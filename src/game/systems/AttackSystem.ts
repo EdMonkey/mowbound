@@ -97,6 +97,12 @@ export function resolveAttack(request: AttackRequest): AttackResult {
   };
 }
 
+export function getSurvivingHitIds(result: Pick<AttackResult, "hitIds" | "destroyedIds">): string[] {
+  const destroyedIds = new Set(result.destroyedIds);
+
+  return result.hitIds.filter((id) => !destroyedIds.has(id));
+}
+
 export function advanceChargeAttack(state: ChargeAttackState, deltaMs: number): ChargeAttackResult {
   const durationMs = Math.max(1, state.durationMs);
   const elapsedMs = Math.max(0, state.elapsedMs + deltaMs);

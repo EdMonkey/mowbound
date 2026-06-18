@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Coin } from "../src/game/entities/Coin";
 import { Grass } from "../src/game/entities/Grass";
-import { advanceChargeAttack, resolveAttack } from "../src/game/systems/AttackSystem";
+import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
 import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
 import {
   InputSystem,
@@ -85,6 +85,23 @@ describe("attack resolution", () => {
     expect(complete.ready).toBe(true);
     expect(complete.progress).toBe(1);
   });
+
+  it("marks only hit grass that survives for shake feedback", () => {
+    const result = resolveAttack({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      range: 0.5,
+      arcDegrees: 180,
+      damage: 3,
+      grass: [
+        { id: "front", position: { x: 0.4, z: 0 }, hp: 5 },
+        { id: "weak", position: { x: 0.3, z: 0 }, hp: 3 },
+        { id: "outside", position: { x: -0.4, z: 0 }, hp: 5 },
+      ],
+    });
+
+    expect(getSurvivingHitIds(result)).toEqual(["front"]);
+  });
 });
 
 describe("persistent upgrades", () => {
@@ -96,6 +113,8 @@ describe("persistent upgrades", () => {
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
     expect(stats.attackArcDegrees).toBe(180);
+    expect(stats.initialGrassCount).toBe(360);
+    expect(stats.grassSpawnPerTick).toBe(20);
     expect(BALANCE.roundDurationMs).toBe(10000);
   });
 

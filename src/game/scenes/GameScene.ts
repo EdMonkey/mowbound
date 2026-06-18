@@ -4,7 +4,13 @@ import { BALANCE, type RuntimeStats } from "../config/balance";
 import { Coin } from "../entities/Coin";
 import { Grass } from "../entities/Grass";
 import { Player } from "../entities/Player";
-import { advanceChargeAttack, createAttackFanGeometry, type ChargeAttackState, resolveAttack } from "../systems/AttackSystem";
+import {
+  advanceChargeAttack,
+  createAttackFanGeometry,
+  getSurvivingHitIds,
+  type ChargeAttackState,
+  resolveAttack,
+} from "../systems/AttackSystem";
 import { rewardForGrass } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
@@ -272,9 +278,11 @@ export class GameScene implements GameSceneController {
       this.grass.delete(id);
     }
 
-    for (const [id, state] of resultById) {
+    for (const id of getSurvivingHitIds(result)) {
       const grass = this.grass.get(id);
-      if (grass) {
+      const state = resultById.get(id);
+
+      if (grass && state) {
         grass.setHp(state.hp);
       }
     }
