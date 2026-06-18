@@ -215,11 +215,11 @@ button:disabled {
 
 .damage-text {
   position: absolute;
-  color: #ffef90;
+  color: #ffffff;
   font-weight: 900;
   text-shadow:
-    0 2px 0 #6e2d1f,
-    0 4px 16px rgba(0, 0, 0, 0.5);
+    0 2px 0 rgba(20, 24, 22, 0.82),
+    0 4px 16px rgba(0, 0, 0, 0.56);
   transform: translate(-50%, -50%);
   pointer-events: none;
   will-change: transform, opacity;

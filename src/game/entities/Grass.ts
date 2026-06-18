@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { BALANCE } from "../config/balance";
 import type { GrassState } from "../types";
 
 const palette = ["#2f9f4b", "#4fb85f", "#7bc96f", "#236c3c"];
@@ -7,6 +6,8 @@ const bladeGeometry = new THREE.BoxGeometry(0.045, 0.32, 0.035);
 
 export class Grass {
   readonly group = new THREE.Group();
+  private baseRotationY = 0;
+  private shakeTimer = 0;
 
   constructor(public state: GrassState) {
     this.group.name = state.id;
@@ -34,17 +35,28 @@ export class Grass {
       this.group.add(blade);
     }
 
-    this.group.rotation.y = Math.random() * Math.PI * 2;
+    this.baseRotationY = Math.random() * Math.PI * 2;
+    this.group.rotation.y = this.baseRotationY;
   }
 
   setHp(hp: number): void {
     this.state = { ...this.state, hp };
-    const healthRatio = THREE.MathUtils.clamp(hp / BALANCE.baseGrassHp, 0.28, 1);
-    this.group.scale.setScalar(healthRatio);
+    this.shakeTimer = 0.24;
   }
 
-  flatten(): void {
-    this.group.scale.y = 0.12;
+  update(deltaSeconds: number): void {
+    this.shakeTimer = Math.max(0, this.shakeTimer - deltaSeconds);
+
+    if (this.shakeTimer === 0) {
+      this.group.rotation.y = this.baseRotationY;
+      this.group.rotation.z = 0;
+      return;
+    }
+
+    const progress = this.shakeTimer / 0.24;
+    const wobble = Math.sin((1 - progress) * Math.PI * 6) * progress;
+    this.group.rotation.y = this.baseRotationY + wobble * 0.16;
+    this.group.rotation.z = wobble * 0.08;
   }
 
   dispose(): void {

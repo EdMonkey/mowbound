@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { Coin } from "../src/game/entities/Coin";
+import { Grass } from "../src/game/entities/Grass";
 import { advanceChargeAttack, resolveAttack } from "../src/game/systems/AttackSystem";
 import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
 import {
@@ -50,25 +52,28 @@ class FakeInputTarget {
 }
 
 describe("attack resolution", () => {
-  it("damages grass inside the 1m 90-degree forward fan and ignores grass outside it", () => {
+  it("damages grass inside the 0.5m 180-degree forward fan and ignores grass outside it", () => {
     const result = resolveAttack({
       origin: { x: 0, z: 0 },
       direction: { x: 1, z: 0 },
-      range: 1,
-      arcDegrees: 90,
+      range: 0.5,
+      arcDegrees: 180,
       damage: 3,
       grass: [
         { id: "front", position: { x: 0.5, z: 0 }, hp: 5 },
-        { id: "side", position: { x: 0.5, z: 0.6 }, hp: 5 },
-        { id: "weak", position: { x: 0.4, z: 0.2 }, hp: 3 },
+        { id: "side", position: { x: 0.01, z: 0.49 }, hp: 5 },
+        { id: "weak", position: { x: 0.3, z: 0.15 }, hp: 3 },
+        { id: "far", position: { x: 0.51, z: 0 }, hp: 5 },
         { id: "behind", position: { x: -0.2, z: 0 }, hp: 5 },
       ],
     });
 
-    expect(result.hitIds).toEqual(["front", "weak"]);
+    expect(result.hitIds).toEqual(["front", "side", "weak"]);
     expect(result.destroyedIds).toEqual(["weak"]);
     expect(result.grass.find((grass) => grass.id === "front")?.hp).toBe(2);
-    expect(result.grass.find((grass) => grass.id === "side")?.hp).toBe(5);
+    expect(result.grass.find((grass) => grass.id === "side")?.hp).toBe(2);
+    expect(result.grass.find((grass) => grass.id === "far")?.hp).toBe(5);
+    expect(result.grass.find((grass) => grass.id === "behind")?.hp).toBe(5);
   });
 
   it("charges for 1s before the strike resolves", () => {
@@ -89,6 +94,8 @@ describe("persistent upgrades", () => {
     expect(stats.moveSpeed).toBe(0.7);
     expect(stats.attackIntervalMs).toBe(1000);
     expect(stats.attackChargeDurationMs).toBe(1000);
+    expect(stats.attackRangeMeters).toBe(0.5);
+    expect(stats.attackArcDegrees).toBe(180);
     expect(BALANCE.roundDurationMs).toBe(10000);
   });
 
@@ -102,8 +109,41 @@ describe("persistent upgrades", () => {
     expect(next.totalGold).toBeLessThan(25);
     expect(next.skills.damage).toBe(1);
     expect(stats.attackDamage).toBe(4);
-    expect(stats.attackRangeMeters).toBe(1);
-    expect(stats.attackArcDegrees).toBe(90);
+    expect(stats.attackRangeMeters).toBe(0.5);
+    expect(stats.attackArcDegrees).toBe(180);
+  });
+});
+
+describe("hit feedback", () => {
+  it("keeps grass full size on non-lethal hits", () => {
+    const grass = new Grass({ id: "grass-test", position: { x: 0, z: 0 }, hp: 5 });
+
+    grass.setHp(2);
+
+    expect(grass.state.hp).toBe(2);
+    expect(grass.group.scale.x).toBe(1);
+    expect(grass.group.scale.y).toBe(1);
+    expect(grass.group.scale.z).toBe(1);
+
+    grass.dispose();
+  });
+
+  it("bounces coins on the floor before they disappear", () => {
+    const coin = new Coin({ x: 0, z: 0 });
+    const floorY = coin.group.position.y;
+    const heights: number[] = [];
+    let expired = false;
+
+    for (let index = 0; index < 18; index += 1) {
+      expired = coin.update(0.08);
+      heights.push(coin.group.position.y);
+    }
+
+    expect(Math.max(...heights)).toBeGreaterThan(floorY + 0.15);
+    expect(heights.some((height, index) => index > 1 && Math.abs(height - floorY) < 0.02)).toBe(true);
+    expect(expired).toBe(true);
+
+    coin.dispose();
   });
 });
 

@@ -60,6 +60,7 @@ export class GameScene implements GameSceneController {
   update(deltaSeconds: number): void {
     this.updateCamera();
     this.player.update(deltaSeconds);
+    this.updateGrass(deltaSeconds);
     this.updateCoins(deltaSeconds);
     this.hud.update(deltaSeconds);
 
@@ -263,7 +264,6 @@ export class GameScene implements GameSceneController {
         continue;
       }
 
-      grass.flatten();
       const coin = new Coin(grass.state.position);
       this.coins.push(coin);
       this.scene.add(coin.group);
@@ -296,6 +296,10 @@ export class GameScene implements GameSceneController {
         this.coins.splice(index, 1);
       }
     }
+  }
+
+  private updateGrass(deltaSeconds: number): void {
+    this.grass.forEach((grass) => grass.update(deltaSeconds));
   }
 
   private updateAttackCharge(): void {

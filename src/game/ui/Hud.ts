@@ -85,7 +85,7 @@ export class Hud {
       text.age += deltaSeconds;
       const t = text.age / 0.7;
       text.element.style.opacity = `${Math.max(0, 1 - t)}`;
-      text.element.style.transform = `translate(-50%, calc(-50% - ${t * 42}px))`;
+      text.element.style.transform = `translate(-50%, calc(-50% - ${t * 54}px)) scale(${1 + t * 0.75})`;
 
       if (t >= 1) {
         text.element.remove();
