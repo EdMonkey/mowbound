@@ -18,10 +18,10 @@
 - Map: 10m x 10m.
 - Player movement speed: 0.7.
 - Attack cadence: one charged strike per second.
-- Attack shape: forward fan, 0.5m range, 180 degrees.
+- Attack shape: forward fan, 0.5m range, 140 degrees.
 - Damage: 3.
 - Grass HP: 5.
-- Grass density: 360 initial grass objects, no mid-round grass spawning.
+- Grass density: 540 initial grass objects, no mid-round grass spawning.
 - Grass model: three rectangular blade meshes per grass object.
 - Hit feedback: only actually hit surviving grass shakes.
 - Death feedback: destroyed grass disappears, drops a bouncing coin, grants gold.

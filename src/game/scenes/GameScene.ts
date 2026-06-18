@@ -11,6 +11,7 @@ import {
   type ChargeAttackState,
   resolveAttack,
 } from "../systems/AttackSystem";
+import { cloneModel } from "../assets/models";
 import { rewardForGrass } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
@@ -143,30 +144,8 @@ export class GameScene implements GameSceneController {
   }
 
   private addMap(): void {
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(BALANCE.mapSizeMeters, BALANCE.mapSizeMeters),
-      new THREE.MeshStandardMaterial({ color: "#497f49", roughness: 0.94 }),
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
-
-    const grid = new THREE.GridHelper(BALANCE.mapSizeMeters, 10, "#263239", "#5d6f4f");
-    grid.position.y = 0.012;
-    this.scene.add(grid);
-
-    const roadMaterial = new THREE.MeshStandardMaterial({ color: "#38424a", roughness: 0.88 });
-    for (const offset of [-2, 2]) {
-      const roadX = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, BALANCE.mapSizeMeters), roadMaterial);
-      roadX.position.set(offset, 0.02, 0);
-      roadX.receiveShadow = true;
-      this.scene.add(roadX);
-
-      const roadZ = new THREE.Mesh(new THREE.BoxGeometry(BALANCE.mapSizeMeters, 0.02, 0.18), roadMaterial);
-      roadZ.position.set(0, 0.021, offset);
-      roadZ.receiveShadow = true;
-      this.scene.add(roadZ);
-    }
+    // Blender-authored 10x10 ground (mow stripes + sod edge); matches mapSizeMeters.
+    this.scene.add(cloneModel("ground"));
 
     const half = BALANCE.mapSizeMeters / 2;
     const points = [
@@ -184,13 +163,16 @@ export class GameScene implements GameSceneController {
   }
 
   private createAttackCharge(): { base: THREE.Mesh; fill: THREE.Mesh } {
+    // depthTest:false + high renderOrder keeps the range indicator visible as an
+    // overlay on top of the tall grass and the uneven ground.
     const base = new THREE.Mesh(
       createAttackFanGeometry(this.stats.attackArcDegrees),
       new THREE.MeshBasicMaterial({
         color: "#54110f",
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.3,
         depthWrite: false,
+        depthTest: false,
         side: THREE.DoubleSide,
       }),
     );
@@ -199,13 +181,16 @@ export class GameScene implements GameSceneController {
       new THREE.MeshBasicMaterial({
         color: "#ff2f24",
         transparent: true,
-        opacity: 0.48,
+        opacity: 0.3,
         depthWrite: false,
+        depthTest: false,
         side: THREE.DoubleSide,
       }),
     );
-    base.position.y = 0.045;
-    fill.position.y = 0.047;
+    base.position.y = 0.08;
+    fill.position.y = 0.085;
+    base.renderOrder = 10;
+    fill.renderOrder = 11;
     this.attackChargeGroup.add(base, fill);
     return { base, fill };
   }

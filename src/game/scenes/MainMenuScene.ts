@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
+import { cloneModel } from "../assets/models";
+import { Player } from "../entities/Player";
 import { resetSave } from "../systems/SaveSystem";
 import { clearElement, createButton } from "../ui/Menu";
 
@@ -38,30 +40,24 @@ export class MainMenuScene implements GameSceneController {
   }
 
   private addPreviewWorld(): void {
-    const ground = new THREE.Mesh(
-      new THREE.BoxGeometry(5.5, 0.18, 5.5),
-      new THREE.MeshStandardMaterial({ color: "#3f8f4e", roughness: 0.9 }),
-    );
-    ground.receiveShadow = true;
+    // Title diorama uses the real game models: GLB ground + farmer (with sickle).
+    const ground = cloneModel("ground");
+    ground.scale.setScalar(0.5);
     this.previewGroup.add(ground);
 
-    for (let index = 0; index < 60; index += 1) {
-      const blade = new THREE.Mesh(
-        new THREE.ConeGeometry(0.035, 0.25 + Math.random() * 0.22, 4),
-        new THREE.MeshStandardMaterial({ color: index % 2 === 0 ? "#62b75c" : "#2e8d48", roughness: 0.9 }),
-      );
-      blade.position.set(Math.random() * 5 - 2.5, 0.18, Math.random() * 5 - 2.5);
-      blade.castShadow = true;
-      this.previewGroup.add(blade);
+    for (let index = 0; index < 8; index += 1) {
+      const angle = (index / 8) * Math.PI * 2 + Math.random() * 0.5;
+      const radius = 1.4 + Math.random() * 0.9;
+      const clump = cloneModel("grass");
+      clump.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      clump.rotation.y = Math.random() * Math.PI * 2;
+      clump.scale.setScalar(0.9 + Math.random() * 0.4);
+      this.previewGroup.add(clump);
     }
 
-    const mower = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.28, 0.6, 5, 12),
-      new THREE.MeshStandardMaterial({ color: "#f0c85a", roughness: 0.65 }),
-    );
-    mower.position.set(0, 0.6, 0);
-    mower.castShadow = true;
-    this.previewGroup.add(mower);
+    const character = new Player();
+    character.group.scale.setScalar(1.8);
+    this.previewGroup.add(character.group);
 
     this.scene.add(this.previewGroup);
   }

@@ -1,57 +1,29 @@
 import * as THREE from "three";
 import type { VectorXZ } from "../types";
-
-const bodyMaterial = new THREE.MeshStandardMaterial({ color: "#f2d38b", roughness: 0.85 });
-const shirtMaterial = new THREE.MeshStandardMaterial({ color: "#4f7fc8", roughness: 0.82 });
-const headMaterial = new THREE.MeshStandardMaterial({ color: "#f0bd8b", roughness: 0.8 });
-const scytheMaterial = new THREE.MeshStandardMaterial({ color: "#2b332f", roughness: 0.65 });
-const bladeMaterial = new THREE.MeshStandardMaterial({ color: "#dfe8de", metalness: 0.25, roughness: 0.32 });
-const markerMaterial = new THREE.MeshStandardMaterial({ color: "#f0c85a", roughness: 0.55 });
+import { cloneModel } from "../assets/models";
 
 export class Player {
   readonly group = new THREE.Group();
   readonly position: VectorXZ = { x: 0, z: 0 };
   readonly direction: VectorXZ = { x: 1, z: 0 };
-  private readonly scythe = new THREE.Group();
+  private readonly tool = new THREE.Group();
   private strikeTimer = 0;
 
   constructor() {
     this.group.name = "Player";
-    this.group.scale.setScalar(0.62);
 
-    const feet = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.16, 12), bodyMaterial);
-    feet.position.y = 0.08;
-    feet.castShadow = true;
-    this.group.add(feet);
-
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.38, 5, 12), shirtMaterial);
-    body.position.y = 0.44;
-    body.castShadow = true;
+    const body = cloneModel("farmer");
     this.group.add(body);
 
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), headMaterial);
-    head.position.y = 0.83;
-    head.castShadow = true;
-    this.group.add(head);
-
-    const marker = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 3), markerMaterial);
-    marker.position.set(0.34, 0.62, 0);
-    marker.rotation.z = -Math.PI / 2;
-    marker.castShadow = true;
-    this.group.add(marker);
-
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.72, 8), scytheMaterial);
-    handle.rotation.z = Math.PI / 2;
-    handle.position.set(0.28, 0.46, -0.16);
-    handle.castShadow = true;
-    this.scythe.add(handle);
-
-    const blade = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.012, 6, 24, Math.PI), bladeMaterial);
-    blade.position.set(0.62, 0.46, -0.16);
-    blade.rotation.set(Math.PI / 2, 0, Math.PI / 2);
-    blade.castShadow = true;
-    this.scythe.add(blade);
-    this.group.add(this.scythe);
+    // Korean hand sickle, held in the right hand (+Z side) at hip height and
+    // swung on strike(). The model's handle runs along +X (the character's
+    // forward axis), so identity rotation points it toward the front.
+    const sickle = cloneModel("sickle");
+    sickle.rotation.set(0, 0, 0);
+    this.tool.add(sickle);
+    this.tool.position.set(0.12, 0.42, 0.08);
+    this.tool.scale.setScalar(0.8);
+    this.group.add(this.tool);
 
     this.syncTransform();
   }
@@ -75,8 +47,8 @@ export class Player {
   update(deltaSeconds: number): void {
     this.strikeTimer = Math.max(0, this.strikeTimer - deltaSeconds);
     const strikeProgress = this.strikeTimer > 0 ? this.strikeTimer / 0.18 : 0;
-    this.scythe.rotation.y = -Math.sin((1 - strikeProgress) * Math.PI) * 1.3;
-    this.scythe.rotation.z = Math.sin((1 - strikeProgress) * Math.PI) * 0.28;
+    this.tool.rotation.y = -Math.sin((1 - strikeProgress) * Math.PI) * 1.3;
+    this.tool.rotation.z = Math.sin((1 - strikeProgress) * Math.PI) * 0.28;
   }
 
   private syncTransform(): void {

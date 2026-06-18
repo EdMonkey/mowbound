@@ -1,27 +1,21 @@
 import * as THREE from "three";
 import type { VectorXZ } from "../types";
-
-const coinMaterial = new THREE.MeshStandardMaterial({
-  color: "#f0c85a",
-  metalness: 0.45,
-  roughness: 0.35,
-  emissive: "#5e4810",
-  emissiveIntensity: 0.2,
-});
+import { cloneModel } from "../assets/models";
 
 export class Coin {
   readonly group = new THREE.Group();
   private age = 0;
-  private readonly startY = 0.12;
+  private readonly startY = 0.18;
   private readonly lifetime = 1.25;
-  private verticalVelocity = 2.2;
+  private verticalVelocity = 3.6;
   private bounceCount = 0;
   private readonly drift: VectorXZ;
 
   constructor(position: VectorXZ) {
-    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.025, 24), coinMaterial);
-    coin.rotation.x = Math.PI / 2;
-    coin.castShadow = true;
+    // The exported coin already lies flat (face up), so no extra rotation.
+    // Scaled up and popped high so it reads clearly above the tall grass.
+    const coin = cloneModel("coin");
+    coin.scale.setScalar(1.5);
     this.group.add(coin);
     this.group.position.set(position.x, this.startY, position.z);
 
@@ -46,7 +40,7 @@ export class Coin {
       this.group.position.y = this.startY;
 
       if (this.bounceCount < 3 && t < 0.88) {
-        const bounceVelocity = [1.35, 0.78, 0.38][this.bounceCount] ?? 0;
+        const bounceVelocity = [1.9, 1.05, 0.5][this.bounceCount] ?? 0;
         this.verticalVelocity = bounceVelocity;
         this.bounceCount += 1;
       } else {
@@ -61,10 +55,7 @@ export class Coin {
   }
 
   dispose(): void {
-    this.group.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        object.geometry.dispose();
-      }
-    });
+    // Geometry and materials are shared with the cached model; only drop references.
+    this.group.clear();
   }
 }
