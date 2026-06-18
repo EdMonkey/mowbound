@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { SKILL_DEFS, SKILL_PREREQ, type SkillId } from "../config/balance";
 import {
+  addGold,
   canPurchaseSkill,
   getRuntimeStats,
   getSkillCost,
@@ -151,6 +152,16 @@ export class SkillTreeScene implements GameSceneController {
     actions.append(
       createButton("Start Run", () => this.app.show("game")),
       createButton("Main Menu", () => this.app.show("menu"), "secondary-button"),
+      // TODO(test): temporary debug grant for skill-tree testing; remove before prod.
+      createButton(
+        "+100 Gold (test)",
+        () => {
+          this.save = addGold(this.save, 100);
+          saveGame(this.save);
+          this.render();
+        },
+        "secondary-button",
+      ),
     );
     panel.appendChild(actions);
 
