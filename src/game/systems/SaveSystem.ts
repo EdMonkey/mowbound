@@ -85,11 +85,14 @@ export function addGold(save: SaveData, amount: number): SaveData {
 export function getRuntimeStats(save: SaveData): RuntimeStats {
   const skills = normalizeSave(save).skills;
 
+  const attackIntervalMs = Math.max(BALANCE.minAttackIntervalMs, BALANCE.baseAttackIntervalMs - skills.attackSpeed * 35);
+
   return {
     attackDamage: BALANCE.baseAttackDamage + skills.damage,
     attackRangeMeters: BALANCE.baseAttackRangeMeters + skills.range * 0.15,
-    attackArcDegrees: BALANCE.baseAttackArcDegrees,
-    attackIntervalMs: Math.max(BALANCE.minAttackIntervalMs, BALANCE.baseAttackIntervalMs - skills.attackSpeed * 35),
+    attackZRadiusMeters: BALANCE.baseAttackZRadiusMeters + skills.range * 0.1,
+    attackChargeDurationMs: attackIntervalMs,
+    attackIntervalMs,
     moveSpeed: BALANCE.playerMoveSpeed + skills.moveSpeed * 0.22,
     goldPerGrass: BALANCE.baseGoldPerGrass + skills.goldValue,
     initialGrassCount: BALANCE.initialGrassCount + skills.grassDensity * 5,

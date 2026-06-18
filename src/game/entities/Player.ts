@@ -17,6 +17,7 @@ export class Player {
 
   constructor() {
     this.group.name = "Player";
+    this.group.scale.setScalar(0.62);
 
     const feet = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.16, 12), bodyMaterial);
     feet.position.y = 0.08;

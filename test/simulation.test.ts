@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { resolveAttack } from "../src/game/systems/AttackSystem";
+import { advanceChargeAttack, resolveAttack } from "../src/game/systems/AttackSystem";
 import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
 import { normalizeInputVector } from "../src/game/systems/InputSystem";
 import { defaultSave } from "../src/game/config/balance";
 
 describe("attack resolution", () => {
-  it("damages only grass inside the forward arc and awards destroyed grass", () => {
+  it("damages grass inside the 1m centered ellipse and ignores grass outside it", () => {
     const result = resolveAttack({
       origin: { x: 0, z: 0 },
       direction: { x: 1, z: 0 },
       range: 1,
-      arcDegrees: 90,
+      zRadius: 0.7,
       damage: 3,
       grass: [
         { id: "front", position: { x: 0.5, z: 0 }, hp: 5 },
-        { id: "side", position: { x: 0.5, z: 0.6 }, hp: 5 },
-        { id: "weak", position: { x: 0.4, z: 0.2 }, hp: 3 },
-        { id: "behind", position: { x: -0.2, z: 0 }, hp: 5 },
+        { id: "side", position: { x: 0, z: 0.72 }, hp: 5 },
+        { id: "weak", position: { x: -0.55, z: 0.1 }, hp: 3 },
+        { id: "outside", position: { x: 1.1, z: 0 }, hp: 5 },
       ],
     });
 
@@ -24,6 +24,16 @@ describe("attack resolution", () => {
     expect(result.destroyedIds).toEqual(["weak"]);
     expect(result.grass.find((grass) => grass.id === "front")?.hp).toBe(2);
     expect(result.grass.find((grass) => grass.id === "side")?.hp).toBe(5);
+  });
+
+  it("charges for 0.5s before the strike resolves", () => {
+    const partial = advanceChargeAttack({ elapsedMs: 0, durationMs: 500 }, 250);
+    const complete = advanceChargeAttack(partial.state, 250);
+
+    expect(partial.ready).toBe(false);
+    expect(partial.progress).toBe(0.5);
+    expect(complete.ready).toBe(true);
+    expect(complete.progress).toBe(1);
   });
 });
 
@@ -38,6 +48,7 @@ describe("persistent upgrades", () => {
     expect(next.totalGold).toBeLessThan(25);
     expect(next.skills.damage).toBe(1);
     expect(stats.attackDamage).toBe(4);
+    expect(stats.attackRangeMeters).toBe(1);
   });
 });
 

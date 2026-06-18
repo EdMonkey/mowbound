@@ -5,8 +5,9 @@ export const BALANCE = {
   baseAttackDamage: 3,
   baseGrassHp: 5,
   baseAttackIntervalMs: 500,
-  baseAttackRangeMeters: 0.5,
-  baseAttackArcDegrees: 90,
+  baseAttackRangeMeters: 1,
+  baseAttackZRadiusMeters: 0.7,
+  attackChargeDurationMs: 500,
   baseGoldPerGrass: 1,
   initialGrassCount: 35,
   grassSpawnIntervalMs: 180,
@@ -35,7 +36,8 @@ export interface SkillDefinition {
 export interface RuntimeStats {
   attackDamage: number;
   attackRangeMeters: number;
-  attackArcDegrees: number;
+  attackZRadiusMeters: number;
+  attackChargeDurationMs: number;
   attackIntervalMs: number;
   moveSpeed: number;
   goldPerGrass: number;
@@ -56,7 +58,7 @@ export const SKILL_DEFS: Record<SkillId, SkillDefinition> = {
   range: {
     id: "range",
     name: "Range Up",
-    description: "Forward mowing range +0.15m.",
+    description: "Mowing ellipse radius +0.15m.",
     baseCost: 7,
     costGrowth: 1.6,
     maxLevel: 20,

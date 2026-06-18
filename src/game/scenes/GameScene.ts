@@ -4,7 +4,7 @@ import { BALANCE, type RuntimeStats } from "../config/balance";
 import { Coin } from "../entities/Coin";
 import { Grass } from "../entities/Grass";
 import { Player } from "../entities/Player";
-import { createAttackArcGeometry, resolveAttack } from "../systems/AttackSystem";
+import { advanceChargeAttack, createAttackEllipseGeometry, type ChargeAttackState, resolveAttack } from "../systems/AttackSystem";
 import { rewardForGrass } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
 import { InputSystem } from "../systems/InputSystem";
@@ -22,11 +22,13 @@ export class GameScene implements GameSceneController {
   private readonly grass = new Map<string, Grass>();
   private readonly coins: Coin[] = [];
   private readonly stats: RuntimeStats;
-  private readonly attackArc: THREE.Mesh;
+  private readonly attackChargeGroup = new THREE.Group();
+  private readonly attackChargeBase: THREE.Mesh;
+  private readonly attackChargeFill: THREE.Mesh;
   private elapsedMs = 0;
-  private attackTimerMs = 0;
+  private chargeState: ChargeAttackState;
+  private attackChargeProgress = 0;
   private spawnTimerMs = 0;
-  private attackFlash = 0;
   private roundGold = 0;
   private nextGrassId = 1;
   private ended = false;
@@ -37,16 +39,19 @@ export class GameScene implements GameSceneController {
     this.stats = getRuntimeStats(this.save);
     this.hud = new Hud(this.app.uiRoot);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
-    this.attackArc = this.createAttackArc();
+    this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
+    const chargeMeshes = this.createAttackCharge();
+    this.attackChargeBase = chargeMeshes.base;
+    this.attackChargeFill = chargeMeshes.fill;
 
-    this.scene.background = new THREE.Color("#8ecbd1");
-    this.scene.fog = new THREE.Fog("#8ecbd1", 13, 24);
-    this.app.setOrthoSize(window.innerWidth < 760 ? 7.2 : 8.8);
+    this.scene.background = new THREE.Color("#617075");
+    this.scene.fog = new THREE.Fog("#617075", 12, 24);
+    this.app.setOrthoSize(window.innerWidth < 760 ? 7.8 : 9.4);
 
     this.addLights();
     this.addMap();
     this.scene.add(this.player.group);
-    this.scene.add(this.attackArc);
+    this.scene.add(this.attackChargeGroup);
     this.spawnInitialGrass();
     this.updateJoystickVisibility();
     window.addEventListener("resize", this.updateJoystickVisibility);
@@ -57,12 +62,10 @@ export class GameScene implements GameSceneController {
     this.player.update(deltaSeconds);
     this.updateCoins(deltaSeconds);
     this.hud.update(deltaSeconds);
-    this.updateAttackArc(deltaSeconds);
 
     if (!this.ended) {
       this.elapsedMs += deltaSeconds * 1000;
       this.spawnTimerMs += deltaSeconds * 1000;
-      this.attackTimerMs += deltaSeconds * 1000;
 
       const movement = this.input.getMovementVector();
       this.player.move(movement, this.stats.moveSpeed, deltaSeconds, BALANCE.mapSizeMeters);
@@ -72,8 +75,11 @@ export class GameScene implements GameSceneController {
         this.spawnGrass(this.stats.grassSpawnPerTick);
       }
 
-      if (this.attackTimerMs >= this.stats.attackIntervalMs) {
-        this.attackTimerMs %= this.stats.attackIntervalMs;
+      const charge = advanceChargeAttack(this.chargeState, deltaSeconds * 1000);
+      this.chargeState = charge.state;
+      this.attackChargeProgress = charge.progress;
+
+      if (charge.ready) {
         this.performAttack();
       }
 
@@ -82,12 +88,14 @@ export class GameScene implements GameSceneController {
       }
     }
 
+    this.updateAttackCharge();
+
     this.hud.updateGame({
       timeMs: BALANCE.roundDurationMs - this.elapsedMs,
       roundGold: this.roundGold,
       totalGold: this.save.totalGold + this.roundGold,
       damage: this.stats.attackDamage,
-      attackIntervalMs: this.stats.attackIntervalMs,
+      attackIntervalMs: this.stats.attackChargeDurationMs,
       range: this.stats.attackRangeMeters,
     });
   }
@@ -99,18 +107,20 @@ export class GameScene implements GameSceneController {
     this.hud.dispose();
     this.grass.forEach((grass) => grass.dispose());
     this.coins.forEach((coin) => coin.dispose());
-    this.attackArc.geometry.dispose();
-    const material = this.attackArc.material;
-    if (Array.isArray(material)) {
-      material.forEach((entry) => entry.dispose());
-    } else {
-      material.dispose();
+    for (const mesh of [this.attackChargeBase, this.attackChargeFill]) {
+      mesh.geometry.dispose();
+      const material = mesh.material;
+      if (Array.isArray(material)) {
+        material.forEach((entry) => entry.dispose());
+      } else {
+        material.dispose();
+      }
     }
   }
 
   private addLights(): void {
-    this.scene.add(new THREE.HemisphereLight("#f8ffe8", "#386d63", 1.8));
-    const sun = new THREE.DirectionalLight("#fff3cb", 2.3);
+    this.scene.add(new THREE.HemisphereLight("#f4f9e8", "#3d4a52", 1.55));
+    const sun = new THREE.DirectionalLight("#ffe7b0", 2.15);
     sun.position.set(4, 8, 5);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -126,15 +136,28 @@ export class GameScene implements GameSceneController {
   private addMap(): void {
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(BALANCE.mapSizeMeters, BALANCE.mapSizeMeters),
-      new THREE.MeshStandardMaterial({ color: "#4d9f4e", roughness: 0.92 }),
+      new THREE.MeshStandardMaterial({ color: "#497f49", roughness: 0.94 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.scene.add(ground);
 
-    const grid = new THREE.GridHelper(BALANCE.mapSizeMeters, 10, "#d7e7b7", "#73a75b");
+    const grid = new THREE.GridHelper(BALANCE.mapSizeMeters, 10, "#263239", "#5d6f4f");
     grid.position.y = 0.012;
     this.scene.add(grid);
+
+    const roadMaterial = new THREE.MeshStandardMaterial({ color: "#38424a", roughness: 0.88 });
+    for (const offset of [-2, 2]) {
+      const roadX = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, BALANCE.mapSizeMeters), roadMaterial);
+      roadX.position.set(offset, 0.02, 0);
+      roadX.receiveShadow = true;
+      this.scene.add(roadX);
+
+      const roadZ = new THREE.Mesh(new THREE.BoxGeometry(BALANCE.mapSizeMeters, 0.02, 0.18), roadMaterial);
+      roadZ.position.set(0, 0.021, offset);
+      roadZ.receiveShadow = true;
+      this.scene.add(roadZ);
+    }
 
     const half = BALANCE.mapSizeMeters / 2;
     const points = [
@@ -151,19 +174,31 @@ export class GameScene implements GameSceneController {
     this.scene.add(border);
   }
 
-  private createAttackArc(): THREE.Mesh {
-    const mesh = new THREE.Mesh(
-      createAttackArcGeometry(this.stats.attackRangeMeters, this.stats.attackArcDegrees),
+  private createAttackCharge(): { base: THREE.Mesh; fill: THREE.Mesh } {
+    const base = new THREE.Mesh(
+      createAttackEllipseGeometry(),
       new THREE.MeshBasicMaterial({
-        color: "#ffe57a",
+        color: "#54110f",
         transparent: true,
-        opacity: 0,
+        opacity: 0.2,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
     );
-    mesh.position.y = 0.045;
-    return mesh;
+    const fill = new THREE.Mesh(
+      createAttackEllipseGeometry(),
+      new THREE.MeshBasicMaterial({
+        color: "#ff2f24",
+        transparent: true,
+        opacity: 0.48,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    base.position.y = 0.045;
+    fill.position.y = 0.047;
+    this.attackChargeGroup.add(base, fill);
+    return { base, fill };
   }
 
   private spawnInitialGrass(): void {
@@ -206,7 +241,7 @@ export class GameScene implements GameSceneController {
       origin: this.player.position,
       direction: this.player.direction,
       range: this.stats.attackRangeMeters,
-      arcDegrees: this.stats.attackArcDegrees,
+      zRadius: this.stats.attackZRadiusMeters,
       damage: this.stats.attackDamage,
       grass: grassStates,
     });
@@ -246,7 +281,6 @@ export class GameScene implements GameSceneController {
 
     if (result.hitIds.length > 0) {
       this.player.strike();
-      this.attackFlash = 0.18;
     }
 
     this.roundGold += rewardForGrass(this.stats, result.destroyedIds.length);
@@ -264,13 +298,15 @@ export class GameScene implements GameSceneController {
     }
   }
 
-  private updateAttackArc(deltaSeconds: number): void {
-    this.attackFlash = Math.max(0, this.attackFlash - deltaSeconds);
-    this.attackArc.position.set(this.player.position.x, 0.05, this.player.position.z);
-    this.attackArc.rotation.y = -Math.atan2(this.player.direction.z, this.player.direction.x);
-
-    const material = this.attackArc.material as THREE.MeshBasicMaterial;
-    material.opacity = this.attackFlash > 0 ? (this.attackFlash / 0.18) * 0.38 : 0;
+  private updateAttackCharge(): void {
+    this.attackChargeGroup.position.set(this.player.position.x, 0, this.player.position.z);
+    this.attackChargeGroup.rotation.y = -Math.atan2(this.player.direction.z, this.player.direction.x);
+    this.attackChargeBase.scale.set(this.stats.attackRangeMeters, 1, this.stats.attackZRadiusMeters);
+    this.attackChargeFill.scale.set(
+      Math.max(0.02, this.stats.attackRangeMeters * this.attackChargeProgress),
+      1,
+      Math.max(0.02, this.stats.attackZRadiusMeters * this.attackChargeProgress),
+    );
   }
 
   private updateCamera(deltaSeconds: number): void {
