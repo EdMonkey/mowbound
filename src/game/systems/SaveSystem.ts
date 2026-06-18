@@ -97,7 +97,7 @@ export function getRuntimeStats(save: SaveData): RuntimeStats {
     goldPerGrass: BALANCE.baseGoldPerGrass + skills.goldValue,
     initialGrassCount: BALANCE.initialGrassCount + skills.grassDensity * 3,
     grassSpawnIntervalMs: Math.max(140, BALANCE.grassSpawnIntervalMs - skills.grassDensity * 8),
-    grassSpawnPerTick: BALANCE.grassSpawnPerTick + Math.floor(skills.grassDensity / 4),
+    grassSpawnPerTick: BALANCE.grassSpawnPerTick,
   };
 }
 

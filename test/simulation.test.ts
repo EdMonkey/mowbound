@@ -114,8 +114,18 @@ describe("persistent upgrades", () => {
     expect(stats.attackRangeMeters).toBe(0.5);
     expect(stats.attackArcDegrees).toBe(180);
     expect(stats.initialGrassCount).toBe(360);
-    expect(stats.grassSpawnPerTick).toBe(20);
+    expect(stats.grassSpawnPerTick).toBe(0);
     expect(BALANCE.roundDurationMs).toBe(10000);
+  });
+
+  it("keeps dense grass initial-only even after density upgrades", () => {
+    const save = defaultSave();
+    save.skills.grassDensity = 8;
+
+    const stats = getRuntimeStats(save);
+
+    expect(stats.initialGrassCount).toBeGreaterThan(360);
+    expect(stats.grassSpawnPerTick).toBe(0);
   });
 
   it("spends gold, increases skill level, and changes runtime stats", () => {

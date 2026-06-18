@@ -11,7 +11,7 @@ export const BALANCE = {
   baseGoldPerGrass: 1,
   initialGrassCount: 360,
   grassSpawnIntervalMs: 320,
-  grassSpawnPerTick: 20,
+  grassSpawnPerTick: 0,
   virtualJoystickRadiusPx: 64,
   virtualJoystickDeadZone: 0.12,
   minAttackIntervalMs: 150,
@@ -90,7 +90,7 @@ export const SKILL_DEFS: Record<SkillId, SkillDefinition> = {
   grassDensity: {
     id: "grassDensity",
     name: "Grass Density Up",
-    description: "More grass at start and during runs.",
+    description: "More grass at run start.",
     baseCost: 8,
     costGrowth: 1.55,
     maxLevel: 18,

@@ -72,15 +72,17 @@ export class GameScene implements GameSceneController {
 
     if (!this.ended) {
       this.elapsedMs += deltaSeconds * 1000;
-      this.spawnTimerMs += deltaSeconds * 1000;
+      if (this.stats.grassSpawnPerTick > 0) {
+        this.spawnTimerMs += deltaSeconds * 1000;
+
+        while (this.spawnTimerMs >= this.stats.grassSpawnIntervalMs) {
+          this.spawnTimerMs -= this.stats.grassSpawnIntervalMs;
+          this.spawnGrass(this.stats.grassSpawnPerTick);
+        }
+      }
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
       this.player.move(movement, this.stats.moveSpeed, deltaSeconds, BALANCE.mapSizeMeters);
-
-      while (this.spawnTimerMs >= this.stats.grassSpawnIntervalMs) {
-        this.spawnTimerMs -= this.stats.grassSpawnIntervalMs;
-        this.spawnGrass(this.stats.grassSpawnPerTick);
-      }
 
       const charge = advanceChargeAttack(this.chargeState, deltaSeconds * 1000);
       this.chargeState = charge.state;
