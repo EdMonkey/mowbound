@@ -1,3 +1,4 @@
+import { BALANCE } from "../config/balance";
 import type { VectorXZ } from "../types";
 
 const KEY_VECTORS: Record<string, VectorXZ> = {
@@ -36,9 +37,26 @@ export function mapScreenInputToWorldMovement(vector: VectorXZ): VectorXZ {
   return normalizeInputVector(world);
 }
 
+export function pointerToCenteredScreenMovement(
+  pointer: { x: number; y: number },
+  viewport: { width: number; height: number },
+  deadZonePx = 0,
+): VectorXZ {
+  return normalizeInputVector(
+    {
+      x: pointer.x - viewport.width / 2,
+      z: pointer.y - viewport.height / 2,
+    },
+    deadZonePx,
+  );
+}
+
 export class InputSystem {
   private readonly keys = new Set<string>();
   private joystickVector: VectorXZ = { x: 0, z: 0 };
+  private pointerVector: VectorXZ = { x: 0, z: 0 };
+  private pointerActive = false;
+  private pointerMovementEnabled = true;
   private readonly onKeyDown = (event: KeyboardEvent) => {
     if (event.code in KEY_VECTORS) {
       event.preventDefault();
@@ -53,13 +71,42 @@ export class InputSystem {
     }
   };
 
+  private readonly onPointerMove = (event: PointerEvent) => {
+    if (!this.pointerMovementEnabled || event.pointerType !== "mouse") {
+      return;
+    }
+
+    this.pointerActive = true;
+    this.pointerVector = pointerToCenteredScreenMovement(
+      { x: event.clientX, y: event.clientY },
+      { width: this.target.innerWidth, height: this.target.innerHeight },
+      BALANCE.mouseMoveDeadZonePx,
+    );
+  };
+
+  private readonly onPointerLeave = () => {
+    this.pointerActive = false;
+    this.pointerVector = { x: 0, z: 0 };
+  };
+
   constructor(private readonly target: Window = window) {
     this.target.addEventListener("keydown", this.onKeyDown);
     this.target.addEventListener("keyup", this.onKeyUp);
+    this.target.addEventListener("pointermove", this.onPointerMove);
+    this.target.addEventListener("pointerleave", this.onPointerLeave);
+    this.target.addEventListener("blur", this.onPointerLeave);
   }
 
   setJoystickVector(vector: VectorXZ): void {
     this.joystickVector = normalizeInputVector(vector);
+  }
+
+  setPointerMovementEnabled(enabled: boolean): void {
+    this.pointerMovementEnabled = enabled;
+
+    if (!enabled) {
+      this.onPointerLeave();
+    }
   }
 
   getMovementVector(): VectorXZ {
@@ -79,12 +126,19 @@ export class InputSystem {
       return this.joystickVector;
     }
 
+    if (this.pointerMovementEnabled && this.pointerActive) {
+      return this.pointerVector;
+    }
+
     return normalizedKeyboard;
   }
 
   dispose(): void {
     this.target.removeEventListener("keydown", this.onKeyDown);
     this.target.removeEventListener("keyup", this.onKeyUp);
+    this.target.removeEventListener("pointermove", this.onPointerMove);
+    this.target.removeEventListener("pointerleave", this.onPointerLeave);
+    this.target.removeEventListener("blur", this.onPointerLeave);
     this.keys.clear();
   }
 }

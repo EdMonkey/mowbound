@@ -53,12 +53,12 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.player.group);
     this.scene.add(this.attackChargeGroup);
     this.spawnInitialGrass();
-    this.updateJoystickVisibility();
-    window.addEventListener("resize", this.updateJoystickVisibility);
+    this.updateInputMode();
+    window.addEventListener("resize", this.updateInputMode);
   }
 
   update(deltaSeconds: number): void {
-    this.updateCamera(deltaSeconds);
+    this.updateCamera();
     this.player.update(deltaSeconds);
     this.updateCoins(deltaSeconds);
     this.hud.update(deltaSeconds);
@@ -101,7 +101,7 @@ export class GameScene implements GameSceneController {
   }
 
   dispose(): void {
-    window.removeEventListener("resize", this.updateJoystickVisibility);
+    window.removeEventListener("resize", this.updateInputMode);
     this.input.dispose();
     this.joystick.dispose();
     this.hud.dispose();
@@ -309,9 +309,8 @@ export class GameScene implements GameSceneController {
     );
   }
 
-  private updateCamera(deltaSeconds: number): void {
-    const target = new THREE.Vector3(this.player.position.x, 0, this.player.position.z);
-    this.cameraTarget.lerp(target, 1 - Math.pow(0.0001, deltaSeconds));
+  private updateCamera(): void {
+    this.cameraTarget.set(this.player.position.x, 0, this.player.position.z);
     const offset = new THREE.Vector3(5.8, 6.2, 5.8);
     this.app.camera.position.copy(this.cameraTarget).add(offset);
     this.app.camera.lookAt(this.cameraTarget.x, 0, this.cameraTarget.z);
@@ -331,6 +330,7 @@ export class GameScene implements GameSceneController {
     this.save = addGold(this.save, this.roundGold);
     saveGame(this.save);
     this.joystick.setVisible(false);
+    this.input.setPointerMovementEnabled(false);
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
@@ -338,8 +338,10 @@ export class GameScene implements GameSceneController {
     });
   }
 
-  private readonly updateJoystickVisibility = (): void => {
+  private readonly updateInputMode = (): void => {
     const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    this.joystick.setVisible(!this.ended && (coarsePointer || window.innerWidth <= 760));
+    const useJoystick = coarsePointer || window.innerWidth <= 760;
+    this.joystick.setVisible(!this.ended && useJoystick);
+    this.input.setPointerMovementEnabled(!this.ended && !useJoystick);
   };
 }

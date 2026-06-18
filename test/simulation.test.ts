@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { advanceChargeAttack, resolveAttack } from "../src/game/systems/AttackSystem";
 import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
-import { mapScreenInputToWorldMovement, normalizeInputVector } from "../src/game/systems/InputSystem";
+import {
+  mapScreenInputToWorldMovement,
+  normalizeInputVector,
+  pointerToCenteredScreenMovement,
+} from "../src/game/systems/InputSystem";
 import { defaultSave } from "../src/game/config/balance";
 
 describe("attack resolution", () => {
@@ -72,6 +76,23 @@ describe("input vectors", () => {
     expect(mapScreenInputToWorldMovement({ x: 1, z: 0 })).toEqual({
       x: 0.7071067811865475,
       z: -0.7071067811865475,
+    });
+  });
+
+  it("derives desktop movement from the mouse pointer around the character center", () => {
+    expect(pointerToCenteredScreenMovement({ x: 500, y: 250 }, { width: 1000, height: 500 }, 24)).toEqual({
+      x: 0,
+      z: 0,
+    });
+
+    expect(pointerToCenteredScreenMovement({ x: 1000, y: 250 }, { width: 1000, height: 500 }, 24)).toEqual({
+      x: 1,
+      z: 0,
+    });
+
+    expect(pointerToCenteredScreenMovement({ x: 500, y: 0 }, { width: 1000, height: 500 }, 24)).toEqual({
+      x: 0,
+      z: -1,
     });
   });
 });

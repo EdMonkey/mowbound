@@ -14,6 +14,7 @@ export const BALANCE = {
   grassSpawnPerTick: 1,
   virtualJoystickRadiusPx: 64,
   virtualJoystickDeadZone: 0.12,
+  mouseMoveDeadZonePx: 24,
   minAttackIntervalMs: 150,
 } as const;
 
