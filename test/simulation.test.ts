@@ -144,15 +144,23 @@ describe("persistent upgrades", () => {
 });
 
 describe("hit feedback", () => {
-  it("keeps grass full size on non-lethal hits", () => {
+  it("randomizes spawn scale and heading, and keeps that size on non-lethal hits", () => {
     const grass = new Grass({ id: "grass-test", position: { x: 0, z: 0 }, hp: 5 });
+    const spawnScale = grass.group.scale.x;
+
+    expect(spawnScale).toBeGreaterThanOrEqual(0.8);
+    expect(spawnScale).toBeLessThanOrEqual(1.2);
+    expect(grass.group.scale.y).toBe(spawnScale);
+    expect(grass.group.scale.z).toBe(spawnScale);
+    expect(grass.group.rotation.y).toBeGreaterThanOrEqual(0);
+    expect(grass.group.rotation.y).toBeLessThan(Math.PI * 2);
 
     grass.setHp(2);
 
     expect(grass.state.hp).toBe(2);
-    expect(grass.group.scale.x).toBe(1);
-    expect(grass.group.scale.y).toBe(1);
-    expect(grass.group.scale.z).toBe(1);
+    expect(grass.group.scale.x).toBe(spawnScale);
+    expect(grass.group.scale.y).toBe(spawnScale);
+    expect(grass.group.scale.z).toBe(spawnScale);
 
     grass.dispose();
   });

@@ -1,13 +1,6 @@
 import * as THREE from "three";
 import type { VectorXZ } from "../types";
-
-const coinMaterial = new THREE.MeshStandardMaterial({
-  color: "#f0c85a",
-  metalness: 0.45,
-  roughness: 0.35,
-  emissive: "#5e4810",
-  emissiveIntensity: 0.2,
-});
+import { cloneModel } from "../assets/models";
 
 export class Coin {
   readonly group = new THREE.Group();
@@ -19,10 +12,8 @@ export class Coin {
   private readonly drift: VectorXZ;
 
   constructor(position: VectorXZ) {
-    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.025, 24), coinMaterial);
-    coin.rotation.x = Math.PI / 2;
-    coin.castShadow = true;
-    this.group.add(coin);
+    // The exported coin already lies flat (face up), so no extra rotation.
+    this.group.add(cloneModel("coin"));
     this.group.position.set(position.x, this.startY, position.z);
 
     const angle = Math.random() * Math.PI * 2;
@@ -61,10 +52,7 @@ export class Coin {
   }
 
   dispose(): void {
-    this.group.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        object.geometry.dispose();
-      }
-    });
+    // Geometry and materials are shared with the cached model; only drop references.
+    this.group.clear();
   }
 }
