@@ -56,7 +56,7 @@ export class SkillTreeScene implements GameSceneController {
         <h2 class="panel-title">Skill Tree</h2>
         <p class="panel-copy">Total gold: <strong>${this.save.totalGold}</strong></p>
       </div>
-      <p class="skill-meta">Damage ${stats.attackDamage} · Ellipse ${stats.attackRangeMeters.toFixed(2)}m · Charge ${(stats.attackChargeDurationMs / 1000).toFixed(2)}s</p>
+      <p class="skill-meta">Damage ${stats.attackDamage} · Fan ${stats.attackRangeMeters.toFixed(2)}m / ${stats.attackArcDegrees}deg · Charge ${(stats.attackChargeDurationMs / 1000).toFixed(2)}s</p>
     `;
     panel.appendChild(header);
 

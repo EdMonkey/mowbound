@@ -90,14 +90,14 @@ export function getRuntimeStats(save: SaveData): RuntimeStats {
   return {
     attackDamage: BALANCE.baseAttackDamage + skills.damage,
     attackRangeMeters: BALANCE.baseAttackRangeMeters + skills.range * 0.15,
-    attackZRadiusMeters: BALANCE.baseAttackZRadiusMeters + skills.range * 0.1,
+    attackArcDegrees: BALANCE.baseAttackArcDegrees,
     attackChargeDurationMs: attackIntervalMs,
     attackIntervalMs,
     moveSpeed: BALANCE.playerMoveSpeed + skills.moveSpeed * 0.22,
     goldPerGrass: BALANCE.baseGoldPerGrass + skills.goldValue,
-    initialGrassCount: BALANCE.initialGrassCount + skills.grassDensity * 5,
-    grassSpawnIntervalMs: Math.max(90, BALANCE.grassSpawnIntervalMs - skills.grassDensity * 8),
-    grassSpawnPerTick: BALANCE.grassSpawnPerTick + Math.floor(skills.grassDensity / 2),
+    initialGrassCount: BALANCE.initialGrassCount + skills.grassDensity * 3,
+    grassSpawnIntervalMs: Math.max(140, BALANCE.grassSpawnIntervalMs - skills.grassDensity * 8),
+    grassSpawnPerTick: BALANCE.grassSpawnPerTick + Math.floor(skills.grassDensity / 4),
   };
 }
 

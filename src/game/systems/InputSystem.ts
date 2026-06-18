@@ -25,6 +25,17 @@ export function normalizeInputVector(vector: VectorXZ, deadZone = 0): VectorXZ {
   };
 }
 
+export function mapScreenInputToWorldMovement(vector: VectorXZ): VectorXZ {
+  const normalized = normalizeInputVector(vector);
+  const invSqrt2 = Math.SQRT1_2;
+  const world = {
+    x: (normalized.x + normalized.z) * invSqrt2,
+    z: (-normalized.x + normalized.z) * invSqrt2,
+  };
+
+  return normalizeInputVector(world);
+}
+
 export class InputSystem {
   private readonly keys = new Set<string>();
   private joystickVector: VectorXZ = { x: 0, z: 0 };

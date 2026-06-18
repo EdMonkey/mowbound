@@ -5,7 +5,7 @@ export interface AttackRequest {
   origin: VectorXZ;
   direction: VectorXZ;
   range: number;
-  zRadius: number;
+  arcDegrees: number;
   damage: number;
   grass: GrassState[];
 }
@@ -32,14 +32,14 @@ function normalizeDirection(direction: VectorXZ): VectorXZ {
   return length === 0 ? { x: 1, z: 0 } : { x: direction.x / length, z: direction.z / length };
 }
 
-export function isInAttackEllipse(
+export function isInAttackFan(
   origin: VectorXZ,
   direction: VectorXZ,
   target: VectorXZ,
-  xRadius: number,
-  zRadius: number,
+  range: number,
+  arcDegrees: number,
 ): boolean {
-  if (xRadius <= 0 || zRadius <= 0) {
+  if (range <= 0 || arcDegrees <= 0) {
     return false;
   }
 
@@ -47,15 +47,25 @@ export function isInAttackEllipse(
     x: target.x - origin.x,
     z: target.z - origin.z,
   };
-  const forward = normalizeDirection(direction);
-  const right = {
-    x: -forward.z,
-    z: forward.x,
-  };
-  const localX = offset.x * forward.x + offset.z * forward.z;
-  const localZ = offset.x * right.x + offset.z * right.z;
+  const distance = Math.hypot(offset.x, offset.z);
 
-  return (localX * localX) / (xRadius * xRadius) + (localZ * localZ) / (zRadius * zRadius) <= 1;
+  if (distance > range) {
+    return false;
+  }
+
+  if (distance === 0) {
+    return true;
+  }
+
+  const forward = normalizeDirection(direction);
+  const targetDirection = {
+    x: offset.x / distance,
+    z: offset.z / distance,
+  };
+  const dot = forward.x * targetDirection.x + forward.z * targetDirection.z;
+  const halfArcRadians = THREE.MathUtils.degToRad(arcDegrees / 2);
+
+  return dot >= Math.cos(halfArcRadians);
 }
 
 export function resolveAttack(request: AttackRequest): AttackResult {
@@ -64,7 +74,7 @@ export function resolveAttack(request: AttackRequest): AttackResult {
   const nextGrass: GrassState[] = [];
 
   for (const patch of request.grass) {
-    if (isInAttackEllipse(request.origin, request.direction, patch.position, request.range, request.zRadius)) {
+    if (isInAttackFan(request.origin, request.direction, patch.position, request.range, request.arcDegrees)) {
       hitIds.push(patch.id);
       const hp = patch.hp - request.damage;
 
@@ -103,12 +113,13 @@ export function advanceChargeAttack(state: ChargeAttackState, deltaMs: number): 
   };
 }
 
-export function createAttackEllipseGeometry(segments = 64): THREE.BufferGeometry {
+export function createAttackFanGeometry(arcDegrees: number, segments = 32): THREE.BufferGeometry {
   const vertices: number[] = [0, 0, 0];
+  const halfArc = THREE.MathUtils.degToRad(arcDegrees / 2);
 
   for (let index = 0; index <= segments; index += 1) {
     const t = index / segments;
-    const angle = t * Math.PI * 2;
+    const angle = -halfArc + t * halfArc * 2;
     vertices.push(Math.cos(angle), 0, Math.sin(angle));
   }
 

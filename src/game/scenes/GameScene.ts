@@ -4,10 +4,10 @@ import { BALANCE, type RuntimeStats } from "../config/balance";
 import { Coin } from "../entities/Coin";
 import { Grass } from "../entities/Grass";
 import { Player } from "../entities/Player";
-import { advanceChargeAttack, createAttackEllipseGeometry, type ChargeAttackState, resolveAttack } from "../systems/AttackSystem";
+import { advanceChargeAttack, createAttackFanGeometry, type ChargeAttackState, resolveAttack } from "../systems/AttackSystem";
 import { rewardForGrass } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
-import { InputSystem } from "../systems/InputSystem";
+import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
 import { addGold, getRuntimeStats, loadSave, saveGame } from "../systems/SaveSystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
@@ -67,7 +67,7 @@ export class GameScene implements GameSceneController {
       this.elapsedMs += deltaSeconds * 1000;
       this.spawnTimerMs += deltaSeconds * 1000;
 
-      const movement = this.input.getMovementVector();
+      const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
       this.player.move(movement, this.stats.moveSpeed, deltaSeconds, BALANCE.mapSizeMeters);
 
       while (this.spawnTimerMs >= this.stats.grassSpawnIntervalMs) {
@@ -176,7 +176,7 @@ export class GameScene implements GameSceneController {
 
   private createAttackCharge(): { base: THREE.Mesh; fill: THREE.Mesh } {
     const base = new THREE.Mesh(
-      createAttackEllipseGeometry(),
+      createAttackFanGeometry(this.stats.attackArcDegrees),
       new THREE.MeshBasicMaterial({
         color: "#54110f",
         transparent: true,
@@ -186,7 +186,7 @@ export class GameScene implements GameSceneController {
       }),
     );
     const fill = new THREE.Mesh(
-      createAttackEllipseGeometry(),
+      createAttackFanGeometry(this.stats.attackArcDegrees),
       new THREE.MeshBasicMaterial({
         color: "#ff2f24",
         transparent: true,
@@ -241,7 +241,7 @@ export class GameScene implements GameSceneController {
       origin: this.player.position,
       direction: this.player.direction,
       range: this.stats.attackRangeMeters,
-      zRadius: this.stats.attackZRadiusMeters,
+      arcDegrees: this.stats.attackArcDegrees,
       damage: this.stats.attackDamage,
       grass: grassStates,
     });
@@ -301,11 +301,11 @@ export class GameScene implements GameSceneController {
   private updateAttackCharge(): void {
     this.attackChargeGroup.position.set(this.player.position.x, 0, this.player.position.z);
     this.attackChargeGroup.rotation.y = -Math.atan2(this.player.direction.z, this.player.direction.x);
-    this.attackChargeBase.scale.set(this.stats.attackRangeMeters, 1, this.stats.attackZRadiusMeters);
+    this.attackChargeBase.scale.set(this.stats.attackRangeMeters, 1, this.stats.attackRangeMeters);
     this.attackChargeFill.scale.set(
       Math.max(0.02, this.stats.attackRangeMeters * this.attackChargeProgress),
       1,
-      Math.max(0.02, this.stats.attackZRadiusMeters * this.attackChargeProgress),
+      Math.max(0.02, this.stats.attackRangeMeters * this.attackChargeProgress),
     );
   }
 
