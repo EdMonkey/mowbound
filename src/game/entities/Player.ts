@@ -15,11 +15,13 @@ export class Player {
     const body = cloneModel("farmer");
     this.group.add(body);
 
-    // Korean hand sickle, held forward at hip height; swung on strike().
+    // Korean hand sickle, held at hip height; swung on strike(). Blade hooks
+    // inward (toward the body), and the rig is scaled to the 0.8x farmer.
     const sickle = cloneModel("sickle");
-    sickle.rotation.set(-0.3, 0, 0);
+    sickle.rotation.set(-0.3, Math.PI, 0);
     this.tool.add(sickle);
-    this.tool.position.set(0.12, 0.46, -0.16);
+    this.tool.position.set(0.1, 0.37, -0.13);
+    this.tool.scale.setScalar(0.8);
     this.group.add(this.tool);
 
     this.syncTransform();

@@ -163,13 +163,16 @@ export class GameScene implements GameSceneController {
   }
 
   private createAttackCharge(): { base: THREE.Mesh; fill: THREE.Mesh } {
+    // depthTest:false + high renderOrder keeps the range indicator visible as an
+    // overlay on top of the tall grass and the uneven ground.
     const base = new THREE.Mesh(
       createAttackFanGeometry(this.stats.attackArcDegrees),
       new THREE.MeshBasicMaterial({
         color: "#54110f",
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.3,
         depthWrite: false,
+        depthTest: false,
         side: THREE.DoubleSide,
       }),
     );
@@ -178,13 +181,16 @@ export class GameScene implements GameSceneController {
       new THREE.MeshBasicMaterial({
         color: "#ff2f24",
         transparent: true,
-        opacity: 0.48,
+        opacity: 0.6,
         depthWrite: false,
+        depthTest: false,
         side: THREE.DoubleSide,
       }),
     );
-    base.position.y = 0.045;
-    fill.position.y = 0.047;
+    base.position.y = 0.08;
+    fill.position.y = 0.085;
+    base.renderOrder = 10;
+    fill.renderOrder = 11;
     this.attackChargeGroup.add(base, fill);
     return { base, fill };
   }
