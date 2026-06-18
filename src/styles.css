@@ -281,6 +281,129 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.skilltree-panel {
+  width: min(760px, 100%);
+}
+
+.tree-viewport {
+  max-width: 100%;
+  max-height: min(540px, 62vh);
+  margin: 2px 0 8px;
+  overflow: auto;
+}
+
+.tree-canvas {
+  position: relative;
+  margin: 0 auto;
+}
+
+.tree-branches {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tree-branch {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.tree-branch.is-grown {
+  stroke: #6f9a4e;
+  stroke-width: 9;
+}
+
+.tree-branch.is-growing {
+  stroke: rgba(168, 196, 156, 0.5);
+  stroke-width: 4;
+  stroke-dasharray: 3 9;
+}
+
+.tree-node {
+  position: absolute;
+  width: 124px;
+  min-height: 0;
+  padding: 9px 11px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon name"
+    "icon meta"
+    "cost cost";
+  gap: 1px 9px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(248, 247, 239, 0.18);
+  background: rgba(20, 37, 28, 0.94);
+  color: #f3f7ee;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.tree-node-icon {
+  grid-area: icon;
+  align-self: center;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tree-node-name {
+  grid-area: name;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.tree-node-meta {
+  grid-area: meta;
+  font-size: 11px;
+  color: #b6cdba;
+}
+
+.tree-node-cost {
+  grid-area: cost;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  color: #ffe08a;
+}
+
+.tree-node.is-owned {
+  border-color: #6f9a4e;
+  background: rgba(36, 64, 40, 0.95);
+}
+
+.tree-node.is-max {
+  border-color: #f0c85a;
+  background: rgba(58, 48, 16, 0.92);
+  color: #ffe9a8;
+}
+
+.tree-node.is-available {
+  border-style: dashed;
+  border-color: rgba(240, 200, 90, 0.55);
+}
+
+.tree-node.can-buy {
+  box-shadow:
+    0 0 0 2px rgba(240, 200, 90, 0.4),
+    0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.tree-node:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translate(-50%, calc(-50% - 1px));
+}
+
+.tree-node:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .joystick {
   position: absolute;
   left: max(18px, env(safe-area-inset-left));

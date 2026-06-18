@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { Coin } from "../src/game/entities/Coin";
 import { Grass } from "../src/game/entities/Grass";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
-import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
+import {
+  canPurchaseSkill,
+  getRuntimeStats,
+  isSkillOwned,
+  isSkillRevealed,
+  purchaseSkill,
+} from "../src/game/systems/SaveSystem";
 import {
   InputSystem,
   mapScreenInputToWorldMovement,
@@ -181,6 +187,31 @@ describe("hit feedback", () => {
     expect(expired).toBe(true);
 
     coin.dispose();
+  });
+});
+
+describe("skill tree unlocks", () => {
+  it("reveals a skill only after its prerequisite is owned", () => {
+    const save = { ...defaultSave(), totalGold: 9999 };
+
+    expect(isSkillRevealed(save, "damage")).toBe(true);
+    expect(isSkillRevealed(save, "attackSpeed")).toBe(false);
+    expect(canPurchaseSkill(save, "attackSpeed")).toBe(false);
+
+    const afterDamage = purchaseSkill(save, "damage");
+    expect(isSkillOwned(afterDamage, "damage")).toBe(true);
+    expect(isSkillRevealed(afterDamage, "attackSpeed")).toBe(true);
+    expect(canPurchaseSkill(afterDamage, "attackSpeed")).toBe(true);
+    // grandchild stays locked until its own prerequisite is owned
+    expect(isSkillRevealed(afterDamage, "moveSpeed")).toBe(false);
+  });
+
+  it("does not spend gold trying to buy a locked skill", () => {
+    const save = { ...defaultSave(), totalGold: 9999 };
+    const next = purchaseSkill(save, "moveSpeed");
+
+    expect(next.totalGold).toBe(9999);
+    expect(next.skills.moveSpeed).toBe(0);
   });
 });
 

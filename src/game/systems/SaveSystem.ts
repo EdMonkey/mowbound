@@ -1,4 +1,12 @@
-import { BALANCE, type RuntimeStats, type SaveData, type SkillId, SKILL_DEFS, defaultSave } from "../config/balance";
+import {
+  BALANCE,
+  type RuntimeStats,
+  type SaveData,
+  type SkillId,
+  SKILL_DEFS,
+  SKILL_PREREQ,
+  defaultSave,
+} from "../config/balance";
 
 const STORAGE_KEY = "mowbound-save-v1";
 
@@ -55,14 +63,23 @@ export function getSkillCost(save: SaveData, skillId: SkillId): number {
   return Math.ceil(definition.baseCost * Math.pow(definition.costGrowth, level));
 }
 
+export function isSkillOwned(save: SaveData, skillId: SkillId): boolean {
+  return normalizeSave(save).skills[skillId] > 0;
+}
+
+export function isSkillRevealed(save: SaveData, skillId: SkillId): boolean {
+  const prerequisite = SKILL_PREREQ[skillId];
+  return prerequisite === null || isSkillOwned(save, prerequisite);
+}
+
 export function canPurchaseSkill(save: SaveData, skillId: SkillId): boolean {
-  return save.totalGold >= getSkillCost(save, skillId);
+  return isSkillRevealed(save, skillId) && save.totalGold >= getSkillCost(save, skillId);
 }
 
 export function purchaseSkill(save: SaveData, skillId: SkillId): SaveData {
   const cost = getSkillCost(save, skillId);
 
-  if (!Number.isFinite(cost) || save.totalGold < cost) {
+  if (!isSkillRevealed(save, skillId) || !Number.isFinite(cost) || save.totalGold < cost) {
     return normalizeSave(save);
   }
 

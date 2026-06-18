@@ -97,6 +97,25 @@ export const SKILL_DEFS: Record<SkillId, SkillDefinition> = {
   },
 };
 
+/**
+ * Skill-tree prerequisites: a skill is revealed/unlockable only once its
+ * prerequisite is owned (level >= 1). `damage` is the root (center) node.
+ *
+ *                 damage
+ *              /    |     \
+ *      attackSpeed range  goldValue
+ *           |               |
+ *       moveSpeed       grassDensity
+ */
+export const SKILL_PREREQ: Record<SkillId, SkillId | null> = {
+  damage: null,
+  attackSpeed: "damage",
+  range: "damage",
+  goldValue: "damage",
+  moveSpeed: "attackSpeed",
+  grassDensity: "goldValue",
+};
+
 export function defaultSave(): SaveData {
   return {
     totalGold: 0,
