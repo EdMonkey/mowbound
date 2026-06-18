@@ -152,16 +152,6 @@ export class SkillTreeScene implements GameSceneController {
     actions.append(
       createButton("Start Run", () => this.app.show("game")),
       createButton("Main Menu", () => this.app.show("menu"), "secondary-button"),
-      // TODO(test): temporary debug grant for skill-tree testing; remove before prod.
-      createButton(
-        "+100 Gold (test)",
-        () => {
-          this.save = addGold(this.save, 100);
-          saveGame(this.save);
-          this.render();
-        },
-        "secondary-button",
-      ),
     );
     panel.appendChild(actions);
 
@@ -242,9 +232,13 @@ export class SkillTreeScene implements GameSceneController {
   private buildZoomControls(): HTMLDivElement {
     const box = document.createElement("div");
     box.className = "tree-zoom";
-    const make = (label: string, onClick: () => void) => {
+    // Keep the controls out of the pan/zoom gesture so their clicks fire.
+    box.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+    const make = (label: string, className: string, onClick: () => void) => {
       const b = document.createElement("button");
       b.type = "button";
+      b.className = className;
       b.textContent = label;
       b.addEventListener("click", onClick);
       return b;
@@ -253,13 +247,20 @@ export class SkillTreeScene implements GameSceneController {
       const r = this.viewport.getBoundingClientRect();
       return { x: r.width / 2, y: r.height / 2 };
     };
+
     box.append(
-      make("+", () => {
+      // TODO(test): temporary debug grant for skill-tree testing; remove before prod.
+      make("+100 Gold", "tree-test-gold", () => {
+        this.save = addGold(this.save, 100);
+        saveGame(this.save);
+        this.render();
+      }),
+      make("+", "", () => {
         const c = center();
         this.zoomAtPoint(c.x, c.y, 1.2);
       }),
-      make("⟲", () => this.fitView()),
-      make("−", () => {
+      make("⟲", "", () => this.fitView()),
+      make("−", "", () => {
         const c = center();
         this.zoomAtPoint(c.x, c.y, 1 / 1.2);
       }),
