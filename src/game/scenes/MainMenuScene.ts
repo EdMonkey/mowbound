@@ -79,7 +79,7 @@ export class MainMenuScene implements GameSceneController {
 
     const subtitle = document.createElement("p");
     subtitle.className = "menu-subtitle";
-    subtitle.textContent = "Four seconds. One scythe. Cut grass, bank gold, grow stronger.";
+    subtitle.textContent = "Ten seconds. One scythe. Cut grass, bank gold, grow stronger.";
     panel.appendChild(subtitle);
 
     const stack = document.createElement("div");

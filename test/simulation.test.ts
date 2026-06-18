@@ -6,7 +6,7 @@ import {
   normalizeInputVector,
   pointerToCenteredScreenMovement,
 } from "../src/game/systems/InputSystem";
-import { defaultSave } from "../src/game/config/balance";
+import { BALANCE, defaultSave } from "../src/game/config/balance";
 
 describe("attack resolution", () => {
   it("damages grass inside the 1m 90-degree forward fan and ignores grass outside it", () => {
@@ -30,9 +30,9 @@ describe("attack resolution", () => {
     expect(result.grass.find((grass) => grass.id === "side")?.hp).toBe(5);
   });
 
-  it("charges for 0.5s before the strike resolves", () => {
-    const partial = advanceChargeAttack({ elapsedMs: 0, durationMs: 500 }, 250);
-    const complete = advanceChargeAttack(partial.state, 250);
+  it("charges for 1s before the strike resolves", () => {
+    const partial = advanceChargeAttack({ elapsedMs: 0, durationMs: 1000 }, 500);
+    const complete = advanceChargeAttack(partial.state, 500);
 
     expect(partial.ready).toBe(false);
     expect(partial.progress).toBe(0.5);
@@ -42,6 +42,15 @@ describe("attack resolution", () => {
 });
 
 describe("persistent upgrades", () => {
+  it("uses slower default movement, 1s base attack timing, and 10s rounds", () => {
+    const stats = getRuntimeStats(defaultSave());
+
+    expect(stats.moveSpeed).toBe(0.7);
+    expect(stats.attackIntervalMs).toBe(1000);
+    expect(stats.attackChargeDurationMs).toBe(1000);
+    expect(BALANCE.roundDurationMs).toBe(10000);
+  });
+
   it("spends gold, increases skill level, and changes runtime stats", () => {
     const save = defaultSave();
     save.totalGold = 25;
