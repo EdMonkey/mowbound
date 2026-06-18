@@ -6,7 +6,7 @@ export const BALANCE = {
   baseGrassHp: 5,
   baseAttackIntervalMs: 1000,
   baseAttackRangeMeters: 0.5,
-  baseAttackArcDegrees: 180,
+  baseAttackArcDegrees: 140,
   attackChargeDurationMs: 1000,
   baseGoldPerGrass: 1,
   initialGrassCount: 360,

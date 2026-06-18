@@ -15,7 +15,7 @@ export class Coin {
     // The exported coin already lies flat (face up), so no extra rotation.
     // Scaled up and popped high so it reads clearly above the tall grass.
     const coin = cloneModel("coin");
-    coin.scale.setScalar(2);
+    coin.scale.setScalar(1.5);
     this.group.add(coin);
     this.group.position.set(position.x, this.startY, position.z);
 

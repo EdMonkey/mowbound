@@ -15,13 +15,14 @@ export class Player {
     const body = cloneModel("farmer");
     this.group.add(body);
 
-    // Korean hand sickle, held at hip height; swung on strike(). Blade points
-    // toward the character's front, scaled up (2x) and visible above the grass.
+    // Korean hand sickle, held at hip height; swung on strike(). The model's
+    // handle runs along +X (the character's forward axis), so identity rotation
+    // already points it toward the front. Scaled 1.5x.
     const sickle = cloneModel("sickle");
-    sickle.rotation.set(-0.3, -Math.PI / 2, 0);
+    sickle.rotation.set(0, 0, 0);
     this.tool.add(sickle);
     this.tool.position.set(0.12, 0.42, -0.08);
-    this.tool.scale.setScalar(1.6);
+    this.tool.scale.setScalar(1.5);
     this.group.add(this.tool);
 
     this.syncTransform();
