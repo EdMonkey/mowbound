@@ -330,7 +330,6 @@ export class GameScene implements GameSceneController {
     this.save = addGold(this.save, this.roundGold);
     saveGame(this.save);
     this.joystick.setVisible(false);
-    this.input.setPointerMovementEnabled(false);
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
@@ -342,6 +341,5 @@ export class GameScene implements GameSceneController {
     const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
     const useJoystick = coarsePointer || window.innerWidth <= 760;
     this.joystick.setVisible(!this.ended && useJoystick);
-    this.input.setPointerMovementEnabled(!this.ended && !useJoystick);
   };
 }

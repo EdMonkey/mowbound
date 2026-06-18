@@ -14,5 +14,5 @@ npm run smoke
 
 ## Controls
 
-- Desktop: move the mouse away from the centered player to move in that direction.
+- Desktop: move with WASD or arrow keys.
 - Mobile/touch: use the virtual joystick.

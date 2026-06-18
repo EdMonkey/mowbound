@@ -2,11 +2,52 @@ import { describe, expect, it } from "vitest";
 import { advanceChargeAttack, resolveAttack } from "../src/game/systems/AttackSystem";
 import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
 import {
+  InputSystem,
   mapScreenInputToWorldMovement,
   normalizeInputVector,
-  pointerToCenteredScreenMovement,
 } from "../src/game/systems/InputSystem";
 import { BALANCE, defaultSave } from "../src/game/config/balance";
+
+class FakeInputTarget {
+  innerWidth = 1000;
+  innerHeight = 500;
+  private readonly listeners = new Map<string, Set<(event: Event) => void>>();
+
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+    const listeners = this.listeners.get(type) ?? new Set<(event: Event) => void>();
+    listeners.add((event) => {
+      if (typeof listener === "function") {
+        listener(event);
+      } else {
+        listener.handleEvent(event);
+      }
+    });
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+    const listeners = this.listeners.get(type);
+
+    if (!listeners) {
+      return;
+    }
+
+    for (const entry of listeners) {
+      if (entry === listener) {
+        listeners.delete(entry);
+      }
+    }
+  }
+
+  emit(type: string, data: Record<string, unknown>): void {
+    const event = {
+      ...data,
+      preventDefault: () => undefined,
+    } as Event;
+
+    this.listeners.get(type)?.forEach((listener) => listener(event));
+  }
+}
 
 describe("attack resolution", () => {
   it("damages grass inside the 1m 90-degree forward fan and ignores grass outside it", () => {
@@ -88,20 +129,21 @@ describe("input vectors", () => {
     });
   });
 
-  it("derives desktop movement from the mouse pointer around the character center", () => {
-    expect(pointerToCenteredScreenMovement({ x: 500, y: 250 }, { width: 1000, height: 500 }, 24)).toEqual({
-      x: 0,
-      z: 0,
-    });
+  it("ignores desktop mouse movement and uses keyboard movement", () => {
+    const target = new FakeInputTarget();
+    const input = new InputSystem(target as unknown as Window);
 
-    expect(pointerToCenteredScreenMovement({ x: 1000, y: 250 }, { width: 1000, height: 500 }, 24)).toEqual({
+    target.emit("pointermove", { pointerType: "mouse", clientX: 1000, clientY: 250 });
+    expect(input.getMovementVector()).toEqual({ x: 0, z: 0 });
+
+    target.emit("keydown", { code: "KeyD" });
+    expect(input.getMovementVector()).toEqual({
       x: 1,
       z: 0,
     });
 
-    expect(pointerToCenteredScreenMovement({ x: 500, y: 0 }, { width: 1000, height: 500 }, 24)).toEqual({
-      x: 0,
-      z: -1,
-    });
+    target.emit("keyup", { code: "KeyD" });
+    expect(input.getMovementVector()).toEqual({ x: 0, z: 0 });
+    input.dispose();
   });
 });
