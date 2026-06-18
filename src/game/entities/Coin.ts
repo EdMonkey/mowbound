@@ -5,15 +5,18 @@ import { cloneModel } from "../assets/models";
 export class Coin {
   readonly group = new THREE.Group();
   private age = 0;
-  private readonly startY = 0.12;
+  private readonly startY = 0.18;
   private readonly lifetime = 1.25;
-  private verticalVelocity = 2.2;
+  private verticalVelocity = 3.6;
   private bounceCount = 0;
   private readonly drift: VectorXZ;
 
   constructor(position: VectorXZ) {
     // The exported coin already lies flat (face up), so no extra rotation.
-    this.group.add(cloneModel("coin"));
+    // Scaled up and popped high so it reads clearly above the tall grass.
+    const coin = cloneModel("coin");
+    coin.scale.setScalar(2);
+    this.group.add(coin);
     this.group.position.set(position.x, this.startY, position.z);
 
     const angle = Math.random() * Math.PI * 2;
@@ -37,7 +40,7 @@ export class Coin {
       this.group.position.y = this.startY;
 
       if (this.bounceCount < 3 && t < 0.88) {
-        const bounceVelocity = [1.35, 0.78, 0.38][this.bounceCount] ?? 0;
+        const bounceVelocity = [1.9, 1.05, 0.5][this.bounceCount] ?? 0;
         this.verticalVelocity = bounceVelocity;
         this.bounceCount += 1;
       } else {

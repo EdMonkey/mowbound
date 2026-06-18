@@ -181,7 +181,7 @@ export class GameScene implements GameSceneController {
       new THREE.MeshBasicMaterial({
         color: "#ff2f24",
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.3,
         depthWrite: false,
         depthTest: false,
         side: THREE.DoubleSide,
