@@ -113,7 +113,7 @@ describe("persistent upgrades", () => {
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
     expect(stats.attackArcDegrees).toBe(140);
-    expect(stats.initialGrassCount).toBe(360);
+    expect(stats.initialGrassCount).toBe(540);
     expect(stats.grassSpawnPerTick).toBe(0);
     expect(BALANCE.roundDurationMs).toBe(10000);
   });

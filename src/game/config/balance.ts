@@ -9,7 +9,7 @@ export const BALANCE = {
   baseAttackArcDegrees: 140,
   attackChargeDurationMs: 1000,
   baseGoldPerGrass: 1,
-  initialGrassCount: 360,
+  initialGrassCount: 540,
   grassSpawnIntervalMs: 320,
   grassSpawnPerTick: 0,
   virtualJoystickRadiusPx: 64,
