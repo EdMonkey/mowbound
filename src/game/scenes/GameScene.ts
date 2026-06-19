@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { BALANCE, type RuntimeStats } from "../config/balance";
 import { Coin } from "../entities/Coin";
+import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
 import { Player } from "../entities/Player";
 import {
@@ -28,6 +29,7 @@ export class GameScene implements GameSceneController {
   private readonly joystick: VirtualJoystick;
   private readonly player = new Player();
   private grassField!: GrassField;
+  private readonly clippings = new GrassClippings();
   private readonly coins: Coin[] = [];
   private readonly stats: RuntimeStats;
   private readonly attackChargeGroup = new THREE.Group();
@@ -59,6 +61,7 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.attackChargeGroup);
     this.grassField = new GrassField(this.stats.initialGrassCount + 64);
     this.scene.add(this.grassField.mesh);
+    this.scene.add(this.clippings.mesh);
     this.spawnInitialGrass();
     this.updateInputMode();
     window.addEventListener("resize", this.updateInputMode);
@@ -69,6 +72,7 @@ export class GameScene implements GameSceneController {
     this.player.update(deltaSeconds);
     this.updateGrass(deltaSeconds);
     this.updateCoins(deltaSeconds);
+    this.clippings.update(deltaSeconds);
     this.hud.update(deltaSeconds);
 
     if (!this.ended) {
@@ -115,6 +119,7 @@ export class GameScene implements GameSceneController {
     this.joystick.dispose();
     this.hud.dispose();
     this.grassField.dispose();
+    this.clippings.dispose();
     this.coins.forEach((coin) => coin.dispose());
     this.attackRing.geometry.dispose();
     (this.attackRing.material as THREE.Material).dispose();
@@ -227,6 +232,7 @@ export class GameScene implements GameSceneController {
       const coin = new Coin(position);
       this.coins.push(coin);
       this.scene.add(coin.group);
+      this.clippings.emit(position.x, position.z);
       this.grassField.destroy(id);
     }
 
