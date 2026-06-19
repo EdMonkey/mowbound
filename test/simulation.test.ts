@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Coin } from "../src/game/entities/Coin";
-import { Grass } from "../src/game/entities/Grass";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
-import { getRuntimeStats, purchaseSkill } from "../src/game/systems/SaveSystem";
+import { createGrassBatch } from "../src/game/systems/GrassSystem";
+import {
+  canUnlockNode,
+  getRuntimeStats,
+  isNodeRevealed,
+  isNodeUnlocked,
+  unlockNode,
+} from "../src/game/systems/SaveSystem";
 import {
   InputSystem,
   mapScreenInputToWorldMovement,
@@ -104,65 +110,52 @@ describe("attack resolution", () => {
   });
 });
 
-describe("persistent upgrades", () => {
-  it("uses slower default movement, 1s base attack timing, and 10s rounds", () => {
+describe("runtime stats from skill nodes", () => {
+  it("uses base stats with nothing unlocked", () => {
     const stats = getRuntimeStats(defaultSave());
 
+    expect(stats.attackDamage).toBe(3);
     expect(stats.moveSpeed).toBe(0.7);
     expect(stats.attackIntervalMs).toBe(1000);
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
     expect(stats.attackArcDegrees).toBe(140);
-    expect(stats.initialGrassCount).toBe(540);
+    expect(stats.initialGrassCount).toBe(1620);
     expect(stats.grassSpawnPerTick).toBe(0);
+    expect(stats.roundDurationMs).toBe(10000);
     expect(BALANCE.roundDurationMs).toBe(10000);
   });
 
-  it("keeps dense grass initial-only even after density upgrades", () => {
-    const save = defaultSave();
-    save.skills.grassDensity = 8;
-
-    const stats = getRuntimeStats(save);
-
-    expect(stats.initialGrassCount).toBeGreaterThan(360);
-    expect(stats.grassSpawnPerTick).toBe(0);
+  it("accumulates the effects of unlocked nodes", () => {
+    const save = { ...defaultSave(), unlocked: ["dmg1", "dmg2"] };
+    expect(getRuntimeStats(save).attackDamage).toBe(5); // 3 + 1 + 1
   });
 
-  it("spends gold, increases skill level, and changes runtime stats", () => {
-    const save = defaultSave();
-    save.totalGold = 25;
-
-    const next = purchaseSkill(save, "damage");
-    const stats = getRuntimeStats(next);
-
-    expect(next.totalGold).toBeLessThan(25);
-    expect(next.skills.damage).toBe(1);
-    expect(stats.attackDamage).toBe(4);
-    expect(stats.attackRangeMeters).toBe(0.5);
-    expect(stats.attackArcDegrees).toBe(140);
+  it("applies the play-time skill to round duration", () => {
+    const save = { ...defaultSave(), unlocked: ["time1", "time2"] };
+    expect(getRuntimeStats(save).roundDurationMs).toBe(10000 + 2000 + 3000);
   });
 });
 
-describe("hit feedback", () => {
-  it("randomizes spawn scale and heading, and keeps that size on non-lethal hits", () => {
-    const grass = new Grass({ id: "grass-test", position: { x: 0, z: 0 }, hp: 5 });
-    const spawnScale = grass.group.scale.x;
+describe("grass and coins", () => {
+  it("spreads grass evenly on a jittered grid and avoids the player", () => {
+    const player = { x: 0, z: 0 };
+    const states = createGrassBatch(400, 1, player, 10);
 
-    expect(spawnScale).toBeGreaterThanOrEqual(0.8);
-    expect(spawnScale).toBeLessThanOrEqual(1.2);
-    expect(grass.group.scale.y).toBe(spawnScale);
-    expect(grass.group.scale.z).toBe(spawnScale);
-    expect(grass.group.rotation.y).toBeGreaterThanOrEqual(0);
-    expect(grass.group.rotation.y).toBeLessThan(Math.PI * 2);
+    expect(states.length).toBeGreaterThan(360);
+    expect(states.length).toBeLessThanOrEqual(400);
 
-    grass.setHp(2);
+    for (const grass of states) {
+      expect(Math.abs(grass.position.x)).toBeLessThanOrEqual(5);
+      expect(Math.abs(grass.position.z)).toBeLessThanOrEqual(5);
+      expect(Math.hypot(grass.position.x, grass.position.z)).toBeGreaterThan(0.5);
+    }
 
-    expect(grass.state.hp).toBe(2);
-    expect(grass.group.scale.x).toBe(spawnScale);
-    expect(grass.group.scale.y).toBe(spawnScale);
-    expect(grass.group.scale.z).toBe(spawnScale);
-
-    grass.dispose();
+    // even coverage: every quadrant of the map receives grass
+    const quadrants = new Set(
+      states.map((g) => `${g.position.x >= 0 ? "E" : "W"}${g.position.z >= 0 ? "S" : "N"}`),
+    );
+    expect(quadrants.size).toBe(4);
   });
 
   it("bounces coins on the floor before they disappear", () => {
@@ -181,6 +174,42 @@ describe("hit feedback", () => {
     expect(expired).toBe(true);
 
     coin.dispose();
+  });
+});
+
+describe("skill tree unlocks", () => {
+  it("reveals a node only after its prerequisite is unlocked", () => {
+    const save = { ...defaultSave(), totalGold: 9999 };
+
+    expect(isNodeRevealed(save, "dmg1")).toBe(true); // root
+    expect(isNodeRevealed(save, "dmg2")).toBe(false);
+    expect(canUnlockNode(save, "dmg2")).toBe(false);
+
+    const afterRoot = unlockNode(save, "dmg1");
+    expect(isNodeUnlocked(afterRoot, "dmg1")).toBe(true);
+    expect(afterRoot.totalGold).toBeLessThan(9999);
+    expect(isNodeRevealed(afterRoot, "dmg2")).toBe(true);
+    expect(isNodeRevealed(afterRoot, "combat")).toBe(true);
+    expect(canUnlockNode(afterRoot, "dmg2")).toBe(true);
+    // deeper tier stays hidden until its own prerequisite is unlocked
+    expect(isNodeRevealed(afterRoot, "dmg3")).toBe(false);
+  });
+
+  it("unlocks each node once and refuses locked nodes", () => {
+    let save = { ...defaultSave(), totalGold: 9999, unlocked: ["dmg1"] };
+    save = unlockNode(save, "dmg2");
+    expect(isNodeUnlocked(save, "dmg2")).toBe(true);
+
+    // unlocking again is a no-op: no duplicate, no extra spend
+    const goldAfter = save.totalGold;
+    const again = unlockNode(save, "dmg2");
+    expect(again.totalGold).toBe(goldAfter);
+    expect(again.unlocked.filter((id) => id === "dmg2").length).toBe(1);
+
+    // a node whose prerequisite isn't unlocked is refused
+    const locked = unlockNode(save, "field");
+    expect(locked.totalGold).toBe(goldAfter);
+    expect(isNodeUnlocked(locked, "field")).toBe(false);
   });
 });
 
