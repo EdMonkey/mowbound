@@ -155,8 +155,8 @@ export class GameScene implements GameSceneController {
   }
 
   private createIndicator(): THREE.Mesh {
-    // White outline ring matching the circular attack range. depthTest:false +
-    // high renderOrder keeps it visible over the tall grass and uneven ground.
+    // White outline ring matching the circular attack range. depthTest stays on
+    // so the character occludes the portion of the ring drawn behind it.
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.92, 1, 64),
       new THREE.MeshBasicMaterial({
@@ -164,7 +164,7 @@ export class GameScene implements GameSceneController {
         transparent: true,
         opacity: 0.3,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
         side: THREE.DoubleSide,
       }),
     );
