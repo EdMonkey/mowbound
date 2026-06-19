@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Coin } from "../src/game/entities/Coin";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
+import {
+  bombsTriggeredBy,
+  createBombState,
+  grassInRadius,
+  resolveChainDetonation,
+} from "../src/game/systems/BombSystem";
 import { createGrassBatch } from "../src/game/systems/GrassSystem";
 import {
   canUnlockNode,
@@ -171,6 +177,48 @@ describe("grass and coins", () => {
     expect(expired).toBe(true);
 
     coin.dispose();
+  });
+});
+
+describe("bomb chain detonation", () => {
+  const line = [
+    createBombState("a", { x: 0, z: 0 }),
+    createBombState("b", { x: 4, z: 0 }), // within 5m of a
+    createBombState("c", { x: 8, z: 0 }), // within 5m of b, but not of a
+    createBombState("d", { x: 20, z: 0 }), // far from everything
+  ];
+
+  it("propagates transitively through bombs within the blast radius", () => {
+    const order = resolveChainDetonation(line, "a", 5);
+    expect(order).toEqual(["a", "b", "c"]);
+    expect(order).not.toContain("d");
+  });
+
+  it("returns nothing when the trigger is already detonated", () => {
+    const spent = line.map((bomb) => (bomb.id === "a" ? { ...bomb, detonated: true } : bomb));
+    expect(resolveChainDetonation(spent, "a", 5)).toEqual([]);
+  });
+
+  it("does not mutate the input bombs", () => {
+    resolveChainDetonation(line, "a", 5);
+    expect(line.every((bomb) => bomb.detonated === false)).toBe(true);
+  });
+
+  it("triggers only live bombs the player is touching", () => {
+    expect(bombsTriggeredBy(line, { x: 0.3, z: 0 }, 0.7)).toEqual(["a"]);
+    expect(bombsTriggeredBy(line, { x: 2, z: 0 }, 0.7)).toEqual([]);
+
+    const spent = line.map((bomb) => (bomb.id === "a" ? { ...bomb, detonated: true } : bomb));
+    expect(bombsTriggeredBy(spent, { x: 0.3, z: 0 }, 0.7)).toEqual([]);
+  });
+
+  it("selects grass within the blast radius", () => {
+    const grass = [
+      { id: "near", position: { x: 1, z: 0 }, hp: 5 },
+      { id: "edge", position: { x: 5, z: 0 }, hp: 5 },
+      { id: "outside", position: { x: 6, z: 0 }, hp: 5 },
+    ];
+    expect(grassInRadius(grass, { x: 0, z: 0 }, 5)).toEqual(["near", "edge"]);
   });
 });
 

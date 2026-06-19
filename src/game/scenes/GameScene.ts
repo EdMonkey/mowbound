@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { BALANCE, type RuntimeStats } from "../config/balance";
+import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
+import { Explosions } from "../entities/Explosions";
 import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
 import { Player } from "../entities/Player";
@@ -11,6 +13,13 @@ import {
   type ChargeAttackState,
   resolveAttack,
 } from "../systems/AttackSystem";
+import {
+  bombsTriggeredBy,
+  createBombState,
+  grassInRadius,
+  resolveChainDetonation,
+  type BombState,
+} from "../systems/BombSystem";
 import { cloneModel } from "../assets/models";
 import { rewardForGrass } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
@@ -31,7 +40,11 @@ export class GameScene implements GameSceneController {
   private grassField!: GrassField;
   private sun!: THREE.DirectionalLight;
   private readonly clippings = new GrassClippings();
+  private readonly explosions = new Explosions();
   private readonly coins: Coin[] = [];
+  private readonly bombs = new Map<string, Bomb>();
+  private bombStates: BombState[] = [];
+  private readonly pendingDetonations: { id: string; delayMs: number }[] = [];
   private readonly stats: RuntimeStats;
   private readonly attackChargeGroup = new THREE.Group();
   private readonly attackRing: THREE.Mesh;
@@ -67,7 +80,9 @@ export class GameScene implements GameSceneController {
     this.grassField = new GrassField();
     this.scene.add(this.grassField.group);
     this.scene.add(this.clippings.mesh);
+    this.scene.add(this.explosions.group);
     this.spawnInitialGrass();
+    this.spawnTestBombs();
     this.updateInputMode();
     window.addEventListener("resize", this.updateInputMode);
   }
@@ -78,6 +93,8 @@ export class GameScene implements GameSceneController {
     this.updateGrass(deltaSeconds);
     this.updateCoins(deltaSeconds);
     this.clippings.update(deltaSeconds);
+    this.explosions.update(deltaSeconds);
+    this.updateBombs(deltaSeconds);
     this.hud.update(deltaSeconds);
 
     if (!this.ended) {
@@ -125,7 +142,10 @@ export class GameScene implements GameSceneController {
     this.hud.dispose();
     this.grassField.dispose();
     this.clippings.dispose();
+    this.explosions.dispose();
     this.coins.forEach((coin) => coin.dispose());
+    this.bombs.forEach((bomb) => bomb.dispose());
+    this.bombs.clear();
     this.attackRing.geometry.dispose();
     (this.attackRing.material as THREE.Material).dispose();
   }
@@ -215,6 +235,112 @@ export class GameScene implements GameSceneController {
 
   private addGrassState(state: GrassState): void {
     this.grassField.add(state);
+  }
+
+  private spawnTestBombs(): void {
+    // Scatter test bombs across the map; count scales with area (like grass),
+    // capped so a big map doesn't spawn too many entities. Kept away from the
+    // player's start so a run doesn't begin mid-explosion.
+    const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
+    const count = Math.min(BALANCE.testBombMaxCount, Math.round(BALANCE.testBombBaseCount * areaScale));
+    for (let index = 0; index < count; index += 1) {
+      const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
+      const id = `bomb-${index + 1}`;
+      this.bombStates.push(createBombState(id, position));
+      const bomb = new Bomb(position);
+      this.bombs.set(id, bomb);
+      this.scene.add(bomb.group);
+    }
+  }
+
+  private updateBombs(deltaSeconds: number): void {
+    for (const bomb of this.bombs.values()) {
+      bomb.update(deltaSeconds);
+    }
+
+    if (this.ended) {
+      return;
+    }
+
+    // Fire chain-scheduled detonations as their staggered delays elapse.
+    const deltaMs = deltaSeconds * 1000;
+    for (let index = this.pendingDetonations.length - 1; index >= 0; index -= 1) {
+      const pending = this.pendingDetonations[index];
+      pending.delayMs -= deltaMs;
+      if (pending.delayMs <= 0) {
+        this.pendingDetonations.splice(index, 1);
+        this.fireBomb(pending.id);
+      }
+    }
+
+    // Walking into a live bomb starts a new chain.
+    const triggered = bombsTriggeredBy(this.bombStates, this.player.position, BALANCE.bombTriggerRadiusMeters);
+    if (triggered.length > 0) {
+      this.triggerChain(triggered[0]);
+    }
+  }
+
+  private triggerChain(triggerId: string): void {
+    const order = resolveChainDetonation(this.bombStates, triggerId, BALANCE.bombBlastRadiusMeters);
+    if (order.length === 0) {
+      return;
+    }
+
+    // Mark the whole chain detonated up front so nothing retriggers; the visual
+    // explosions are staggered for a cascading "chain" feel.
+    const chained = new Set(order);
+    this.bombStates = this.bombStates.map((bomb) =>
+      chained.has(bomb.id) ? { ...bomb, detonated: true } : bomb,
+    );
+    order.forEach((id, index) => {
+      this.pendingDetonations.push({ id, delayMs: index * BALANCE.bombChainDelayMs });
+    });
+  }
+
+  private fireBomb(id: string): void {
+    const state = this.bombStates.find((bomb) => bomb.id === id);
+    if (!state) {
+      return;
+    }
+    const center = state.position;
+    const radius = BALANCE.bombBlastRadiusMeters;
+
+    this.explosions.emit(center.x, center.z, radius);
+
+    const bomb = this.bombs.get(id);
+    if (bomb) {
+      this.scene.remove(bomb.group);
+      bomb.dispose();
+      this.bombs.delete(id);
+    }
+
+    // Mow every grass clump inside the blast. Gold is granted for all of them,
+    // but coin/clipping VFX are capped so a huge blast can't spike the frame.
+    const grassStates = this.grassField.getStates();
+    const positionById = new Map(grassStates.map((grass) => [grass.id, grass.position]));
+    const hitIds = grassInRadius(grassStates, center, radius);
+
+    let coinBudget = BALANCE.bombMaxCoinsPerBlast;
+    let clipBudget = BALANCE.bombMaxClippingsPerBlast;
+    for (const grassId of hitIds) {
+      const position = positionById.get(grassId);
+      this.grassField.destroy(grassId);
+      if (!position) {
+        continue;
+      }
+      if (clipBudget > 0) {
+        this.clippings.emit(position.x, position.z);
+        clipBudget -= 1;
+      }
+      if (coinBudget > 0) {
+        const coin = new Coin(position, center);
+        this.coins.push(coin);
+        this.scene.add(coin.group);
+        coinBudget -= 1;
+      }
+    }
+
+    this.roundGold += rewardForGrass(this.stats, hitIds.length);
   }
 
   private performAttack(): void {

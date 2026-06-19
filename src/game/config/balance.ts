@@ -18,6 +18,16 @@ export const BALANCE = {
   virtualJoystickRadiusPx: 64,
   virtualJoystickDeadZone: 0.12,
   minAttackIntervalMs: 150,
+  // Bomb skill: touch a bomb to set off a circular blast that mows all grass in
+  // range; bombs within the blast radius chain-detonate. Test bombs are
+  // scattered at run start (count scales with map area, capped).
+  bombBlastRadiusMeters: 5,
+  bombTriggerRadiusMeters: 0.7,
+  bombChainDelayMs: 110,
+  bombMaxCoinsPerBlast: 30,
+  bombMaxClippingsPerBlast: 40,
+  testBombBaseCount: 16,
+  testBombMaxCount: 80,
 } as const;
 
 /** Selectable map sizes (meters per side) offered on the main menu. */

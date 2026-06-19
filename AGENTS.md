@@ -26,6 +26,7 @@
 - Hit feedback: only actually hit surviving grass shakes.
 - Death feedback: destroyed grass disappears, drops a bouncing coin, grants gold.
 - Damage text: white text floats upward, grows, then fades.
+- Bombs: touching a bomb sets off a 5m circular blast that mows all grass in range and emits explosion particles + shockwave rings; bombs within the blast chain-detonate (staggered). Logic is in `BombSystem` (pure); `Bomb`/`Explosions` are the visuals. Currently scattered as test bombs at run start (count scales with map area, capped at 80); not yet wired to a skill-tree node.
 
 ## Commands
 
