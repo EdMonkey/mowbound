@@ -3,7 +3,7 @@ import type { VectorXZ } from "../types";
 import { cloneModel } from "../assets/models";
 import { resolveCollision, type Circle } from "../systems/ObstacleSystem";
 
-const PLAYER_COLLISION_RADIUS = 0.18;
+export const PLAYER_COLLISION_RADIUS = 0.18;
 const KNOCKBACK_TAU = 0.12; // exponential decay time of the recoil shove
 
 export class Player {

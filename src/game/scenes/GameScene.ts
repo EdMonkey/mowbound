@@ -14,7 +14,7 @@ import { Explosions } from "../entities/Explosions";
 import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
 import { Obstacle } from "../entities/Obstacle";
-import { Player } from "../entities/Player";
+import { Player, PLAYER_COLLISION_RADIUS } from "../entities/Player";
 import {
   advanceChargeAttack,
   getSurvivingHitIds,
@@ -65,6 +65,27 @@ export class GameScene implements GameSceneController {
   private obstacleStates: ObstacleState[] = [];
   private readonly rockChips = new Debris(["#8a8a90", "#6f6f77", "#a6a6ac"], [0.09, 0.09, 0.09]);
   private readonly woodChips = new Debris(["#7a5230", "#5e3d1f", "#9b6b3a"], [0.13, 0.05, 0.05]);
+  // Collision-circle debug overlay (toggled by a button); off by default.
+  private readonly debugGroup = new THREE.Group();
+  private readonly debugCircleGeo = new THREE.CircleGeometry(1, 28);
+  private readonly debugObstacleMat = new THREE.MeshBasicMaterial({
+    color: "#33e0ff",
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  private readonly debugPlayerMat = new THREE.MeshBasicMaterial({
+    color: "#ffd23f",
+    transparent: true,
+    opacity: 0.34,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  private readonly debugObstacleDiscs = new Map<string, THREE.Mesh>();
+  private debugPlayerDisc!: THREE.Mesh;
+  private debugButton!: HTMLButtonElement;
+  private debugVisible = false;
   private readonly stats: RuntimeStats;
   private readonly attackChargeGroup = new THREE.Group();
   private readonly attackRing: THREE.Mesh;
@@ -110,6 +131,8 @@ export class GameScene implements GameSceneController {
     this.spawnInitialGrass();
     this.spawnTestBombs();
     this.spawnObstacles();
+    this.buildCollisionDebug();
+    this.createDebugButton();
     this.updateInputMode();
     window.addEventListener("resize", this.updateInputMode);
   }
@@ -124,6 +147,7 @@ export class GameScene implements GameSceneController {
     this.rockChips.update(deltaSeconds);
     this.woodChips.update(deltaSeconds);
     this.updateBombs(deltaSeconds);
+    this.updateCollisionDebug();
     this.hud.update(deltaSeconds);
 
     if (!this.ended) {
@@ -182,6 +206,10 @@ export class GameScene implements GameSceneController {
     this.bombs.clear();
     this.obstacles.forEach((obstacle) => obstacle.dispose());
     this.obstacles.clear();
+    this.debugButton.remove();
+    this.debugCircleGeo.dispose();
+    this.debugObstacleMat.dispose();
+    this.debugPlayerMat.dispose();
     this.attackRing.geometry.dispose();
     (this.attackRing.material as THREE.Material).dispose();
   }
@@ -318,6 +346,59 @@ export class GameScene implements GameSceneController {
       }
     }
     return blockers;
+  }
+
+  private buildCollisionDebug(): void {
+    // A flat disc per obstacle collision circle (cyan) + one for the player
+    // (yellow) that follows them. Hidden until the debug button is toggled.
+    for (const state of this.obstacleStates) {
+      const disc = new THREE.Mesh(this.debugCircleGeo, this.debugObstacleMat);
+      const radius = OBSTACLE_COLLISION_RADIUS[state.kind];
+      disc.rotation.x = -Math.PI / 2;
+      disc.scale.setScalar(radius);
+      disc.position.set(state.position.x, 0.06, state.position.z);
+      disc.renderOrder = 13;
+      this.debugGroup.add(disc);
+      this.debugObstacleDiscs.set(state.id, disc);
+    }
+
+    this.debugPlayerDisc = new THREE.Mesh(this.debugCircleGeo, this.debugPlayerMat);
+    this.debugPlayerDisc.rotation.x = -Math.PI / 2;
+    this.debugPlayerDisc.scale.setScalar(PLAYER_COLLISION_RADIUS);
+    this.debugPlayerDisc.renderOrder = 13;
+    this.debugGroup.add(this.debugPlayerDisc);
+
+    this.debugGroup.visible = false;
+    this.scene.add(this.debugGroup);
+  }
+
+  private createDebugButton(): void {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "debug-toggle";
+    button.textContent = "충돌 박스";
+    // Don't let the tap also spawn the virtual joystick underneath.
+    button.addEventListener("pointerdown", (event) => event.stopPropagation());
+    button.addEventListener("click", () => {
+      this.debugVisible = !this.debugVisible;
+      this.debugGroup.visible = this.debugVisible;
+      button.classList.toggle("on", this.debugVisible);
+    });
+    this.app.uiRoot.appendChild(button);
+    this.debugButton = button;
+  }
+
+  private updateCollisionDebug(): void {
+    if (!this.debugVisible) {
+      return;
+    }
+    this.debugPlayerDisc.position.set(this.player.position.x, 0.06, this.player.position.z);
+    for (const state of this.obstacleStates) {
+      const disc = this.debugObstacleDiscs.get(state.id);
+      if (disc) {
+        disc.visible = !state.destroyed; // broken obstacles stop blocking
+      }
+    }
   }
 
   private updateBombs(deltaSeconds: number): void {
