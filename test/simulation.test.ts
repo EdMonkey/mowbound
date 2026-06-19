@@ -119,8 +119,8 @@ describe("runtime stats from skill nodes", () => {
     expect(stats.attackIntervalMs).toBe(1000);
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
-    expect(stats.attackArcDegrees).toBe(140);
-    expect(stats.initialGrassCount).toBe(1620);
+    expect(stats.attackArcDegrees).toBe(360);
+    expect(stats.initialGrassCount).toBe(1600);
     expect(stats.grassSpawnPerTick).toBe(0);
     expect(stats.roundDurationMs).toBe(10000);
     expect(BALANCE.roundDurationMs).toBe(10000);
@@ -138,20 +138,17 @@ describe("runtime stats from skill nodes", () => {
 });
 
 describe("grass and coins", () => {
-  it("spreads grass evenly on a jittered grid and avoids the player", () => {
-    const player = { x: 0, z: 0 };
-    const states = createGrassBatch(400, 1, player, 10);
+  it("places grass on a 40x40 jittered grid inside a 10cm edge margin", () => {
+    const states = createGrassBatch(1600, 1, 10);
 
-    expect(states.length).toBeGreaterThan(360);
-    expect(states.length).toBeLessThanOrEqual(400);
+    expect(states.length).toBe(1600);
 
     for (const grass of states) {
-      expect(Math.abs(grass.position.x)).toBeLessThanOrEqual(5);
-      expect(Math.abs(grass.position.z)).toBeLessThanOrEqual(5);
-      expect(Math.hypot(grass.position.x, grass.position.z)).toBeGreaterThan(0.5);
+      // stays at least 10cm from the 5m map edge
+      expect(Math.abs(grass.position.x)).toBeLessThanOrEqual(4.9);
+      expect(Math.abs(grass.position.z)).toBeLessThanOrEqual(4.9);
     }
 
-    // even coverage: every quadrant of the map receives grass
     const quadrants = new Set(
       states.map((g) => `${g.position.x >= 0 ? "E" : "W"}${g.position.z >= 0 ? "S" : "N"}`),
     );
@@ -164,7 +161,7 @@ describe("grass and coins", () => {
     const heights: number[] = [];
     let expired = false;
 
-    for (let index = 0; index < 18; index += 1) {
+    for (let index = 0; index < 34; index += 1) {
       expired = coin.update(0.08);
       heights.push(coin.group.position.y);
     }

@@ -2,29 +2,43 @@ import * as THREE from "three";
 import type { VectorXZ } from "../types";
 import { cloneModel } from "../assets/models";
 
+const COIN_GROW_TIME = 0.12; // pop-in: grow to full size
+const COIN_SHRINK_TIME = 0.3; // shrink out over the last 0.3s before it vanishes
+
 export class Coin {
   readonly group = new THREE.Group();
   private age = 0;
   private readonly startY = 0.18;
-  private readonly lifetime = 1.25;
+  private readonly lifetime = 2.5;
   private verticalVelocity = 3.6;
   private bounceCount = 0;
   private readonly drift: VectorXZ;
+  private readonly spinY: number;
+  private readonly spinZ: number;
 
-  constructor(position: VectorXZ) {
+  constructor(position: VectorXZ, origin: VectorXZ = position) {
     // The exported coin already lies flat (face up), so no extra rotation.
-    // Scaled up and popped high so it reads clearly above the tall grass.
     const coin = cloneModel("coin");
-    coin.scale.setScalar(1.5);
+    coin.scale.setScalar(0.75);
     this.group.add(coin);
     this.group.position.set(position.x, this.startY, position.z);
 
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 0.25 + Math.random() * 0.18;
+    // Burst outward from the character (origin), with a ~15% offset on the
+    // direction and intensity.
+    const dx = position.x - origin.x;
+    const dz = position.z - origin.z;
+    const radial = Math.hypot(dx, dz) > 1e-4 ? Math.atan2(dz, dx) : Math.random() * Math.PI * 2;
+    const angle = radial + (Math.random() * 2 - 1) * Math.PI * 0.15;
+    const speed = 1.4 * (1 + (Math.random() * 2 - 1) * 0.15);
     this.drift = {
       x: Math.cos(angle) * speed,
       z: Math.sin(angle) * speed,
     };
+
+    this.verticalVelocity *= 1 + Math.random() * 0.5; // pop 1x–1.5x height
+    this.spinY = (Math.random() < 0.5 ? -1 : 1) * 9; // random spin direction
+    this.spinZ = (Math.random() < 0.5 ? -1 : 1) * 6;
+    this.group.rotation.y = Math.random() * Math.PI * 2;
   }
 
   update(deltaSeconds: number): boolean {
@@ -48,9 +62,20 @@ export class Coin {
       }
     }
 
-    this.group.rotation.y += deltaSeconds * 9;
-    this.group.rotation.z += deltaSeconds * 6;
-    this.group.scale.setScalar(Math.max(0.05, 1 - t * 0.82));
+    this.group.rotation.y += this.spinY * deltaSeconds;
+    this.group.rotation.z += this.spinZ * deltaSeconds;
+
+    // Pop in (grow), hold, then shrink away over the last 0.3s.
+    let scale: number;
+    if (this.age < COIN_GROW_TIME) {
+      scale = this.age / COIN_GROW_TIME;
+    } else if (this.age > this.lifetime - COIN_SHRINK_TIME) {
+      scale = Math.max(0, (this.lifetime - this.age) / COIN_SHRINK_TIME);
+    } else {
+      scale = 1;
+    }
+    this.group.scale.setScalar(scale);
+
     return t >= 1;
   }
 

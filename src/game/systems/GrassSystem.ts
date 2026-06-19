@@ -30,36 +30,31 @@ export function createGrassState(id: string, position: VectorXZ, hp = BALANCE.ba
   };
 }
 
+const GRASS_BOUNDARY_MARGIN = 0.1; // no grass within 10cm of the map edge
+const GRASS_JITTER = 0.1; // ±10cm random offset per grid point
+
 /**
- * Even, spread-out placement via a jittered grid: one clump per cell at the
- * cell centre plus a small random offset. Covers the map edge-to-edge without
- * the clumps-and-gaps look of independent uniform random scatter. Cells within
- * the avoid radius (the player) are skipped.
+ * Grid placement: a square grid of `round(sqrt(count))` nodes per side (e.g.
+ * 1600 -> 40x40), each offset by a random ±10cm, kept at least 10cm inside the
+ * map boundary.
  */
 export function createGrassBatch(
   count: number,
   startId: number,
-  avoid?: VectorXZ,
   mapSize = BALANCE.mapSizeMeters,
 ): GrassState[] {
-  const usable = mapSize - 0.7;
-  const cells = Math.max(1, Math.ceil(Math.sqrt(count)));
-  const cell = usable / cells;
-  const jitter = cell * 0.45;
-  const half = usable / 2;
+  const cells = Math.max(1, Math.round(Math.sqrt(count)));
+  // Nodes span [-limit, limit] so node + jitter stays inside (half - margin).
+  const limit = mapSize / 2 - GRASS_BOUNDARY_MARGIN - GRASS_JITTER;
+  const step = cells > 1 ? (2 * limit) / (cells - 1) : 0;
 
   const states: GrassState[] = [];
   let id = startId;
 
-  for (let row = 0; row < cells && states.length < count; row += 1) {
-    for (let col = 0; col < cells && states.length < count; col += 1) {
-      const x = -half + (col + 0.5) * cell + (Math.random() * 2 - 1) * jitter;
-      const z = -half + (row + 0.5) * cell + (Math.random() * 2 - 1) * jitter;
-
-      if (avoid && Math.hypot(x - avoid.x, z - avoid.z) < 0.8) {
-        continue;
-      }
-
+  for (let row = 0; row < cells; row += 1) {
+    for (let col = 0; col < cells; col += 1) {
+      const x = -limit + col * step + (Math.random() * 2 - 1) * GRASS_JITTER;
+      const z = -limit + row * step + (Math.random() * 2 - 1) * GRASS_JITTER;
       states.push(createGrassState(`grass-${id}`, { x, z }));
       id += 1;
     }
