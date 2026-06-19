@@ -220,6 +220,7 @@ button:disabled {
 .damage-text {
   position: absolute;
   color: #ffffff;
+  font-size: 0.8rem;
   font-weight: 900;
   text-shadow:
     0 2px 0 rgba(20, 24, 22, 0.82),

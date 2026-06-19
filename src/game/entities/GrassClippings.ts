@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
-const CAPACITY = 256; // pooled particles (ring buffer)
-const PER_BURST = 5; // particles spawned per mowed clump
+const CAPACITY = 512; // pooled particles (ring buffer)
+const PER_BURST = 10; // particles spawned per mowed clump
 const GRAVITY = 7;
 const COLORS = ["#4aa84f", "#3a8c42", "#69c46a"];
 
@@ -35,7 +35,7 @@ export class GrassClippings {
   private readonly hidden = new THREE.Matrix4().makeScale(0, 0, 0);
 
   constructor() {
-    const geometry = new THREE.BoxGeometry(0.05, 0.015, 0.09);
+    const geometry = new THREE.BoxGeometry(0.1, 0.03, 0.18);
     const material = new THREE.MeshStandardMaterial({ roughness: 0.9 });
     this.mesh = new THREE.InstancedMesh(geometry, material, CAPACITY);
     this.mesh.castShadow = false;
