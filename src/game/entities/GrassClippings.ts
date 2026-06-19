@@ -1,7 +1,8 @@
 import * as THREE from "three";
 
 const CAPACITY = 512; // pooled particles (ring buffer)
-const PER_BURST = 10; // particles spawned per mowed clump
+const PER_BURST = 10; // particles spawned when a clump is mowed (dies)
+const HIT_BURST = Math.max(1, Math.round(PER_BURST / 4)); // 1/4 burst on a non-lethal hit
 const GRAVITY = 7;
 const COLORS = ["#4aa84f", "#3a8c42", "#69c46a"];
 
@@ -54,8 +55,18 @@ export class GrassClippings {
     }
   }
 
+  /** Full burst — a clump was mowed (died). */
   emit(x: number, z: number): void {
-    for (let n = 0; n < PER_BURST; n += 1) {
+    this.spawn(x, z, PER_BURST);
+  }
+
+  /** Small burst — a clump was hit but survived. */
+  emitHit(x: number, z: number): void {
+    this.spawn(x, z, HIT_BURST);
+  }
+
+  private spawn(x: number, z: number, count: number): void {
+    for (let n = 0; n < count; n += 1) {
       const i = this.cursor;
       this.cursor = (this.cursor + 1) % CAPACITY;
 

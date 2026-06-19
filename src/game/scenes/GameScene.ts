@@ -233,6 +233,10 @@ export class GameScene implements GameSceneController {
       const state = resultById.get(id);
       if (state) {
         this.grassField.setHp(id, state.hp);
+        const position = positionById.get(id);
+        if (position) {
+          this.clippings.emitHit(position.x, position.z);
+        }
       }
     }
 
