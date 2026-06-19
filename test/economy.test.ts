@@ -6,6 +6,7 @@ import {
   scoreRun,
   type EconomyStats,
 } from "../src/game/systems/EconomySystem";
+import { summarizeRun } from "../src/game/systems/RunSummarySystem";
 
 const baseStats: EconomyStats = {
   goldDivisor: 4,
@@ -38,5 +39,22 @@ describe("event economy", () => {
   it("detects clean patches as 40 grass within 3 seconds", () => {
     const cuts = Array.from({ length: 40 }, (_, index) => index * 50);
     expect(detectCleanPatchCount(cuts, 3000, 40)).toBe(1);
+  });
+
+  it("summarizes run events into save stats and gold", () => {
+    const summary = summarizeRun(
+      [
+        { kind: "grassCut", count: 80 },
+        { kind: "rockBroken", count: 1 },
+        { kind: "clearPercent", percent: 10, mapSize: 10 },
+      ],
+      { ...baseStats, rockScore: 25 },
+      10,
+    );
+
+    expect(summary.gold).toBeGreaterThan(0);
+    expect(summary.grassCut).toBe(80);
+    expect(summary.rocksBroken).toBe(1);
+    expect(summary.clearPercent).toBe(10);
   });
 });

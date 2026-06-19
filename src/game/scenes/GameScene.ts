@@ -5,7 +5,6 @@ import {
   OBSTACLE_COUNTS_BY_MAP,
   ROUND_DURATION_BY_MAP,
   TEST_BOMB_COUNTS,
-  type RuntimeStats,
 } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
@@ -39,10 +38,12 @@ import {
   type ObstacleState,
 } from "../systems/ObstacleSystem";
 import { cloneModel } from "../assets/models";
-import { rewardForGrass } from "../systems/EconomySystem";
+import type { RunScoreEvent } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
-import { addGold, getRuntimeStats, loadSave, saveGame } from "../systems/SaveSystem";
+import { applyRunResultToSave, loadSave, saveGame } from "../systems/SaveSystem";
+import { getEconomyStats, getRuntimeStats, type RuntimeStats } from "../systems/SkillSystem";
+import { summarizeRun } from "../systems/RunSummarySystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
 import type { GrassState } from "../types";
@@ -97,6 +98,8 @@ export class GameScene implements GameSceneController {
   private attackFlash = 0;
   private spawnTimerMs = 0;
   private roundGold = 0;
+  private initialGrassTotal = 0;
+  private readonly scoreEvents: RunScoreEvent[] = [];
   private nextGrassId = 1;
   private ended = false;
   private save = loadSave();
@@ -188,7 +191,7 @@ export class GameScene implements GameSceneController {
     this.hud.updateGame({
       timeMs: this.roundDurationMs - this.elapsedMs,
       roundGold: this.roundGold,
-      totalGold: this.save.totalGold + this.roundGold,
+      totalGold: this.save.gold + this.roundGold,
       damage: this.stats.attackDamage,
       attackIntervalMs: this.stats.attackChargeDurationMs,
       range: this.stats.attackRangeMeters,
@@ -286,6 +289,7 @@ export class GameScene implements GameSceneController {
     // Scale the base count (tuned for 10x10) by map area so density is constant.
     const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
     const count = Math.round(this.stats.initialGrassCount * areaScale);
+    this.initialGrassTotal = count;
     const batch = createGrassBatch(count, this.nextGrassId, this.mapSize);
     this.nextGrassId += batch.length;
     for (const state of batch) {
@@ -502,7 +506,9 @@ export class GameScene implements GameSceneController {
       }
     }
 
-    this.roundGold += rewardForGrass(this.stats, hitIds.length);
+    if (hitIds.length > 0) {
+      this.recordScoreEvent({ kind: "grassCut", count: hitIds.length });
+    }
   }
 
   private performAttack(): void {
@@ -548,7 +554,9 @@ export class GameScene implements GameSceneController {
       this.player.strike();
     }
 
-    this.roundGold += rewardForGrass(this.stats, result.destroyedIds.length);
+    if (result.destroyedIds.length > 0) {
+      this.recordScoreEvent({ kind: "grassCut", count: result.destroyedIds.length });
+    }
 
     this.attackObstacles();
   }
@@ -669,9 +677,26 @@ export class GameScene implements GameSceneController {
     };
   }
 
+  private recordScoreEvent(event: RunScoreEvent): void {
+    this.scoreEvents.push(event);
+    this.roundGold = summarizeRun(this.scoreEvents, getEconomyStats(this.save), this.mapSize).gold;
+  }
+
+  private clearPercent(): number {
+    if (this.initialGrassTotal <= 0) {
+      return 0;
+    }
+    const remaining = this.grassField.getStates().length;
+    const cut = Math.max(0, this.initialGrassTotal - remaining);
+    return Math.floor((cut / this.initialGrassTotal) * 100);
+  }
+
   private endRound(): void {
     this.ended = true;
-    this.save = addGold(this.save, this.roundGold);
+    this.scoreEvents.push({ kind: "clearPercent", percent: this.clearPercent(), mapSize: this.mapSize });
+    const summary = summarizeRun(this.scoreEvents, getEconomyStats(this.save), this.mapSize);
+    this.roundGold = summary.gold;
+    this.save = applyRunResultToSave(this.save, summary);
     saveGame(this.save);
     this.joystick.setVisible(false);
     this.hud.showResult(this.roundGold, {

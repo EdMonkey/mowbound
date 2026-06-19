@@ -19,13 +19,14 @@ import {
   isNodeRevealed,
   isNodeUnlocked,
   unlockNode,
-} from "../src/game/systems/SaveSystem";
+} from "../src/game/systems/SkillSystem";
 import {
   InputSystem,
   mapScreenInputToWorldMovement,
   normalizeInputVector,
 } from "../src/game/systems/InputSystem";
-import { BALANCE, defaultSave, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
+import { BALANCE, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
+import { defaultSave } from "../src/game/systems/SaveSystem";
 
 class FakeInputTarget {
   innerWidth = 1000;
@@ -138,13 +139,13 @@ describe("runtime stats from skill nodes", () => {
   });
 
   it("accumulates the effects of unlocked nodes", () => {
-    const save = { ...defaultSave(), unlocked: ["dmg1", "dmg2"] };
+    const save = { ...defaultSave(), levels: { root_sharpen: 1, sharp_edge_1: 1 } };
     expect(getRuntimeStats(save).attackDamage).toBe(5); // 3 + 1 + 1
   });
 
   it("applies the play-time skill to round duration", () => {
-    const save = { ...defaultSave(), unlocked: ["time1", "time2"] };
-    expect(getRuntimeStats(save).roundDurationMs).toBe(10000 + 2000 + 3000);
+    const save = { ...defaultSave(), levels: { field_rhythm_1: 1, field_rhythm_2: 1 } };
+    expect(getRuntimeStats(save).roundDurationMs).toBe(11600);
   });
 });
 
@@ -292,37 +293,38 @@ describe("rock/tree obstacles", () => {
 
 describe("skill tree unlocks", () => {
   it("reveals a node only after its prerequisite is unlocked", () => {
-    const save = { ...defaultSave(), totalGold: 9999 };
+    const save = { ...defaultSave(), gold: 9999 };
 
-    expect(isNodeRevealed(save, "dmg1")).toBe(true); // root
-    expect(isNodeRevealed(save, "dmg2")).toBe(false);
-    expect(canUnlockNode(save, "dmg2")).toBe(false);
+    expect(isNodeRevealed(save, "root_sharpen")).toBe(true); // root
+    expect(isNodeRevealed(save, "sharp_edge_1")).toBe(false);
+    expect(canUnlockNode(save, "sharp_edge_1")).toBe(false);
 
-    const afterRoot = unlockNode(save, "dmg1");
-    expect(isNodeUnlocked(afterRoot, "dmg1")).toBe(true);
-    expect(afterRoot.totalGold).toBeLessThan(9999);
-    expect(isNodeRevealed(afterRoot, "dmg2")).toBe(true);
-    expect(isNodeRevealed(afterRoot, "combat")).toBe(true);
-    expect(canUnlockNode(afterRoot, "dmg2")).toBe(true);
+    const afterRoot = unlockNode(save, "root_sharpen");
+    expect(isNodeUnlocked(afterRoot, "root_sharpen")).toBe(true);
+    expect(afterRoot.gold).toBeLessThan(9999);
+    expect(isNodeRevealed(afterRoot, "sharp_edge_1")).toBe(true);
+    expect(isNodeRevealed(afterRoot, "clean_sweep_1")).toBe(true);
+    expect(canUnlockNode(afterRoot, "sharp_edge_1")).toBe(true);
     // deeper tier stays hidden until its own prerequisite is unlocked
-    expect(isNodeRevealed(afterRoot, "dmg3")).toBe(false);
+    expect(isNodeRevealed(afterRoot, "sharp_edge_2")).toBe(false);
   });
 
   it("unlocks each node once and refuses locked nodes", () => {
-    let save = { ...defaultSave(), totalGold: 9999, unlocked: ["dmg1"] };
-    save = unlockNode(save, "dmg2");
-    expect(isNodeUnlocked(save, "dmg2")).toBe(true);
+    let save = defaultSave();
+    save = { ...save, gold: 9999, levels: { root_sharpen: 1 } };
+    save = unlockNode(save, "sharp_edge_1");
+    expect(isNodeUnlocked(save, "sharp_edge_1")).toBe(true);
 
     // unlocking again is a no-op: no duplicate, no extra spend
-    const goldAfter = save.totalGold;
-    const again = unlockNode(save, "dmg2");
-    expect(again.totalGold).toBe(goldAfter);
-    expect(again.unlocked.filter((id) => id === "dmg2").length).toBe(1);
+    const goldAfter = save.gold;
+    const again = unlockNode(save, "sharp_edge_1");
+    expect(again.gold).toBe(goldAfter);
+    expect(again.levels.sharp_edge_1).toBe(1);
 
     // a node whose prerequisite isn't unlocked is refused
-    const locked = unlockNode(save, "field");
-    expect(locked.totalGold).toBe(goldAfter);
-    expect(isNodeUnlocked(locked, "field")).toBe(false);
+    const locked = unlockNode(save, "field_rhythm_2");
+    expect(locked.gold).toBe(goldAfter);
+    expect(isNodeUnlocked(locked, "field_rhythm_2")).toBe(false);
   });
 });
 

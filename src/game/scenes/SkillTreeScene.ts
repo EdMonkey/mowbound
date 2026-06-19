@@ -1,15 +1,14 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
-import { SKILL_NODES, SKILL_NODE_BY_ID, SKILL_ROOT, type SkillNode } from "../config/balance";
+import { SKILL_NODES, SKILL_NODE_BY_ID, SKILL_ROOT, type SkillEffect, type SkillNode } from "../config/skillTree";
 import {
   canUnlockNode,
   getNodeCost,
   isNodeRevealed,
   isNodeUnlocked,
-  loadSave,
-  saveGame,
   unlockNode,
-} from "../systems/SaveSystem";
+} from "../systems/SkillSystem";
+import { loadSave, saveGame } from "../systems/SaveSystem";
 import { createButton } from "../ui/Menu";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -37,29 +36,63 @@ interface PressState {
   timer: number;
 }
 
-function effectLabel(node: SkillNode): string {
-  const e = node.effect;
-  if (!e) {
-    return "Opens a branch";
-  }
-  switch (e.kind) {
-    case "damage":
-      return `Damage +${e.amount}`;
-    case "range":
-      return `Range +${e.amount}m`;
-    case "arc":
-      return `Fan +${e.amount}°`;
+function effectText(effect: SkillEffect): string {
+  switch (effect.kind) {
+    case "attackDamage":
+      return `Damage +${effect.amount}`;
+    case "attackRange":
+      return `Range +${effect.amount}m`;
     case "attackInterval":
-      return `Attack speed +${(Math.abs(e.amount) / 1000).toFixed(2)}s`;
+      return `Attack speed +${(Math.abs(effect.amount) / 1000).toFixed(2)}s`;
     case "moveSpeed":
-      return `Move speed +${e.amount}`;
-    case "gold":
-      return `Gold +${e.amount}/grass`;
-    case "grassCount":
-      return `Grass +${e.amount}`;
-    case "roundDuration":
-      return `Round time +${(e.amount / 1000).toFixed(0)}s`;
+      return `Move speed +${effect.amount}`;
+    case "roundDurationPercent":
+      return `Round time +${effect.amount}%`;
+    case "goldDivisor":
+      return `Gold divisor ${effect.amount}`;
+    case "cleanPatchScore":
+      return `Clean patch +${effect.amount}`;
+    case "clearBonusPercent":
+      return `Clear bonus +${effect.amount}%`;
+    case "rockScore":
+      return `Rock +${effect.amount}`;
+    case "treeScore":
+      return `Tree +${effect.amount}`;
+    case "stumpNoCollision":
+      return "Stumps stop blocking";
+    case "failedChopStunPercent":
+      return `Recoil stun ${effect.amount}%`;
+    case "obstacleDamage":
+      return `Obstacle damage +${effect.amount}`;
+    case "obstacleBreakGrassBonus":
+      return "Obstacle break cuts grass";
+    case "obstacleScorePercent":
+      return `Obstacle score +${effect.amount}%`;
+    case "bombCount10m":
+      return `10m bombs +${effect.amount}`;
+    case "bombChainRadius":
+      return `Chain radius +${effect.amount}m`;
+    case "bombBlastRadius":
+      return `Blast radius +${effect.amount}m`;
+    case "bombChainScore":
+      return `Chain score +${effect.amount}`;
+    case "firstBombScorePercent":
+      return `First bomb score +${effect.amount}%`;
+    case "unlockMap":
+      return `${effect.mapSize}m map`;
+    case "initialGrassCount":
+      return `Grass +${effect.amount}`;
+    case "grassScorePercent":
+      return `Grass score +${effect.amount}%`;
+    case "toolUnlock":
+      return `Tool: ${effect.tool}`;
+    case "special":
+      return effect.id.replace(/_/g, " ");
   }
+}
+
+function effectLabel(node: SkillNode): string {
+  return node.effects.length > 0 ? node.effects.map(effectText).join(" / ") : "Opens a branch";
 }
 
 export class SkillTreeScene implements GameSceneController {
@@ -126,10 +159,11 @@ export class SkillTreeScene implements GameSceneController {
   private computeLayout(): void {
     const children = new Map<string, SkillNode[]>();
     for (const node of SKILL_NODES) {
-      if (node.prereq) {
-        const list = children.get(node.prereq) ?? [];
+      const primaryParent = node.prereq[0];
+      if (primaryParent) {
+        const list = children.get(primaryParent) ?? [];
         list.push(node);
-        children.set(node.prereq, list);
+        children.set(primaryParent, list);
       }
     }
 
@@ -191,11 +225,11 @@ export class SkillTreeScene implements GameSceneController {
 
     const header = document.createElement("div");
     header.className = "skill-header";
-    const owned = this.save.unlocked.length;
+    const owned = Object.keys(this.save.levels).length;
     header.innerHTML = `
       <div>
         <h2 class="panel-title">Skill Tree</h2>
-        <p class="panel-copy">Unlock to grow new branches — ${owned}/${SKILL_NODES.length} skills. Total gold: <strong>${this.save.totalGold}</strong></p>
+        <p class="panel-copy">Unlock to grow new branches - ${owned}/${SKILL_NODES.length} skills. Total gold: <strong>${this.save.gold}</strong></p>
       </div>
       <p class="skill-meta">Drag to pan · scroll / pinch to zoom · hover or long-press for details</p>
     `;
@@ -251,10 +285,11 @@ export class SkillTreeScene implements GameSceneController {
     svg.setAttribute("height", `${this.worldH}`);
 
     for (const node of SKILL_NODES) {
-      if (!node.prereq || !isNodeRevealed(this.save, node.id)) {
+      const primaryParent = node.prereq[0];
+      if (!primaryParent || !isNodeRevealed(this.save, node.id)) {
         continue;
       }
-      const from = this.positions[node.prereq];
+      const from = this.positions[primaryParent];
       const to = this.positions[node.id];
       const grown = isNodeUnlocked(this.save, node.id);
 
@@ -278,7 +313,7 @@ export class SkillTreeScene implements GameSceneController {
     const el = document.createElement("button");
     el.type = "button";
     el.dataset.node = node.id;
-    const branch = node.effect === null ? " is-branch" : "";
+    const branch = ` branch-${node.branch}`;
     el.className = `tree-node ${unlocked ? "is-owned" : "is-available"}${affordable ? " can-buy" : ""}${branch}`;
     el.style.left = `${pos.x}px`;
     el.style.top = `${pos.y}px`;
@@ -586,7 +621,7 @@ export class SkillTreeScene implements GameSceneController {
       <div class="tree-detail-row">${
         unlocked
           ? "✓ Already unlocked"
-          : `Unlock for <span class="tree-detail-cost">${cost} gold</span> (you have ${this.save.totalGold})`
+          : `Unlock for <span class="tree-detail-cost">${cost} gold</span> (you have ${this.save.gold})`
       }</div>
     `;
 
