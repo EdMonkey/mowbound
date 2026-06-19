@@ -541,48 +541,46 @@ button:disabled {
   opacity: 0.55;
 }
 
-.joystick {
+.joystick-zone {
   position: absolute;
-  left: max(18px, env(safe-area-inset-left));
-  bottom: max(22px, env(safe-area-inset-bottom));
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
-  pointer-events: auto;
+  inset: 0;
+  pointer-events: none;
   touch-action: none;
-  opacity: 0;
-  transform: scale(0.92);
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease;
 }
 
-.joystick.visible {
-  opacity: 1;
-  transform: scale(1);
+.joystick-zone.active {
+  pointer-events: auto;
 }
 
 .joystick-base,
 .joystick-knob {
   position: absolute;
   border-radius: 50%;
-  touch-action: none;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 120ms ease;
+}
+
+/* Floating control appears at 50% opacity once a touch engages it. */
+.joystick-zone.engaged .joystick-base,
+.joystick-zone.engaged .joystick-knob {
+  opacity: 0.5;
 }
 
 .joystick-base {
-  inset: 0;
-  border: 2px solid rgba(248, 247, 239, 0.26);
-  background: rgba(8, 18, 14, 0.38);
-  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05);
+  width: 128px;
+  height: 128px;
+  border: 2px solid rgba(248, 247, 239, 0.5);
+  background: rgba(8, 18, 14, 0.42);
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.06);
 }
 
 .joystick-knob {
-  left: 38px;
-  top: 38px;
-  width: 52px;
-  height: 52px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  background: rgba(240, 200, 90, 0.88);
+  width: 56px;
+  height: 56px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: rgba(240, 200, 90, 0.95);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
 }
 
