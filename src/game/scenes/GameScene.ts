@@ -29,6 +29,7 @@ export class GameScene implements GameSceneController {
   private readonly joystick: VirtualJoystick;
   private readonly player = new Player();
   private grassField!: GrassField;
+  private sun!: THREE.DirectionalLight;
   private readonly clippings = new GrassClippings();
   private readonly coins: Coin[] = [];
   private readonly stats: RuntimeStats;
@@ -132,17 +133,25 @@ export class GameScene implements GameSceneController {
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 20;
-    sun.shadow.camera.left = -7;
-    sun.shadow.camera.right = 7;
-    sun.shadow.camera.top = 7;
-    sun.shadow.camera.bottom = -7;
+    sun.shadow.camera.far = 40;
+    // Shadow frustum covers the visible area and follows the player (see
+    // updateCamera) so shadows work on a large map and chunks cull in the
+    // shadow pass too.
+    sun.shadow.camera.left = -12;
+    sun.shadow.camera.right = 12;
+    sun.shadow.camera.top = 12;
+    sun.shadow.camera.bottom = -12;
     this.scene.add(sun);
+    this.scene.add(sun.target);
+    this.sun = sun;
   }
 
   private addMap(): void {
-    // Blender-authored 10x10 ground (mow stripes + sod edge); matches mapSizeMeters.
-    this.scene.add(cloneModel("ground"));
+    // Blender ground is authored at 10x10; scale it to the current map size.
+    const ground = cloneModel("ground");
+    const groundScale = BALANCE.mapSizeMeters / 10;
+    ground.scale.set(groundScale, 1, groundScale);
+    this.scene.add(ground);
 
     const half = BALANCE.mapSizeMeters / 2;
     const points = [
@@ -278,6 +287,11 @@ export class GameScene implements GameSceneController {
     const offset = new THREE.Vector3(5.8, 6.2, 5.8);
     this.app.camera.position.copy(this.cameraTarget).add(offset);
     this.app.camera.lookAt(this.cameraTarget.x, 0, this.cameraTarget.z);
+
+    // Sun + shadow frustum follow the player so shadows cover the view on a
+    // large map (and the shadow pass only renders nearby chunks).
+    this.sun.position.set(this.player.position.x + 4, 8, this.player.position.z + 5);
+    this.sun.target.position.set(this.player.position.x, 0, this.player.position.z);
   }
 
   private worldToScreen(position: THREE.Vector3): { x: number; y: number } {

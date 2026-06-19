@@ -1,6 +1,6 @@
 export const BALANCE = {
   roundDurationMs: 10000,
-  mapSizeMeters: 10,
+  mapSizeMeters: 30,
   playerMoveSpeed: 0.7,
   baseAttackDamage: 3,
   baseGrassHp: 5,
@@ -9,7 +9,7 @@ export const BALANCE = {
   baseAttackArcDegrees: 360,
   attackChargeDurationMs: 1000,
   baseGoldPerGrass: 1,
-  initialGrassCount: 1600,
+  initialGrassCount: 14400,
   grassSpawnIntervalMs: 320,
   grassSpawnPerTick: 0,
   virtualJoystickRadiusPx: 64,
