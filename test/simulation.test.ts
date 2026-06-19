@@ -161,7 +161,7 @@ describe("grass and coins", () => {
     const heights: number[] = [];
     let expired = false;
 
-    for (let index = 0; index < 18; index += 1) {
+    for (let index = 0; index < 34; index += 1) {
       expired = coin.update(0.08);
       heights.push(coin.group.position.y);
     }

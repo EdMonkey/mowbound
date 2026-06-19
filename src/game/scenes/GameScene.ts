@@ -222,7 +222,7 @@ export class GameScene implements GameSceneController {
       if (!position) {
         continue;
       }
-      const coin = new Coin(position);
+      const coin = new Coin(position, this.player.position);
       this.coins.push(coin);
       this.scene.add(coin.group);
       this.clippings.emit(position.x, position.z);
