@@ -30,7 +30,9 @@ import {
 } from "../systems/BombSystem";
 import {
   createObstacleState,
+  OBSTACLE_COLLISION_RADIUS,
   resolveObstacleAttack,
+  type Circle,
   type ObstacleKind,
   type ObstacleState,
 } from "../systems/ObstacleSystem";
@@ -136,7 +138,7 @@ export class GameScene implements GameSceneController {
       }
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
-      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize);
+      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize, this.collisionBlockers());
 
       // A stunned player can't swing; the charge timer holds until they recover.
       if (!this.player.stunned) {
@@ -301,6 +303,21 @@ export class GameScene implements GameSceneController {
     };
     spawn("rock", counts.rocks);
     spawn("tree", counts.trees);
+  }
+
+  /** Collision circles for intact obstacles only (broken ones are passable). */
+  private collisionBlockers(): Circle[] {
+    const blockers: Circle[] = [];
+    for (const obstacle of this.obstacleStates) {
+      if (!obstacle.destroyed) {
+        blockers.push({
+          x: obstacle.position.x,
+          z: obstacle.position.z,
+          radius: OBSTACLE_COLLISION_RADIUS[obstacle.kind],
+        });
+      }
+    }
+    return blockers;
   }
 
   private updateBombs(deltaSeconds: number): void {

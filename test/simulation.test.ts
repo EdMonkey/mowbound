@@ -8,7 +8,11 @@ import {
   resolveChainDetonation,
 } from "../src/game/systems/BombSystem";
 import { createGrassBatch } from "../src/game/systems/GrassSystem";
-import { createObstacleState, resolveObstacleAttack } from "../src/game/systems/ObstacleSystem";
+import {
+  createObstacleState,
+  resolveCollision,
+  resolveObstacleAttack,
+} from "../src/game/systems/ObstacleSystem";
 import {
   canUnlockNode,
   getRuntimeStats,
@@ -244,19 +248,19 @@ describe("rock/tree obstacles", () => {
       obstacles,
     });
 
-  it("breaks an obstacle only when damage exceeds its HP, and stuns on a break", () => {
+  it("breaks an obstacle when damage exceeds its HP, without stunning", () => {
     const rock = createObstacleState("r", "rock", { x: 0.3, z: 0 }, 5);
     const result = attack(6, [rock]);
     expect(result.destroyedIds).toEqual(["r"]);
     expect(result.blockedIds).toEqual([]);
-    expect(result.stun).toBe(true);
+    expect(result.stun).toBe(false);
   });
 
-  it("does nothing (no chip, no stun) when damage does not exceed HP", () => {
+  it("stuns the attacker (no HP change) when damage fails to break the obstacle", () => {
     const tree = createObstacleState("t", "tree", { x: 0.3, z: 0 }, 5);
     // equal damage is not enough — must be strictly greater
-    expect(attack(5, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: false });
-    expect(attack(3, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: false });
+    expect(attack(5, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: true });
+    expect(attack(3, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: true });
   });
 
   it("ignores out-of-range and already-destroyed obstacles", () => {
@@ -264,7 +268,16 @@ describe("rock/tree obstacles", () => {
     const spent = { ...createObstacleState("spent", "tree", { x: 0.2, z: 0 }, 1), destroyed: true };
     const result = attack(99, [far, spent]);
     expect(result.destroyedIds).toEqual([]);
+    expect(result.blockedIds).toEqual([]);
     expect(result.stun).toBe(false);
+  });
+
+  it("pushes the player out of an intact obstacle's collision circle", () => {
+    // player (r=0.2) overlapping a blocker (r=0.3) at distance 0.2 -> pushed to 0.5
+    const pushed = resolveCollision({ x: 0.2, z: 0 }, [{ x: 0, z: 0, radius: 0.3 }], 0.2);
+    expect(Math.hypot(pushed.x, pushed.z)).toBeCloseTo(0.5, 5);
+    // already clear of the blocker -> unchanged
+    expect(resolveCollision({ x: 2, z: 0 }, [{ x: 0, z: 0, radius: 0.3 }], 0.2)).toEqual({ x: 2, z: 0 });
   });
 });
 

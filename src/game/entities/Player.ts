@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import type { VectorXZ } from "../types";
 import { cloneModel } from "../assets/models";
+import { resolveCollision, type Circle } from "../systems/ObstacleSystem";
+
+const PLAYER_COLLISION_RADIUS = 0.18;
 
 export class Player {
   readonly group = new THREE.Group();
@@ -38,7 +41,7 @@ export class Player {
     this.stunTimer = Math.max(this.stunTimer, seconds);
   }
 
-  move(vector: VectorXZ, speed: number, deltaSeconds: number, mapSize: number): void {
+  move(vector: VectorXZ, speed: number, deltaSeconds: number, mapSize: number, blockers: readonly Circle[] = []): void {
     if (this.stunned) {
       return; // dazed: input is ignored until the stun wears off
     }
@@ -49,8 +52,13 @@ export class Player {
     }
 
     const half = mapSize / 2 - 0.24;
-    this.position.x = THREE.MathUtils.clamp(this.position.x + vector.x * speed * deltaSeconds, -half, half);
-    this.position.z = THREE.MathUtils.clamp(this.position.z + vector.z * speed * deltaSeconds, -half, half);
+    const x = THREE.MathUtils.clamp(this.position.x + vector.x * speed * deltaSeconds, -half, half);
+    const z = THREE.MathUtils.clamp(this.position.z + vector.z * speed * deltaSeconds, -half, half);
+
+    // Slide out of intact rocks/trees, then re-clamp in case a push left the map.
+    const resolved = resolveCollision({ x, z }, blockers, PLAYER_COLLISION_RADIUS);
+    this.position.x = THREE.MathUtils.clamp(resolved.x, -half, half);
+    this.position.z = THREE.MathUtils.clamp(resolved.z, -half, half);
     this.syncTransform();
   }
 
