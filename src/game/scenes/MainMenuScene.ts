@@ -3,13 +3,15 @@ import type { App, GameSceneController } from "../App";
 import { MAP_SIZE_OPTIONS } from "../config/balance";
 import { cloneModel } from "../assets/models";
 import { Player } from "../entities/Player";
-import { resetSave } from "../systems/SaveSystem";
+import { loadSave, resetSave } from "../systems/SaveSystem";
+import { isMapUnlocked } from "../systems/SkillSystem";
 import { clearElement, createButton } from "../ui/Menu";
 
 export class MainMenuScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
   private readonly previewGroup = new THREE.Group();
+  private save = loadSave();
 
   constructor(private readonly app: App) {
     this.scene.background = new THREE.Color("#13261c");
@@ -64,6 +66,8 @@ export class MainMenuScene implements GameSceneController {
   }
 
   private buildMenu(): void {
+    this.layer.remove();
+    clearElement(this.layer);
     this.layer.className = "menu-layer";
 
     const panel = document.createElement("div");
@@ -90,7 +94,9 @@ export class MainMenuScene implements GameSceneController {
         "Reset Save",
         () => {
           if (window.confirm("Reset all Mowbound save data?")) {
-            resetSave();
+            this.save = resetSave();
+            this.app.mapSizeMeters = 10;
+            this.buildMenu();
           }
         },
         "danger-button",
@@ -114,12 +120,18 @@ export class MainMenuScene implements GameSceneController {
     choices.className = "menu-options-choices";
 
     const buttons = MAP_SIZE_OPTIONS.map((size) => {
+      const unlocked = isMapUnlocked(this.save, size);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "option-button";
-      button.textContent = `${size}×${size}`;
-      button.setAttribute("aria-pressed", String(size === this.app.mapSizeMeters));
+      button.textContent = unlocked ? `${size}x${size}` : `${size}x${size} Locked`;
+      button.disabled = !unlocked;
+      button.title = unlocked ? `${size}x${size}` : "Need: Open Acre";
+      button.setAttribute("aria-pressed", String(unlocked && size === this.app.mapSizeMeters));
       button.addEventListener("click", () => {
+        if (!isMapUnlocked(this.save, size)) {
+          return;
+        }
         this.app.mapSizeMeters = size;
         for (const other of buttons) {
           other.setAttribute("aria-pressed", String(other === button));

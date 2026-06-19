@@ -156,6 +156,13 @@ button:disabled {
   font-weight: 600;
 }
 
+.option-button:disabled {
+  cursor: not-allowed;
+  color: #96a69a;
+  background: rgba(80, 88, 82, 0.26);
+  border-color: rgba(180, 190, 178, 0.16);
+}
+
 .button-stack {
   display: grid;
   gap: 10px;
