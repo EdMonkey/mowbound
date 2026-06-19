@@ -6,7 +6,6 @@ import { GrassField } from "../entities/GrassField";
 import { Player } from "../entities/Player";
 import {
   advanceChargeAttack,
-  createAttackFanGeometry,
   getSurvivingHitIds,
   type ChargeAttackState,
   resolveAttack,
@@ -20,6 +19,8 @@ import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
 import type { GrassState, VectorXZ } from "../types";
 
+const ATTACK_FLASH_DURATION = 0.45;
+
 export class GameScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly input = new InputSystem();
@@ -30,11 +31,10 @@ export class GameScene implements GameSceneController {
   private readonly coins: Coin[] = [];
   private readonly stats: RuntimeStats;
   private readonly attackChargeGroup = new THREE.Group();
-  private readonly attackChargeBase: THREE.Mesh;
-  private readonly attackChargeFill: THREE.Mesh;
+  private readonly attackRing: THREE.Mesh;
   private elapsedMs = 0;
   private chargeState: ChargeAttackState;
-  private attackChargeProgress = 0;
+  private attackFlash = 0;
   private spawnTimerMs = 0;
   private roundGold = 0;
   private nextGrassId = 1;
@@ -47,9 +47,7 @@ export class GameScene implements GameSceneController {
     this.hud = new Hud(this.app.uiRoot);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
     this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
-    const chargeMeshes = this.createAttackCharge();
-    this.attackChargeBase = chargeMeshes.base;
-    this.attackChargeFill = chargeMeshes.fill;
+    this.attackRing = this.createIndicator();
 
     this.scene.background = new THREE.Color("#617075");
     this.scene.fog = new THREE.Fog("#617075", 12, 24);
@@ -89,7 +87,6 @@ export class GameScene implements GameSceneController {
 
       const charge = advanceChargeAttack(this.chargeState, deltaSeconds * 1000);
       this.chargeState = charge.state;
-      this.attackChargeProgress = charge.progress;
 
       if (charge.ready) {
         this.performAttack();
@@ -100,7 +97,7 @@ export class GameScene implements GameSceneController {
       }
     }
 
-    this.updateAttackCharge();
+    this.updateIndicator(deltaSeconds);
 
     this.hud.updateGame({
       timeMs: this.stats.roundDurationMs - this.elapsedMs,
@@ -119,15 +116,8 @@ export class GameScene implements GameSceneController {
     this.hud.dispose();
     this.grassField.dispose();
     this.coins.forEach((coin) => coin.dispose());
-    for (const mesh of [this.attackChargeBase, this.attackChargeFill]) {
-      mesh.geometry.dispose();
-      const material = mesh.material;
-      if (Array.isArray(material)) {
-        material.forEach((entry) => entry.dispose());
-      } else {
-        material.dispose();
-      }
-    }
+    this.attackRing.geometry.dispose();
+    (this.attackRing.material as THREE.Material).dispose();
   }
 
   private addLights(): void {
@@ -164,13 +154,13 @@ export class GameScene implements GameSceneController {
     this.scene.add(border);
   }
 
-  private createAttackCharge(): { base: THREE.Mesh; fill: THREE.Mesh } {
-    // depthTest:false + high renderOrder keeps the range indicator visible as an
-    // overlay on top of the tall grass and the uneven ground.
-    const base = new THREE.Mesh(
-      createAttackFanGeometry(this.stats.attackArcDegrees),
+  private createIndicator(): THREE.Mesh {
+    // White outline ring matching the circular attack range. depthTest:false +
+    // high renderOrder keeps it visible over the tall grass and uneven ground.
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.92, 1, 64),
       new THREE.MeshBasicMaterial({
-        color: "#54110f",
+        color: "#ffffff",
         transparent: true,
         opacity: 0.3,
         depthWrite: false,
@@ -178,23 +168,11 @@ export class GameScene implements GameSceneController {
         side: THREE.DoubleSide,
       }),
     );
-    const fill = new THREE.Mesh(
-      createAttackFanGeometry(this.stats.attackArcDegrees),
-      new THREE.MeshBasicMaterial({
-        color: "#ff2f24",
-        transparent: true,
-        opacity: 0.3,
-        depthWrite: false,
-        depthTest: false,
-        side: THREE.DoubleSide,
-      }),
-    );
-    base.position.y = 0.08;
-    fill.position.y = 0.085;
-    base.renderOrder = 10;
-    fill.renderOrder = 11;
-    this.attackChargeGroup.add(base, fill);
-    return { base, fill };
+    ring.rotation.x = -Math.PI / 2; // lay flat on the ground
+    ring.position.y = 0.08;
+    ring.renderOrder = 11;
+    this.attackChargeGroup.add(ring);
+    return ring;
   }
 
   private spawnInitialGrass(): void {
@@ -230,6 +208,7 @@ export class GameScene implements GameSceneController {
   }
 
   private performAttack(): void {
+    this.attackFlash = 1; // flash the range ring on every strike
     const grassStates = this.grassField.getStates();
     const result = resolveAttack({
       origin: this.player.position,
@@ -292,15 +271,14 @@ export class GameScene implements GameSceneController {
     this.grassField.update(deltaSeconds);
   }
 
-  private updateAttackCharge(): void {
+  private updateIndicator(deltaSeconds: number): void {
     this.attackChargeGroup.position.set(this.player.position.x, 0, this.player.position.z);
-    this.attackChargeGroup.rotation.y = -Math.atan2(this.player.direction.z, this.player.direction.x);
-    this.attackChargeBase.scale.set(this.stats.attackRangeMeters, 1, this.stats.attackRangeMeters);
-    this.attackChargeFill.scale.set(
-      Math.max(0.02, this.stats.attackRangeMeters * this.attackChargeProgress),
-      1,
-      Math.max(0.02, this.stats.attackRangeMeters * this.attackChargeProgress),
-    );
+    const range = this.stats.attackRangeMeters;
+    this.attackRing.scale.set(range, range, 1);
+
+    // Sit at 30% opacity, flash to 100% on a strike, then fade back.
+    this.attackFlash = Math.max(0, this.attackFlash - deltaSeconds / ATTACK_FLASH_DURATION);
+    (this.attackRing.material as THREE.MeshBasicMaterial).opacity = 0.3 + 0.7 * this.attackFlash;
   }
 
   private updateCamera(): void {
