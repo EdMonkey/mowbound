@@ -27,6 +27,7 @@
 - Death feedback: destroyed grass disappears, drops a bouncing coin, grants gold.
 - Damage text: white text floats upward, grows, then fades.
 - Bombs: touching a bomb sets off a 5m circular blast that mows all grass in range and emits explosion particles + shockwave rings; other bombs within the 2.5m chain radius detonate too (staggered, transitive). Logic is in `BombSystem` (pure); `Bomb`/`Explosions` are the visuals. Scattered as test bombs at run start per map (TEST_BOMB_COUNTS: none on 10x10, 30 on 30x30); not yet wired to a skill-tree node.
+- Rocks & trees: destructible props with all-or-nothing damage — a swing only breaks one when its damage is strictly greater than the obstacle HP (test HP 5; base damage 3 won't break them, so damage upgrades are needed). Breaking one stuns the player for 1.5s (`obstacleStunSeconds`). A broken rock leaves rubble (rock_broken model), a cut tree leaves a stump (tree_stump model), with grey/brown chip particles (`Debris`). Logic in `ObstacleSystem` (pure, reuses the attack fan); `Obstacle` is the visual. Scattered randomly per map (OBSTACLE_COUNTS_BY_MAP) on both maps; not yet wired to a skill-tree node.
 
 ## Commands
 

@@ -1,7 +1,16 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-export type ModelKey = "farmer" | "sickle" | "grass" | "ground" | "coin";
+export type ModelKey =
+  | "farmer"
+  | "sickle"
+  | "grass"
+  | "ground"
+  | "coin"
+  | "rock"
+  | "rock_broken"
+  | "tree"
+  | "tree_stump";
 
 const MODEL_FILES: Record<ModelKey, string> = {
   farmer: "farmer.glb",
@@ -9,6 +18,10 @@ const MODEL_FILES: Record<ModelKey, string> = {
   grass: "grass.glb",
   ground: "ground.glb",
   coin: "coin.glb",
+  rock: "rock.glb",
+  rock_broken: "rock_broken.glb",
+  tree: "tree.glb",
+  tree_stump: "tree_stump.glb",
 };
 
 export type ModelLibrary = Record<ModelKey, THREE.Object3D>;

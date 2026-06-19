@@ -8,6 +8,7 @@ import {
   resolveChainDetonation,
 } from "../src/game/systems/BombSystem";
 import { createGrassBatch } from "../src/game/systems/GrassSystem";
+import { createObstacleState, resolveObstacleAttack } from "../src/game/systems/ObstacleSystem";
 import {
   canUnlockNode,
   getRuntimeStats,
@@ -229,6 +230,41 @@ describe("bomb chain detonation", () => {
     // small mow radius, with a wider chain radius so neighbors still detonate
     expect(BALANCE.bombBlastRadiusMeters).toBe(1.25);
     expect(BALANCE.bombChainRadiusMeters).toBe(2.5);
+  });
+});
+
+describe("rock/tree obstacles", () => {
+  const attack = (damage: number, obstacles: ReturnType<typeof createObstacleState>[]) =>
+    resolveObstacleAttack({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      range: 0.5,
+      arcDegrees: 360,
+      damage,
+      obstacles,
+    });
+
+  it("breaks an obstacle only when damage exceeds its HP, and stuns on a break", () => {
+    const rock = createObstacleState("r", "rock", { x: 0.3, z: 0 }, 5);
+    const result = attack(6, [rock]);
+    expect(result.destroyedIds).toEqual(["r"]);
+    expect(result.blockedIds).toEqual([]);
+    expect(result.stun).toBe(true);
+  });
+
+  it("does nothing (no chip, no stun) when damage does not exceed HP", () => {
+    const tree = createObstacleState("t", "tree", { x: 0.3, z: 0 }, 5);
+    // equal damage is not enough — must be strictly greater
+    expect(attack(5, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: false });
+    expect(attack(3, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: false });
+  });
+
+  it("ignores out-of-range and already-destroyed obstacles", () => {
+    const far = createObstacleState("far", "rock", { x: 3, z: 0 }, 1);
+    const spent = { ...createObstacleState("spent", "tree", { x: 0.2, z: 0 }, 1), destroyed: true };
+    const result = attack(99, [far, spent]);
+    expect(result.destroyedIds).toEqual([]);
+    expect(result.stun).toBe(false);
   });
 });
 

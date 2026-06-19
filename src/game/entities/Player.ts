@@ -8,6 +8,7 @@ export class Player {
   readonly direction: VectorXZ = { x: 1, z: 0 };
   private readonly tool = new THREE.Group();
   private strikeTimer = 0;
+  private stunTimer = 0;
 
   constructor() {
     this.group.name = "Player";
@@ -28,7 +29,20 @@ export class Player {
     this.syncTransform();
   }
 
+  get stunned(): boolean {
+    return this.stunTimer > 0;
+  }
+
+  /** Lock out movement and attacks for `seconds` (e.g. recoil from a hard chop). */
+  stun(seconds: number): void {
+    this.stunTimer = Math.max(this.stunTimer, seconds);
+  }
+
   move(vector: VectorXZ, speed: number, deltaSeconds: number, mapSize: number): void {
+    if (this.stunned) {
+      return; // dazed: input is ignored until the stun wears off
+    }
+
     if (Math.hypot(vector.x, vector.z) > 0) {
       this.direction.x = vector.x;
       this.direction.z = vector.z;
@@ -49,6 +63,10 @@ export class Player {
     const strikeProgress = this.strikeTimer > 0 ? this.strikeTimer / 0.18 : 0;
     this.tool.rotation.y = -Math.sin((1 - strikeProgress) * Math.PI) * 1.3;
     this.tool.rotation.z = Math.sin((1 - strikeProgress) * Math.PI) * 0.28;
+
+    // Dizzy wobble while stunned, then settle upright.
+    this.stunTimer = Math.max(0, this.stunTimer - deltaSeconds);
+    this.group.rotation.z = this.stunned ? Math.sin(this.stunTimer * 22) * 0.18 : 0;
   }
 
   private syncTransform(): void {

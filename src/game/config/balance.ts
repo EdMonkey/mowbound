@@ -28,10 +28,20 @@ export const BALANCE = {
   bombChainDelayMs: 110,
   bombMaxCoinsPerBlast: 30,
   bombMaxClippingsPerBlast: 40,
+  // Rocks & trees: all-or-nothing. A hit only breaks one if its damage is
+  // strictly greater than the obstacle HP; breaking one stuns the player.
+  obstacleHp: 5,
+  obstacleStunSeconds: 1.5,
 } as const;
 
 /** Test bombs scattered at run start, per selected map size (meters/side). */
 export const TEST_BOMB_COUNTS: Record<number, number> = { 10: 0, 30: 30 };
+
+/** Test rocks/trees scattered per map size: how many of each to spread around. */
+export const OBSTACLE_COUNTS_BY_MAP: Record<number, { rocks: number; trees: number }> = {
+  10: { rocks: 5, trees: 4 },
+  30: { rocks: 22, trees: 18 },
+};
 
 /** Base round duration per map size (ms); skill bonuses add on top. */
 export const ROUND_DURATION_BY_MAP: Record<number, number> = { 10: 10000, 30: 30000 };
