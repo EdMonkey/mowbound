@@ -4,17 +4,18 @@ import type { ObstacleKind } from "../systems/ObstacleSystem";
 import type { VectorXZ } from "../types";
 
 const INTACT_MODEL: Record<ObstacleKind, ModelKey> = { rock: "rock", tree: "tree" };
-const BROKEN_MODEL: Record<ObstacleKind, ModelKey> = { rock: "rock_broken", tree: "tree_stump" };
+// What stays after a break: a rock vanishes entirely (null), a tree leaves a stump.
+const BROKEN_MODEL: Record<ObstacleKind, ModelKey | null> = { rock: null, tree: "tree_stump" };
 
 /**
- * A rock or tree prop. Shows the intact Blender model and, on `break()`, swaps
- * in the broken model (rock -> rubble, tree -> stump) which stays on the ground.
+ * A rock or tree prop. Shows the intact Blender model and, on `break()`, either
+ * vanishes (rock) or swaps in the stump (tree, which stays and keeps blocking).
  * Models are cloned from the shared cache, so dispose() only drops references.
  */
 export class Obstacle {
   readonly group = new THREE.Group();
   private current: THREE.Object3D;
-  private readonly brokenModel: ModelKey;
+  private readonly brokenModel: ModelKey | null;
 
   constructor(kind: ObstacleKind, position: VectorXZ, scale: number) {
     this.brokenModel = BROKEN_MODEL[kind];
@@ -28,7 +29,7 @@ export class Obstacle {
 
   break(): void {
     this.group.remove(this.current);
-    this.current = cloneModel(this.brokenModel);
+    this.current = this.brokenModel ? cloneModel(this.brokenModel) : new THREE.Group();
     this.group.add(this.current);
   }
 

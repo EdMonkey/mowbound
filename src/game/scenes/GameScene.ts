@@ -11,6 +11,7 @@ import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
 import { Debris } from "../entities/Debris";
 import { Explosions } from "../entities/Explosions";
+import { FallingLog } from "../entities/FallingLog";
 import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
 import { Obstacle } from "../entities/Obstacle";
@@ -32,6 +33,7 @@ import {
   createObstacleState,
   OBSTACLE_BASE_RADIUS,
   resolveObstacleAttack,
+  TREE_STUMP_BASE_RADIUS,
   type Circle,
   type ObstacleKind,
   type ObstacleState,
@@ -63,6 +65,7 @@ export class GameScene implements GameSceneController {
   private readonly pendingDetonations: { id: string; delayMs: number }[] = [];
   private readonly obstacles = new Map<string, Obstacle>();
   private obstacleStates: ObstacleState[] = [];
+  private readonly fallingLogs: FallingLog[] = [];
   private readonly rockChips = new Debris(["#8a8a90", "#6f6f77", "#a6a6ac"], [0.09, 0.09, 0.09]);
   private readonly woodChips = new Debris(["#7a5230", "#5e3d1f", "#9b6b3a"], [0.13, 0.05, 0.05]);
   // Collision-circle debug overlay (toggled by a button); off by default.
@@ -146,6 +149,7 @@ export class GameScene implements GameSceneController {
     this.explosions.update(deltaSeconds);
     this.rockChips.update(deltaSeconds);
     this.woodChips.update(deltaSeconds);
+    this.updateFallingLogs(deltaSeconds);
     this.updateBombs(deltaSeconds);
     this.updateCollisionDebug();
     this.hud.update(deltaSeconds);
@@ -206,6 +210,7 @@ export class GameScene implements GameSceneController {
     this.bombs.clear();
     this.obstacles.forEach((obstacle) => obstacle.dispose());
     this.obstacles.clear();
+    this.fallingLogs.forEach((log) => log.dispose());
     this.debugButton.remove();
     this.debugCircleGeo.dispose();
     this.debugObstacleMat.dispose();
@@ -336,11 +341,15 @@ export class GameScene implements GameSceneController {
     spawn("tree", counts.trees);
   }
 
-  /** Collision circles for intact obstacles only (broken ones are passable). */
+  /**
+   * Collision circles: intact obstacles always block; once broken, a rock
+   * vanishes (passable) while a tree keeps blocking at its stump radius.
+   */
   private collisionBlockers(): Circle[] {
     const blockers: Circle[] = [];
     for (const obstacle of this.obstacleStates) {
-      if (!obstacle.destroyed) {
+      const blocks = obstacle.kind === "tree" || !obstacle.destroyed;
+      if (blocks) {
         blockers.push({
           x: obstacle.position.x,
           z: obstacle.position.z,
@@ -398,7 +407,10 @@ export class GameScene implements GameSceneController {
     for (const state of this.obstacleStates) {
       const disc = this.debugObstacleDiscs.get(state.id);
       if (disc) {
-        disc.visible = !state.destroyed; // broken obstacles stop blocking
+        // Trees keep blocking (stump) so their circle stays, resized to the
+        // stump; a broken rock stops blocking so its circle disappears.
+        disc.visible = state.kind === "tree" || !state.destroyed;
+        disc.scale.setScalar(state.radius);
       }
     }
   }
@@ -564,9 +576,20 @@ export class GameScene implements GameSceneController {
         continue;
       }
       state.destroyed = true;
-      obstacle.break(); // swap to rubble / stump (stays on the ground)
-      const chips = state.kind === "rock" ? this.rockChips : this.woodChips;
-      chips.emit(state.position.x, state.position.z);
+      obstacle.break(); // rock vanishes; tree leaves a stump
+
+      if (state.kind === "rock") {
+        this.rockChips.emit(state.position.x, state.position.z);
+      } else {
+        // Bigger, denser wood chips at the cut, plus the upper trunk topples away.
+        this.woodChips.emit(state.position.x, state.position.z, { count: 32, scale: 1.9 });
+        const scale = state.radius / OBSTACLE_BASE_RADIUS.tree;
+        const log = new FallingLog(state.position, scale);
+        this.fallingLogs.push(log);
+        this.scene.add(log.group);
+        // The stump keeps blocking, but at the (smaller) stump footprint.
+        state.radius = TREE_STUMP_BASE_RADIUS * scale;
+      }
     }
 
     this.player.strike();
@@ -585,6 +608,17 @@ export class GameScene implements GameSceneController {
       }
       this.player.applyKnockback(awayX, awayZ, BALANCE.obstacleKnockbackSpeed);
       this.player.stun(BALANCE.obstacleStunSeconds);
+    }
+  }
+
+  private updateFallingLogs(deltaSeconds: number): void {
+    for (let index = this.fallingLogs.length - 1; index >= 0; index -= 1) {
+      const log = this.fallingLogs[index];
+      if (log.update(deltaSeconds)) {
+        this.scene.remove(log.group);
+        log.dispose();
+        this.fallingLogs.splice(index, 1);
+      }
     }
   }
 

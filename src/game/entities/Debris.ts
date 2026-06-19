@@ -54,8 +54,11 @@ export class Debris {
     }
   }
 
-  emit(x: number, z: number): void {
-    for (let n = 0; n < PER_BURST; n += 1) {
+  /** `count` particles (default PER_BURST) at `scale`x the usual size. */
+  emit(x: number, z: number, options: { count?: number; scale?: number } = {}): void {
+    const count = options.count ?? PER_BURST;
+    const scaleFactor = options.scale ?? 1;
+    for (let n = 0; n < count; n += 1) {
       const i = this.cursor;
       this.cursor = (this.cursor + 1) % CAPACITY;
 
@@ -75,7 +78,7 @@ export class Debris {
       this.spin[i * 3 + 2] = (Math.random() * 2 - 1) * 14;
       this.age[i] = 0;
       this.life[i] = 0.55 + Math.random() * 0.35;
-      this.baseScale[i] = 0.7 + Math.random() * 0.8;
+      this.baseScale[i] = (0.7 + Math.random() * 0.8) * scaleFactor;
       this.active[i] = 1;
     }
   }

@@ -10,7 +10,8 @@ export type ModelKey =
   | "rock"
   | "rock_broken"
   | "tree"
-  | "tree_stump";
+  | "tree_stump"
+  | "tree_top";
 
 const MODEL_FILES: Record<ModelKey, string> = {
   farmer: "farmer.glb",
@@ -22,6 +23,7 @@ const MODEL_FILES: Record<ModelKey, string> = {
   rock_broken: "rock_broken.glb",
   tree: "tree.glb",
   tree_stump: "tree_stump.glb",
+  tree_top: "tree_top.glb",
 };
 
 export type ModelLibrary = Record<ModelKey, THREE.Object3D>;

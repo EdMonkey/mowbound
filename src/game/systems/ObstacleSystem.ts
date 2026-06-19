@@ -85,6 +85,9 @@ export interface Circle {
  */
 export const OBSTACLE_BASE_RADIUS: Record<ObstacleKind, number> = { rock: 0.33, tree: 0.24 };
 
+/** Collision radius of a tree's leftover stump (the stump keeps blocking). */
+export const TREE_STUMP_BASE_RADIUS = 0.17;
+
 /**
  * Push `point` (a mover of `pointRadius`) out of any blocker circle it overlaps,
  * resolving each blocker once. Used so the player can't walk through intact
