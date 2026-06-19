@@ -43,9 +43,13 @@ export class GameScene implements GameSceneController {
   private nextGrassId = 1;
   private ended = false;
   private save = loadSave();
+  private readonly mapSize: number;
   private readonly cameraTarget = new THREE.Vector3(0, 0, 0);
 
   constructor(private readonly app: App) {
+    // Assigned in the body (not a field initializer): `app` is a constructor
+    // parameter property, which isn't available when field initializers run.
+    this.mapSize = this.app.mapSizeMeters;
     this.stats = getRuntimeStats(this.save);
     this.hud = new Hud(this.app.uiRoot);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
@@ -88,7 +92,7 @@ export class GameScene implements GameSceneController {
       }
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
-      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, BALANCE.mapSizeMeters);
+      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize);
 
       const charge = advanceChargeAttack(this.chargeState, deltaSeconds * 1000);
       this.chargeState = charge.state;
@@ -149,11 +153,11 @@ export class GameScene implements GameSceneController {
   private addMap(): void {
     // Blender ground is authored at 10x10; scale it to the current map size.
     const ground = cloneModel("ground");
-    const groundScale = BALANCE.mapSizeMeters / 10;
+    const groundScale = this.mapSize / 10;
     ground.scale.set(groundScale, 1, groundScale);
     this.scene.add(ground);
 
-    const half = BALANCE.mapSizeMeters / 2;
+    const half = this.mapSize / 2;
     const points = [
       new THREE.Vector3(-half, 0.04, -half),
       new THREE.Vector3(half, 0.04, -half),
@@ -190,7 +194,10 @@ export class GameScene implements GameSceneController {
   }
 
   private spawnInitialGrass(): void {
-    const batch = createGrassBatch(this.stats.initialGrassCount, this.nextGrassId);
+    // Scale the base count (tuned for 10x10) by map area so density is constant.
+    const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
+    const count = Math.round(this.stats.initialGrassCount * areaScale);
+    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize);
     this.nextGrassId += batch.length;
     for (const state of batch) {
       this.addGrassState(state);
@@ -200,7 +207,7 @@ export class GameScene implements GameSceneController {
   private spawnGrass(count: number): void {
     for (let index = 0; index < count; index += 1) {
       this.addGrassState(
-        createGrassState(`grass-${this.nextGrassId}`, randomGrassPosition(BALANCE.mapSizeMeters, this.player.position)),
+        createGrassState(`grass-${this.nextGrassId}`, randomGrassPosition(this.mapSize, this.player.position)),
       );
       this.nextGrassId += 1;
     }

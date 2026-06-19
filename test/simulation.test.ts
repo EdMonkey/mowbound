@@ -120,7 +120,7 @@ describe("runtime stats from skill nodes", () => {
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
     expect(stats.attackArcDegrees).toBe(360);
-    expect(stats.initialGrassCount).toBe(14400);
+    expect(stats.initialGrassCount).toBe(1600);
     expect(stats.grassSpawnPerTick).toBe(0);
     expect(stats.roundDurationMs).toBe(10000);
     expect(BALANCE.roundDurationMs).toBe(10000);

@@ -1,6 +1,9 @@
 export const BALANCE = {
   roundDurationMs: 10000,
-  mapSizeMeters: 30,
+  // Base map is 10x10; the menu lets the player pick a larger map (see
+  // MAP_SIZE_OPTIONS / App.mapSizeMeters). Grass count scales with area so
+  // density stays at 16/m^2 regardless of the chosen size.
+  mapSizeMeters: 10,
   playerMoveSpeed: 0.7,
   baseAttackDamage: 3,
   baseGrassHp: 5,
@@ -9,13 +12,16 @@ export const BALANCE = {
   baseAttackArcDegrees: 360,
   attackChargeDurationMs: 1000,
   baseGoldPerGrass: 1,
-  initialGrassCount: 14400,
+  initialGrassCount: 1600,
   grassSpawnIntervalMs: 320,
   grassSpawnPerTick: 0,
   virtualJoystickRadiusPx: 64,
   virtualJoystickDeadZone: 0.12,
   minAttackIntervalMs: 150,
 } as const;
+
+/** Selectable map sizes (meters per side) offered on the main menu. */
+export const MAP_SIZE_OPTIONS = [10, 30] as const;
 
 export interface SaveData {
   totalGold: number;

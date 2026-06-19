@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
+import { MAP_SIZE_OPTIONS } from "../config/balance";
 import { cloneModel } from "../assets/models";
 import { Player } from "../entities/Player";
 import { resetSave } from "../systems/SaveSystem";
@@ -78,6 +79,8 @@ export class MainMenuScene implements GameSceneController {
     subtitle.textContent = "Ten seconds. One scythe. Cut grass, bank gold, grow stronger.";
     panel.appendChild(subtitle);
 
+    panel.appendChild(this.buildMapSizeSelector());
+
     const stack = document.createElement("div");
     stack.className = "button-stack";
     stack.append(
@@ -96,5 +99,37 @@ export class MainMenuScene implements GameSceneController {
     panel.appendChild(stack);
     this.layer.appendChild(panel);
     this.app.uiRoot.appendChild(this.layer);
+  }
+
+  private buildMapSizeSelector(): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "menu-options";
+
+    const label = document.createElement("span");
+    label.className = "menu-options-label";
+    label.textContent = "Map";
+    wrap.appendChild(label);
+
+    const choices = document.createElement("div");
+    choices.className = "menu-options-choices";
+
+    const buttons = MAP_SIZE_OPTIONS.map((size) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "option-button";
+      button.textContent = `${size}×${size}`;
+      button.setAttribute("aria-pressed", String(size === this.app.mapSizeMeters));
+      button.addEventListener("click", () => {
+        this.app.mapSizeMeters = size;
+        for (const other of buttons) {
+          other.setAttribute("aria-pressed", String(other === button));
+        }
+      });
+      choices.appendChild(button);
+      return button;
+    });
+
+    wrap.appendChild(choices);
+    return wrap;
   }
 }

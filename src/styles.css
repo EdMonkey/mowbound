@@ -118,6 +118,44 @@ button:disabled {
   line-height: 1.45;
 }
 
+.menu-options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(260px, 100%);
+  margin: 0 0 18px;
+}
+
+.menu-options-label {
+  color: #dbe8d1;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.menu-options-choices {
+  display: flex;
+  gap: 8px;
+}
+
+.option-button {
+  padding: 8px 14px;
+  color: #f8f7ef;
+  font: inherit;
+  font-size: 14px;
+  background: rgba(248, 247, 239, 0.12);
+  border: 1px solid rgba(248, 247, 239, 0.22);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.option-button[aria-pressed="true"] {
+  color: #13261c;
+  background: #cfe89a;
+  border-color: #cfe89a;
+  font-weight: 600;
+}
+
 .button-stack {
   display: grid;
   gap: 10px;

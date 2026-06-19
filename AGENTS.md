@@ -15,13 +15,13 @@
 - View: isometric orthographic camera following the player.
 - Controls: WASD or arrow keys on desktop, virtual joystick on mobile.
 - Round length: 10 seconds.
-- Map: 30m x 30m.
+- Map: selectable on the main menu — 10m x 10m (default) or 30m x 30m.
 - Player movement speed: 0.7.
 - Attack cadence: one charged strike per second.
 - Attack shape: forward fan, 0.5m range, 140 degrees.
 - Damage: 3.
 - Grass HP: 5.
-- Grass density: 14400 initial grass objects on a 120x120 grid (±10cm jitter, 10cm edge margin), chunked InstancedMesh with per-chunk frustum culling, no mid-round grass spawning.
+- Grass density: 16/m^2 — 1600 grass objects on a 40x40 grid for the 10x10 map, scaled by map area for larger maps (e.g. 14400 on 30x30). Uniform grid with ±10cm jitter and a 10cm edge margin, chunked InstancedMesh with per-chunk frustum culling, no mid-round grass spawning.
 - Grass model: three rectangular blade meshes per grass object.
 - Hit feedback: only actually hit surviving grass shakes.
 - Death feedback: destroyed grass disappears, drops a bouncing coin, grants gold.
