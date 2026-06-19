@@ -29,9 +29,11 @@ export const BALANCE = {
   bombMaxCoinsPerBlast: 30,
   bombMaxClippingsPerBlast: 40,
   // Rocks & trees: all-or-nothing. A hit only breaks one if its damage is
-  // strictly greater than the obstacle HP; breaking one stuns the player.
+  // strictly greater than the obstacle HP. A hit that fails to break one
+  // recoils the player: knockback away from it + a red flash + a stun.
   obstacleHp: 5,
-  obstacleStunSeconds: 1.5,
+  obstacleStunSeconds: 2,
+  obstacleKnockbackSpeed: 4.2,
 } as const;
 
 /** Test bombs scattered at run start, per selected map size (meters/side). */

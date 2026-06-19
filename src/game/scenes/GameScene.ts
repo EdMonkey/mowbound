@@ -470,7 +470,7 @@ export class GameScene implements GameSceneController {
       obstacles: this.obstacleStates,
     });
 
-    if (result.destroyedIds.length === 0) {
+    if (result.destroyedIds.length === 0 && result.blockedIds.length === 0) {
       return;
     }
 
@@ -487,7 +487,20 @@ export class GameScene implements GameSceneController {
     }
 
     this.player.strike();
-    if (result.stun) {
+
+    // A chop that failed to break anything recoils the player: shove away from
+    // the obstacle(s) that resisted, flash red, and lock out actions.
+    if (result.blockedIds.length > 0) {
+      let awayX = 0;
+      let awayZ = 0;
+      for (const id of result.blockedIds) {
+        const state = this.obstacleStates.find((obstacle) => obstacle.id === id);
+        if (state) {
+          awayX += this.player.position.x - state.position.x;
+          awayZ += this.player.position.z - state.position.z;
+        }
+      }
+      this.player.applyKnockback(awayX, awayZ, BALANCE.obstacleKnockbackSpeed);
       this.player.stun(BALANCE.obstacleStunSeconds);
     }
   }
