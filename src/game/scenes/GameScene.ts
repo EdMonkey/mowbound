@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { BALANCE, type RuntimeStats } from "../config/balance";
 import { Coin } from "../entities/Coin";
-import { Grass } from "../entities/Grass";
+import { GrassField } from "../entities/GrassField";
 import { Player } from "../entities/Player";
 import {
   advanceChargeAttack,
@@ -26,7 +26,7 @@ export class GameScene implements GameSceneController {
   private readonly hud: Hud;
   private readonly joystick: VirtualJoystick;
   private readonly player = new Player();
-  private readonly grass = new Map<string, Grass>();
+  private grassField!: GrassField;
   private readonly coins: Coin[] = [];
   private readonly stats: RuntimeStats;
   private readonly attackChargeGroup = new THREE.Group();
@@ -59,6 +59,8 @@ export class GameScene implements GameSceneController {
     this.addMap();
     this.scene.add(this.player.group);
     this.scene.add(this.attackChargeGroup);
+    this.grassField = new GrassField(this.stats.initialGrassCount + 16);
+    this.scene.add(this.grassField.mesh);
     this.spawnInitialGrass();
     this.updateInputMode();
     window.addEventListener("resize", this.updateInputMode);
@@ -115,7 +117,7 @@ export class GameScene implements GameSceneController {
     this.input.dispose();
     this.joystick.dispose();
     this.hud.dispose();
-    this.grass.forEach((grass) => grass.dispose());
+    this.grassField.dispose();
     this.coins.forEach((coin) => coin.dispose());
     for (const mesh of [this.attackChargeBase, this.attackChargeFill]) {
       mesh.geometry.dispose();
@@ -224,13 +226,11 @@ export class GameScene implements GameSceneController {
   }
 
   private addGrassState(state: GrassState): void {
-    const grass = new Grass(state);
-    this.grass.set(state.id, grass);
-    this.scene.add(grass.group);
+    this.grassField.add(state);
   }
 
   private performAttack(): void {
-    const grassStates = Array.from(this.grass.values()).map((grass) => grass.state);
+    const grassStates = this.grassField.getStates();
     const result = resolveAttack({
       origin: this.player.position,
       direction: this.player.direction,
@@ -239,38 +239,33 @@ export class GameScene implements GameSceneController {
       damage: this.stats.attackDamage,
       grass: grassStates,
     });
+    const positionById = new Map(grassStates.map((state) => [state.id, state.position]));
     const resultById = new Map(result.grass.map((state) => [state.id, state]));
 
     for (const id of result.hitIds) {
-      const grass = this.grass.get(id);
-      if (!grass) {
+      const position = positionById.get(id);
+      if (!position) {
         continue;
       }
-
-      const screen = this.worldToScreen(new THREE.Vector3(grass.state.position.x, 0.55, grass.state.position.z));
+      const screen = this.worldToScreen(new THREE.Vector3(position.x, 0.55, position.z));
       this.hud.spawnDamageText(screen.x, screen.y, this.stats.attackDamage);
     }
 
     for (const id of result.destroyedIds) {
-      const grass = this.grass.get(id);
-      if (!grass) {
+      const position = positionById.get(id);
+      if (!position) {
         continue;
       }
-
-      const coin = new Coin(grass.state.position);
+      const coin = new Coin(position);
       this.coins.push(coin);
       this.scene.add(coin.group);
-      this.scene.remove(grass.group);
-      grass.dispose();
-      this.grass.delete(id);
+      this.grassField.destroy(id);
     }
 
     for (const id of getSurvivingHitIds(result)) {
-      const grass = this.grass.get(id);
       const state = resultById.get(id);
-
-      if (grass && state) {
-        grass.setHp(state.hp);
+      if (state) {
+        this.grassField.setHp(id, state.hp);
       }
     }
 
@@ -294,7 +289,7 @@ export class GameScene implements GameSceneController {
   }
 
   private updateGrass(deltaSeconds: number): void {
-    this.grass.forEach((grass) => grass.update(deltaSeconds));
+    this.grassField.update(deltaSeconds);
   }
 
   private updateAttackCharge(): void {

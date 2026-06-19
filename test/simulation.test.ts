@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Coin } from "../src/game/entities/Coin";
-import { Grass } from "../src/game/entities/Grass";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
+import { createGrassBatch } from "../src/game/systems/GrassSystem";
 import {
   canUnlockNode,
   getRuntimeStats,
@@ -137,26 +137,25 @@ describe("runtime stats from skill nodes", () => {
   });
 });
 
-describe("hit feedback", () => {
-  it("randomizes spawn scale and heading, and keeps that size on non-lethal hits", () => {
-    const grass = new Grass({ id: "grass-test", position: { x: 0, z: 0 }, hp: 5 });
-    const spawnScale = grass.group.scale.x;
+describe("grass and coins", () => {
+  it("spreads grass evenly on a jittered grid and avoids the player", () => {
+    const player = { x: 0, z: 0 };
+    const states = createGrassBatch(400, 1, player, 10);
 
-    expect(spawnScale).toBeGreaterThanOrEqual(0.8);
-    expect(spawnScale).toBeLessThanOrEqual(1.2);
-    expect(grass.group.scale.y).toBe(spawnScale);
-    expect(grass.group.scale.z).toBe(spawnScale);
-    expect(grass.group.rotation.y).toBeGreaterThanOrEqual(0);
-    expect(grass.group.rotation.y).toBeLessThan(Math.PI * 2);
+    expect(states.length).toBeGreaterThan(360);
+    expect(states.length).toBeLessThanOrEqual(400);
 
-    grass.setHp(2);
+    for (const grass of states) {
+      expect(Math.abs(grass.position.x)).toBeLessThanOrEqual(5);
+      expect(Math.abs(grass.position.z)).toBeLessThanOrEqual(5);
+      expect(Math.hypot(grass.position.x, grass.position.z)).toBeGreaterThan(0.5);
+    }
 
-    expect(grass.state.hp).toBe(2);
-    expect(grass.group.scale.x).toBe(spawnScale);
-    expect(grass.group.scale.y).toBe(spawnScale);
-    expect(grass.group.scale.z).toBe(spawnScale);
-
-    grass.dispose();
+    // even coverage: every quadrant of the map receives grass
+    const quadrants = new Set(
+      states.map((g) => `${g.position.x >= 0 ? "E" : "W"}${g.position.z >= 0 ? "S" : "N"}`),
+    );
+    expect(quadrants.size).toBe(4);
   });
 
   it("bounces coins on the floor before they disappear", () => {
