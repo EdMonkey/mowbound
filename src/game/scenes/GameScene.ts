@@ -59,8 +59,8 @@ export class GameScene implements GameSceneController {
     this.addMap();
     this.scene.add(this.player.group);
     this.scene.add(this.attackChargeGroup);
-    this.grassField = new GrassField(this.stats.initialGrassCount + 64);
-    this.scene.add(this.grassField.mesh);
+    this.grassField = new GrassField();
+    this.scene.add(this.grassField.group);
     this.scene.add(this.clippings.mesh);
     this.spawnInitialGrass();
     this.updateInputMode();
