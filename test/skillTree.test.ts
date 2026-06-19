@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SKILL_NODE_BY_ID, SKILL_NODES, SKILL_ROOT } from "../src/game/config/skillTree";
+import { canUnlockNode, getRuntimeStats, isMapUnlocked, unlockNode } from "../src/game/systems/SkillSystem";
+import { defaultSave } from "../src/game/systems/SaveSystem";
 
 describe("v2 skill tree data", () => {
   it("contains 46 nodes and revised total cost", () => {
@@ -66,5 +68,31 @@ describe("v2 skill tree data", () => {
         expect(SKILL_NODE_BY_ID[prereq], `${node.id} prereq ${prereq}`).toBeDefined();
       }
     }
+  });
+});
+
+describe("v2 skill runtime", () => {
+  it("applies root and blade damage", () => {
+    let save = { ...defaultSave(), gold: 999 };
+    save = unlockNode(save, "root_sharpen");
+    save = unlockNode(save, "sharp_edge_1");
+    expect(getRuntimeStats(save).attackDamage).toBe(5);
+  });
+
+  it("uses softened seed_bombs gate", () => {
+    const save = { ...defaultSave(), gold: 999, levels: { root_sharpen: 1 } };
+    expect(canUnlockNode(save, "seed_bombs")).toBe(false);
+    const cleared = {
+      ...save,
+      lifetimeStats: { ...save.lifetimeStats, bestClearPercentByMap: { "10": 15 } },
+    };
+    expect(canUnlockNode(cleared, "seed_bombs")).toBe(true);
+  });
+
+  it("locks 30m until open_acre is unlocked", () => {
+    const save = defaultSave();
+    expect(isMapUnlocked(save, 10)).toBe(true);
+    expect(isMapUnlocked(save, 30)).toBe(false);
+    expect(isMapUnlocked({ ...save, levels: { open_acre: 1 } }, 30)).toBe(true);
   });
 });
