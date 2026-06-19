@@ -521,6 +521,16 @@ button:disabled {
     0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
+.tree-node.is-branch {
+  border-style: solid;
+  border-color: rgba(120, 200, 130, 0.65);
+}
+
+.tree-node.is-branch.is-owned {
+  border-color: #8fce7a;
+  background: rgba(30, 58, 36, 0.96);
+}
+
 .tree-node:hover:not(:disabled) {
   filter: brightness(1.06);
   transform: translate(-50%, calc(-50% - 1px));

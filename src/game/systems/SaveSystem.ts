@@ -2,13 +2,13 @@ import {
   BALANCE,
   type RuntimeStats,
   type SaveData,
-  type SkillId,
-  SKILL_DEFS,
-  SKILL_PREREQ,
+  SKILL_NODES,
+  SKILL_NODE_BY_ID,
   defaultSave,
 } from "../config/balance";
 
 const STORAGE_KEY = "mowbound-save-v1";
+const VALID_IDS = new Set(SKILL_NODES.map((node) => node.id));
 
 function normalizeSave(value: unknown): SaveData {
   const fallback = defaultSave();
@@ -18,18 +18,15 @@ function normalizeSave(value: unknown): SaveData {
   }
 
   const candidate = value as Partial<SaveData>;
-  const skills = { ...fallback.skills, ...(candidate.skills ?? {}) };
-
-  for (const key of Object.keys(skills) as SkillId[]) {
-    const level = Number(skills[key]);
-    skills[key] = Number.isFinite(level) && level > 0 ? Math.floor(level) : 0;
-  }
+  const unlocked = Array.isArray(candidate.unlocked)
+    ? [...new Set(candidate.unlocked.filter((id): id is string => typeof id === "string" && VALID_IDS.has(id)))]
+    : [];
 
   const totalGold = Number(candidate.totalGold);
 
   return {
     totalGold: Number.isFinite(totalGold) && totalGold > 0 ? Math.floor(totalGold) : 0,
-    skills,
+    unlocked,
   };
 }
 
@@ -52,43 +49,37 @@ export function resetSave(): SaveData {
   return fresh;
 }
 
-export function getSkillCost(save: SaveData, skillId: SkillId): number {
-  const definition = SKILL_DEFS[skillId];
-  const level = save.skills[skillId];
+export function isNodeUnlocked(save: SaveData, nodeId: string): boolean {
+  return normalizeSave(save).unlocked.includes(nodeId);
+}
 
-  if (level >= definition.maxLevel) {
-    return Number.POSITIVE_INFINITY;
+export function isNodeRevealed(save: SaveData, nodeId: string): boolean {
+  const node = SKILL_NODE_BY_ID[nodeId];
+  if (!node) {
+    return false;
   }
-
-  return Math.ceil(definition.baseCost * Math.pow(definition.costGrowth, level));
+  return node.prereq === null || isNodeUnlocked(save, node.prereq);
 }
 
-export function isSkillOwned(save: SaveData, skillId: SkillId): boolean {
-  return normalizeSave(save).skills[skillId] > 0;
+export function getNodeCost(nodeId: string): number {
+  return SKILL_NODE_BY_ID[nodeId]?.cost ?? Number.POSITIVE_INFINITY;
 }
 
-export function isSkillRevealed(save: SaveData, skillId: SkillId): boolean {
-  const prerequisite = SKILL_PREREQ[skillId];
-  return prerequisite === null || isSkillOwned(save, prerequisite);
+export function canUnlockNode(save: SaveData, nodeId: string): boolean {
+  return (
+    isNodeRevealed(save, nodeId) &&
+    !isNodeUnlocked(save, nodeId) &&
+    save.totalGold >= getNodeCost(nodeId)
+  );
 }
 
-export function canPurchaseSkill(save: SaveData, skillId: SkillId): boolean {
-  return isSkillRevealed(save, skillId) && save.totalGold >= getSkillCost(save, skillId);
-}
-
-export function purchaseSkill(save: SaveData, skillId: SkillId): SaveData {
-  const cost = getSkillCost(save, skillId);
-
-  if (!isSkillRevealed(save, skillId) || !Number.isFinite(cost) || save.totalGold < cost) {
+export function unlockNode(save: SaveData, nodeId: string): SaveData {
+  if (!canUnlockNode(save, nodeId)) {
     return normalizeSave(save);
   }
-
   return normalizeSave({
-    totalGold: save.totalGold - cost,
-    skills: {
-      ...save.skills,
-      [skillId]: save.skills[skillId] + 1,
-    },
+    totalGold: save.totalGold - getNodeCost(nodeId),
+    unlocked: [...save.unlocked, nodeId],
   });
 }
 
@@ -100,21 +91,41 @@ export function addGold(save: SaveData, amount: number): SaveData {
 }
 
 export function getRuntimeStats(save: SaveData): RuntimeStats {
-  const skills = normalizeSave(save).skills;
+  const unlocked = new Set(normalizeSave(save).unlocked);
+  const total: Record<string, number> = {
+    damage: 0,
+    range: 0,
+    arc: 0,
+    attackInterval: 0,
+    moveSpeed: 0,
+    gold: 0,
+    grassCount: 0,
+    roundDuration: 0,
+  };
 
-  const attackIntervalMs = Math.max(BALANCE.minAttackIntervalMs, BALANCE.baseAttackIntervalMs - skills.attackSpeed * 35);
+  for (const node of SKILL_NODES) {
+    if (node.effect && unlocked.has(node.id)) {
+      total[node.effect.kind] += node.effect.amount;
+    }
+  }
+
+  const attackIntervalMs = Math.max(
+    BALANCE.minAttackIntervalMs,
+    BALANCE.baseAttackIntervalMs + total.attackInterval,
+  );
 
   return {
-    attackDamage: BALANCE.baseAttackDamage + skills.damage,
-    attackRangeMeters: BALANCE.baseAttackRangeMeters + skills.range * 0.15,
-    attackArcDegrees: BALANCE.baseAttackArcDegrees,
+    attackDamage: BALANCE.baseAttackDamage + total.damage,
+    attackRangeMeters: BALANCE.baseAttackRangeMeters + total.range,
+    attackArcDegrees: BALANCE.baseAttackArcDegrees + total.arc,
     attackChargeDurationMs: attackIntervalMs,
     attackIntervalMs,
-    moveSpeed: BALANCE.playerMoveSpeed + skills.moveSpeed * 0.22,
-    goldPerGrass: BALANCE.baseGoldPerGrass + skills.goldValue,
-    initialGrassCount: BALANCE.initialGrassCount + skills.grassDensity * 3,
-    grassSpawnIntervalMs: Math.max(140, BALANCE.grassSpawnIntervalMs - skills.grassDensity * 8),
+    moveSpeed: BALANCE.playerMoveSpeed + total.moveSpeed,
+    goldPerGrass: BALANCE.baseGoldPerGrass + total.gold,
+    initialGrassCount: BALANCE.initialGrassCount + total.grassCount,
+    grassSpawnIntervalMs: BALANCE.grassSpawnIntervalMs,
     grassSpawnPerTick: BALANCE.grassSpawnPerTick,
+    roundDurationMs: BALANCE.roundDurationMs + total.roundDuration,
   };
 }
 

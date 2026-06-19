@@ -3,11 +3,11 @@ import { Coin } from "../src/game/entities/Coin";
 import { Grass } from "../src/game/entities/Grass";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
 import {
-  canPurchaseSkill,
+  canUnlockNode,
   getRuntimeStats,
-  isSkillOwned,
-  isSkillRevealed,
-  purchaseSkill,
+  isNodeRevealed,
+  isNodeUnlocked,
+  unlockNode,
 } from "../src/game/systems/SaveSystem";
 import {
   InputSystem,
@@ -110,10 +110,11 @@ describe("attack resolution", () => {
   });
 });
 
-describe("persistent upgrades", () => {
-  it("uses slower default movement, 1s base attack timing, and 10s rounds", () => {
+describe("runtime stats from skill nodes", () => {
+  it("uses base stats with nothing unlocked", () => {
     const stats = getRuntimeStats(defaultSave());
 
+    expect(stats.attackDamage).toBe(3);
     expect(stats.moveSpeed).toBe(0.7);
     expect(stats.attackIntervalMs).toBe(1000);
     expect(stats.attackChargeDurationMs).toBe(1000);
@@ -121,31 +122,18 @@ describe("persistent upgrades", () => {
     expect(stats.attackArcDegrees).toBe(140);
     expect(stats.initialGrassCount).toBe(540);
     expect(stats.grassSpawnPerTick).toBe(0);
+    expect(stats.roundDurationMs).toBe(10000);
     expect(BALANCE.roundDurationMs).toBe(10000);
   });
 
-  it("keeps dense grass initial-only even after density upgrades", () => {
-    const save = defaultSave();
-    save.skills.grassDensity = 8;
-
-    const stats = getRuntimeStats(save);
-
-    expect(stats.initialGrassCount).toBeGreaterThan(360);
-    expect(stats.grassSpawnPerTick).toBe(0);
+  it("accumulates the effects of unlocked nodes", () => {
+    const save = { ...defaultSave(), unlocked: ["dmg1", "dmg2"] };
+    expect(getRuntimeStats(save).attackDamage).toBe(5); // 3 + 1 + 1
   });
 
-  it("spends gold, increases skill level, and changes runtime stats", () => {
-    const save = defaultSave();
-    save.totalGold = 25;
-
-    const next = purchaseSkill(save, "damage");
-    const stats = getRuntimeStats(next);
-
-    expect(next.totalGold).toBeLessThan(25);
-    expect(next.skills.damage).toBe(1);
-    expect(stats.attackDamage).toBe(4);
-    expect(stats.attackRangeMeters).toBe(0.5);
-    expect(stats.attackArcDegrees).toBe(140);
+  it("applies the play-time skill to round duration", () => {
+    const save = { ...defaultSave(), unlocked: ["time1", "time2"] };
+    expect(getRuntimeStats(save).roundDurationMs).toBe(10000 + 2000 + 3000);
   });
 });
 
@@ -191,27 +179,38 @@ describe("hit feedback", () => {
 });
 
 describe("skill tree unlocks", () => {
-  it("reveals a skill only after its prerequisite is owned", () => {
+  it("reveals a node only after its prerequisite is unlocked", () => {
     const save = { ...defaultSave(), totalGold: 9999 };
 
-    expect(isSkillRevealed(save, "damage")).toBe(true);
-    expect(isSkillRevealed(save, "attackSpeed")).toBe(false);
-    expect(canPurchaseSkill(save, "attackSpeed")).toBe(false);
+    expect(isNodeRevealed(save, "dmg1")).toBe(true); // root
+    expect(isNodeRevealed(save, "dmg2")).toBe(false);
+    expect(canUnlockNode(save, "dmg2")).toBe(false);
 
-    const afterDamage = purchaseSkill(save, "damage");
-    expect(isSkillOwned(afterDamage, "damage")).toBe(true);
-    expect(isSkillRevealed(afterDamage, "attackSpeed")).toBe(true);
-    expect(canPurchaseSkill(afterDamage, "attackSpeed")).toBe(true);
-    // grandchild stays locked until its own prerequisite is owned
-    expect(isSkillRevealed(afterDamage, "moveSpeed")).toBe(false);
+    const afterRoot = unlockNode(save, "dmg1");
+    expect(isNodeUnlocked(afterRoot, "dmg1")).toBe(true);
+    expect(afterRoot.totalGold).toBeLessThan(9999);
+    expect(isNodeRevealed(afterRoot, "dmg2")).toBe(true);
+    expect(isNodeRevealed(afterRoot, "combat")).toBe(true);
+    expect(canUnlockNode(afterRoot, "dmg2")).toBe(true);
+    // deeper tier stays hidden until its own prerequisite is unlocked
+    expect(isNodeRevealed(afterRoot, "dmg3")).toBe(false);
   });
 
-  it("does not spend gold trying to buy a locked skill", () => {
-    const save = { ...defaultSave(), totalGold: 9999 };
-    const next = purchaseSkill(save, "moveSpeed");
+  it("unlocks each node once and refuses locked nodes", () => {
+    let save = { ...defaultSave(), totalGold: 9999, unlocked: ["dmg1"] };
+    save = unlockNode(save, "dmg2");
+    expect(isNodeUnlocked(save, "dmg2")).toBe(true);
 
-    expect(next.totalGold).toBe(9999);
-    expect(next.skills.moveSpeed).toBe(0);
+    // unlocking again is a no-op: no duplicate, no extra spend
+    const goldAfter = save.totalGold;
+    const again = unlockNode(save, "dmg2");
+    expect(again.totalGold).toBe(goldAfter);
+    expect(again.unlocked.filter((id) => id === "dmg2").length).toBe(1);
+
+    // a node whose prerequisite isn't unlocked is refused
+    const locked = unlockNode(save, "field");
+    expect(locked.totalGold).toBe(goldAfter);
+    expect(isNodeUnlocked(locked, "field")).toBe(false);
   });
 });
 

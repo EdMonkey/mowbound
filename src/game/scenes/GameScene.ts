@@ -93,7 +93,7 @@ export class GameScene implements GameSceneController {
         this.performAttack();
       }
 
-      if (this.elapsedMs >= BALANCE.roundDurationMs) {
+      if (this.elapsedMs >= this.stats.roundDurationMs) {
         this.endRound();
       }
     }
@@ -101,7 +101,7 @@ export class GameScene implements GameSceneController {
     this.updateAttackCharge();
 
     this.hud.updateGame({
-      timeMs: BALANCE.roundDurationMs - this.elapsedMs,
+      timeMs: this.stats.roundDurationMs - this.elapsedMs,
       roundGold: this.roundGold,
       totalGold: this.save.totalGold + this.roundGold,
       damage: this.stats.attackDamage,

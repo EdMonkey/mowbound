@@ -1,48 +1,34 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
-import { SKILL_DEFS, SKILL_PREREQ, type SkillId } from "../config/balance";
+import { SKILL_NODES, SKILL_NODE_BY_ID, SKILL_ROOT, type SkillNode } from "../config/balance";
 import {
   addGold,
-  canPurchaseSkill,
-  getRuntimeStats,
-  getSkillCost,
-  isSkillOwned,
-  isSkillRevealed,
+  canUnlockNode,
+  getNodeCost,
+  isNodeRevealed,
+  isNodeUnlocked,
   loadSave,
-  purchaseSkill,
   saveGame,
+  unlockNode,
 } from "../systems/SaveSystem";
 import { createButton } from "../ui/Menu";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const CANVAS_W = 680;
-const CANVAS_H = 540;
-const MIN_ZOOM = 0.4;
+const RADIUS_STEP = 195;
+const LAYOUT_MARGIN = 120;
+const MIN_ZOOM = 0.35;
 const MAX_ZOOM = 2.5;
 const TAP_MOVE = 8;
 const LONG_PRESS_MS = 450;
 
-interface NodeLayout {
+interface Pos {
   x: number;
   y: number;
-  icon: string;
 }
-
-// Radial layout: damage is the trunk at the center, branches fan outward.
-const NODE_LAYOUT: Record<SkillId, NodeLayout> = {
-  damage: { x: 340, y: 270, icon: "🗡️" },
-  attackSpeed: { x: 340, y: 146, icon: "⚡" },
-  moveSpeed: { x: 340, y: 44, icon: "👟" },
-  range: { x: 540, y: 356, icon: "🎯" },
-  goldValue: { x: 140, y: 356, icon: "💰" },
-  grassDensity: { x: 84, y: 470, icon: "🌱" },
-};
-
-const SKILL_IDS = Object.keys(SKILL_DEFS) as SkillId[];
 
 interface PressState {
   id: number;
-  skill: SkillId | null;
+  nodeId: string | null;
   x: number;
   y: number;
   type: string;
@@ -52,12 +38,41 @@ interface PressState {
   timer: number;
 }
 
+function effectLabel(node: SkillNode): string {
+  const e = node.effect;
+  if (!e) {
+    return "Opens a branch";
+  }
+  switch (e.kind) {
+    case "damage":
+      return `Damage +${e.amount}`;
+    case "range":
+      return `Range +${e.amount}m`;
+    case "arc":
+      return `Fan +${e.amount}°`;
+    case "attackInterval":
+      return `Attack speed +${(Math.abs(e.amount) / 1000).toFixed(2)}s`;
+    case "moveSpeed":
+      return `Move speed +${e.amount}`;
+    case "gold":
+      return `Gold +${e.amount}/grass`;
+    case "grassCount":
+      return `Grass +${e.amount}`;
+    case "roundDuration":
+      return `Round time +${(e.amount / 1000).toFixed(0)}s`;
+  }
+}
+
 export class SkillTreeScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
   private save = loadSave();
 
-  // pan/zoom camera state (persists across re-renders)
+  private readonly positions: Record<string, Pos> = {};
+  private worldW = 0;
+  private worldH = 0;
+
+  // pan/zoom camera (persists across re-renders)
   private zoom = 1;
   private panX = 0;
   private panY = 0;
@@ -68,11 +83,11 @@ export class SkillTreeScene implements GameSceneController {
   private detailEl!: HTMLDivElement;
 
   // gesture state (reset each render)
-  private readonly pointers = new Map<number, { x: number; y: number }>();
+  private readonly pointers = new Map<number, Pos>();
   private panning = false;
-  private lastPan = { x: 0, y: 0 };
+  private lastPan: Pos = { x: 0, y: 0 };
   private pinchDist = 0;
-  private pinchMid = { x: 0, y: 0 };
+  private pinchMid: Pos = { x: 0, y: 0 };
   private press: PressState | null = null;
 
   constructor(private readonly app: App) {
@@ -81,6 +96,7 @@ export class SkillTreeScene implements GameSceneController {
     this.app.camera.position.set(4.5, 6, 4.5);
     this.app.camera.lookAt(0, 0, 0);
     this.addWorld();
+    this.computeLayout();
     this.render();
   }
 
@@ -106,6 +122,65 @@ export class SkillTreeScene implements GameSceneController {
     this.scene.add(ground);
   }
 
+  // ----- radial layout -----
+
+  private computeLayout(): void {
+    const children = new Map<string, SkillNode[]>();
+    for (const node of SKILL_NODES) {
+      if (node.prereq) {
+        const list = children.get(node.prereq) ?? [];
+        list.push(node);
+        children.set(node.prereq, list);
+      }
+    }
+
+    const leaves = new Map<string, number>();
+    const countLeaves = (id: string): number => {
+      const kids = children.get(id) ?? [];
+      if (kids.length === 0) {
+        leaves.set(id, 1);
+        return 1;
+      }
+      let sum = 0;
+      for (const kid of kids) {
+        sum += countLeaves(kid.id);
+      }
+      leaves.set(id, sum);
+      return sum;
+    };
+    countLeaves(SKILL_ROOT);
+
+    const raw: Record<string, Pos> = {};
+    const place = (id: string, a0: number, a1: number, depth: number): void => {
+      const angle = (a0 + a1) / 2;
+      raw[id] =
+        depth === 0
+          ? { x: 0, y: 0 }
+          : { x: Math.cos(angle) * depth * RADIUS_STEP, y: Math.sin(angle) * depth * RADIUS_STEP };
+      const kids = children.get(id) ?? [];
+      const total = leaves.get(id) ?? 1;
+      let a = a0;
+      for (const kid of kids) {
+        const span = ((leaves.get(kid.id) ?? 1) / total) * (a1 - a0);
+        place(kid.id, a, a + span, depth + 1);
+        a += span;
+      }
+    };
+    place(SKILL_ROOT, -Math.PI / 2, Math.PI * 1.5, 0);
+
+    const xs = Object.values(raw).map((p) => p.x);
+    const ys = Object.values(raw).map((p) => p.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    this.worldW = Math.max(...xs) - minX + LAYOUT_MARGIN * 2;
+    this.worldH = Math.max(...ys) - minY + LAYOUT_MARGIN * 2;
+    for (const id of Object.keys(raw)) {
+      this.positions[id] = { x: raw[id].x - minX + LAYOUT_MARGIN, y: raw[id].y - minY + LAYOUT_MARGIN };
+    }
+  }
+
+  // ----- rendering -----
+
   private render(): void {
     this.resetGestures();
     this.layer.remove();
@@ -117,11 +192,11 @@ export class SkillTreeScene implements GameSceneController {
 
     const header = document.createElement("div");
     header.className = "skill-header";
-    const stats = getRuntimeStats(this.save);
+    const owned = this.save.unlocked.length;
     header.innerHTML = `
       <div>
         <h2 class="panel-title">Skill Tree</h2>
-        <p class="panel-copy">Unlock <strong>Damage</strong>, then grow new branches. Total gold: <strong>${this.save.totalGold}</strong></p>
+        <p class="panel-copy">Unlock to grow new branches — ${owned}/${SKILL_NODES.length} skills. Total gold: <strong>${this.save.totalGold}</strong></p>
       </div>
       <p class="skill-meta">Drag to pan · scroll / pinch to zoom · hover or long-press for details</p>
     `;
@@ -133,12 +208,12 @@ export class SkillTreeScene implements GameSceneController {
 
     const world = document.createElement("div");
     world.className = "tree-world";
-    world.style.width = `${CANVAS_W}px`;
-    world.style.height = `${CANVAS_H}px`;
+    world.style.width = `${this.worldW}px`;
+    world.style.height = `${this.worldH}px`;
     world.appendChild(this.buildBranches());
-    for (const skillId of SKILL_IDS) {
-      if (isSkillRevealed(this.save, skillId)) {
-        world.appendChild(this.buildNode(skillId));
+    for (const node of SKILL_NODES) {
+      if (isNodeRevealed(this.save, node.id)) {
+        world.appendChild(this.buildNode(node));
       }
     }
     this.world = world;
@@ -173,17 +248,16 @@ export class SkillTreeScene implements GameSceneController {
   private buildBranches(): SVGElement {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("class", "tree-branches");
-    svg.setAttribute("viewBox", `0 0 ${CANVAS_W} ${CANVAS_H}`);
-    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("width", `${this.worldW}`);
+    svg.setAttribute("height", `${this.worldH}`);
 
-    for (const skillId of SKILL_IDS) {
-      const prerequisite = SKILL_PREREQ[skillId];
-      if (!prerequisite || !isSkillRevealed(this.save, skillId)) {
+    for (const node of SKILL_NODES) {
+      if (!node.prereq || !isNodeRevealed(this.save, node.id)) {
         continue;
       }
-      const from = NODE_LAYOUT[prerequisite];
-      const to = NODE_LAYOUT[skillId];
-      const grown = isSkillOwned(this.save, skillId);
+      const from = this.positions[node.prereq];
+      const to = this.positions[node.id];
+      const grown = isNodeUnlocked(this.save, node.id);
 
       const path = document.createElementNS(SVG_NS, "path");
       path.setAttribute(
@@ -196,43 +270,38 @@ export class SkillTreeScene implements GameSceneController {
     return svg;
   }
 
-  private buildNode(skillId: SkillId): HTMLButtonElement {
-    const definition = SKILL_DEFS[skillId];
-    const layout = NODE_LAYOUT[skillId];
-    const level = this.save.skills[skillId];
-    const owned = isSkillOwned(this.save, skillId);
-    const maxed = level >= definition.maxLevel;
-    const cost = getSkillCost(this.save, skillId);
-    const affordable = canPurchaseSkill(this.save, skillId);
+  private buildNode(node: SkillNode): HTMLButtonElement {
+    const pos = this.positions[node.id];
+    const unlocked = isNodeUnlocked(this.save, node.id);
+    const affordable = canUnlockNode(this.save, node.id);
+    const cost = getNodeCost(node.id);
 
-    const node = document.createElement("button");
-    node.type = "button";
-    node.dataset.skill = skillId;
-    const state = maxed ? "is-max" : owned ? "is-owned" : "is-available";
-    node.className = `tree-node ${state}${affordable ? " can-buy" : ""}`;
-    node.style.left = `${(layout.x / CANVAS_W) * 100}%`;
-    node.style.top = `${(layout.y / CANVAS_H) * 100}%`;
-    node.innerHTML = `
-      <span class="tree-node-icon">${layout.icon}</span>
-      <span class="tree-node-name">${definition.name}</span>
-      <span class="tree-node-meta">${owned ? `Lv ${level}/${definition.maxLevel}` : "Unlock"}</span>
-      <span class="tree-node-cost">${maxed ? "MAX" : `${cost}g`}</span>
+    const el = document.createElement("button");
+    el.type = "button";
+    el.dataset.node = node.id;
+    const branch = node.effect === null ? " is-branch" : "";
+    el.className = `tree-node ${unlocked ? "is-owned" : "is-available"}${affordable ? " can-buy" : ""}${branch}`;
+    el.style.left = `${pos.x}px`;
+    el.style.top = `${pos.y}px`;
+    el.innerHTML = `
+      <span class="tree-node-icon">${node.icon}</span>
+      <span class="tree-node-name">${node.name}</span>
+      <span class="tree-node-meta">${effectLabel(node)}</span>
+      <span class="tree-node-cost">${unlocked ? "✓ Owned" : `${cost}g`}</span>
     `;
 
-    // Desktop: hover shows the detail panel.
-    node.addEventListener("mouseenter", () => {
+    el.addEventListener("mouseenter", () => {
       if (!this.panning && this.pointers.size === 0) {
-        this.showDetail(skillId, node);
+        this.showDetail(node.id, el);
       }
     });
-    node.addEventListener("mouseleave", () => this.hideDetail());
-    return node;
+    el.addEventListener("mouseleave", () => this.hideDetail());
+    return el;
   }
 
   private buildZoomControls(): HTMLDivElement {
     const box = document.createElement("div");
     box.className = "tree-zoom";
-    // Keep the controls out of the pan/zoom gesture so their clicks fire.
     box.addEventListener("pointerdown", (e) => e.stopPropagation());
 
     const make = (label: string, className: string, onClick: () => void) => {
@@ -287,11 +356,19 @@ export class SkillTreeScene implements GameSceneController {
 
   private fitView(): void {
     const r = this.viewport.getBoundingClientRect();
-    const vw = r.width || CANVAS_W;
-    const vh = r.height || CANVAS_H;
-    this.zoom = Math.max(MIN_ZOOM, Math.min(vw / CANVAS_W, vh / CANVAS_H, 1.4) * 0.94);
-    this.panX = (vw - CANVAS_W * this.zoom) / 2;
-    this.panY = (vh - CANVAS_H * this.zoom) / 2;
+    const vw = r.width || 600;
+    const vh = r.height || 440;
+    const revealed = SKILL_NODES.filter((n) => isNodeRevealed(this.save, n.id)).map((n) => this.positions[n.id]);
+    const pad = 110;
+    const minX = Math.min(...revealed.map((p) => p.x)) - pad;
+    const maxX = Math.max(...revealed.map((p) => p.x)) + pad;
+    const minY = Math.min(...revealed.map((p) => p.y)) - pad;
+    const maxY = Math.max(...revealed.map((p) => p.y)) + pad;
+    const bw = Math.max(1, maxX - minX);
+    const bh = Math.max(1, maxY - minY);
+    this.zoom = Math.max(MIN_ZOOM, Math.min(vw / bw, vh / bh, 1.1));
+    this.panX = (vw - (minX + maxX) * this.zoom) / 2;
+    this.panY = (vh - (minY + maxY) * this.zoom) / 2;
     this.applyTransform();
   }
 
@@ -347,7 +424,7 @@ export class SkillTreeScene implements GameSceneController {
     }
 
     const nodeEl = (e.target as HTMLElement).closest(".tree-node") as HTMLElement | null;
-    const skill = (nodeEl?.dataset.skill ?? null) as SkillId | null;
+    const nodeId = nodeEl?.dataset.node ?? null;
 
     if (e.pointerType === "mouse" && e.button === 2) {
       this.panning = true;
@@ -357,7 +434,7 @@ export class SkillTreeScene implements GameSceneController {
 
     this.press = {
       id: e.pointerId,
-      skill,
+      nodeId,
       x: e.clientX,
       y: e.clientY,
       type: e.pointerType,
@@ -367,11 +444,11 @@ export class SkillTreeScene implements GameSceneController {
       timer: 0,
     };
 
-    if (e.pointerType === "touch" && skill && nodeEl) {
+    if (e.pointerType === "touch" && nodeId && nodeEl) {
       this.press.timer = window.setTimeout(() => {
         if (this.press && !this.press.moved) {
           this.press.longFired = true;
-          this.showDetail(skill, nodeEl);
+          this.showDetail(nodeId, nodeEl);
         }
       }, LONG_PRESS_MS);
     }
@@ -438,12 +515,12 @@ export class SkillTreeScene implements GameSceneController {
       const p = this.press;
       this.clearPressTimer();
       if (!p.moved) {
-        if (p.type === "mouse" && p.button === 0 && p.skill) {
-          this.buy(p.skill); // desktop left-click unlocks
-        } else if (p.type === "touch" && !p.longFired && p.skill) {
-          this.showConfirm(p.skill); // mobile tap -> yes/no
+        if (p.type === "mouse" && p.button === 0 && p.nodeId) {
+          this.buy(p.nodeId);
+        } else if (p.type === "touch" && !p.longFired && p.nodeId) {
+          this.showConfirm(p.nodeId);
         } else if (p.longFired) {
-          this.hideDetail(); // mobile long-press release
+          this.hideDetail();
         }
       }
       this.press = null;
@@ -452,27 +529,28 @@ export class SkillTreeScene implements GameSceneController {
 
   // ----- actions / popups -----
 
-  private buy(skillId: SkillId): void {
-    if (!canPurchaseSkill(this.save, skillId)) {
+  private buy(nodeId: string): void {
+    if (!canUnlockNode(this.save, nodeId)) {
       return;
     }
-    this.save = purchaseSkill(this.save, skillId);
+    this.save = unlockNode(this.save, nodeId);
     saveGame(this.save);
     this.render();
   }
 
-  private showDetail(skillId: SkillId, anchor: HTMLElement): void {
-    const def = SKILL_DEFS[skillId];
-    const layout = NODE_LAYOUT[skillId];
-    const level = this.save.skills[skillId];
-    const maxed = level >= def.maxLevel;
-    const cost = getSkillCost(this.save, skillId);
+  private showDetail(nodeId: string, anchor: HTMLElement): void {
+    const node = SKILL_NODE_BY_ID[nodeId];
+    if (!node) {
+      return;
+    }
+    const unlocked = isNodeUnlocked(this.save, nodeId);
+    const cost = getNodeCost(nodeId);
 
     this.detailEl.innerHTML = `
-      <h4><span>${layout.icon}</span>${def.name}</h4>
-      <p>${def.description}</p>
-      <div class="tree-detail-row">Level <strong>${level}/${def.maxLevel}</strong></div>
-      <div class="tree-detail-row">${maxed ? "Maxed out" : `Next: <span class="tree-detail-cost">${cost} gold</span>`}</div>
+      <h4><span>${node.icon}</span>${node.name}</h4>
+      <p>${node.description}</p>
+      <div class="tree-detail-row">${effectLabel(node)}</div>
+      <div class="tree-detail-row">${unlocked ? "✓ Unlocked" : `Cost: <span class="tree-detail-cost">${cost} gold</span>`}</div>
     `;
     this.detailEl.style.display = "block";
 
@@ -495,27 +573,27 @@ export class SkillTreeScene implements GameSceneController {
     }
   }
 
-  private showConfirm(skillId: SkillId): void {
-    const def = SKILL_DEFS[skillId];
-    const layout = NODE_LAYOUT[skillId];
-    const level = this.save.skills[skillId];
-    const maxed = level >= def.maxLevel;
-    const cost = getSkillCost(this.save, skillId);
-    const affordable = canPurchaseSkill(this.save, skillId);
+  private showConfirm(nodeId: string): void {
+    const node = SKILL_NODE_BY_ID[nodeId];
+    if (!node) {
+      return;
+    }
+    const unlocked = isNodeUnlocked(this.save, nodeId);
+    const cost = getNodeCost(nodeId);
+    const affordable = canUnlockNode(this.save, nodeId);
 
     const modal = document.createElement("div");
     modal.className = "tree-modal";
 
     const card = document.createElement("div");
     card.className = "tree-modal-card";
-    const action = level > 0 ? "Upgrade" : "Unlock";
     card.innerHTML = `
-      <h3>${layout.icon} ${def.name}</h3>
-      <p class="panel-copy" style="margin:0 0 8px">${def.description}</p>
+      <h3>${node.icon} ${node.name}</h3>
+      <p class="panel-copy" style="margin:0 0 8px">${node.description} (${effectLabel(node)})</p>
       <div class="tree-detail-row">${
-        maxed
-          ? "Maxed out"
-          : `${action} for <span class="tree-detail-cost">${cost} gold</span> (you have ${this.save.totalGold})`
+        unlocked
+          ? "✓ Already unlocked"
+          : `Unlock for <span class="tree-detail-cost">${cost} gold</span> (you have ${this.save.totalGold})`
       }</div>
     `;
 
@@ -527,7 +605,7 @@ export class SkillTreeScene implements GameSceneController {
     yes.disabled = !affordable;
     yes.addEventListener("click", () => {
       modal.remove();
-      this.buy(skillId);
+      this.buy(nodeId);
     });
     const no = document.createElement("button");
     no.type = "button";
