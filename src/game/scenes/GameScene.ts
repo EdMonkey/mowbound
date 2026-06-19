@@ -215,14 +215,7 @@ export class GameScene implements GameSceneController {
     const positionById = new Map(grassStates.map((state) => [state.id, state.position]));
     const resultById = new Map(result.grass.map((state) => [state.id, state]));
 
-    for (const id of result.hitIds) {
-      const position = positionById.get(id);
-      if (!position) {
-        continue;
-      }
-      const screen = this.worldToScreen(new THREE.Vector3(position.x, 0.55, position.z));
-      this.hud.spawnDamageText(screen.x, screen.y, this.stats.attackDamage);
-    }
+    // (test) damage text disabled
 
     for (const id of result.destroyedIds) {
       const position = positionById.get(id);
