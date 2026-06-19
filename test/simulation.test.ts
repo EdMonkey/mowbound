@@ -226,8 +226,9 @@ describe("bomb chain detonation", () => {
     expect(TEST_BOMB_COUNTS[30]).toBe(30);
     expect(ROUND_DURATION_BY_MAP[10]).toBe(10000);
     expect(ROUND_DURATION_BY_MAP[30]).toBe(30000);
-    // chain radius is smaller than the mow radius so chains stay local
-    expect(BALANCE.bombChainRadiusMeters).toBeLessThan(BALANCE.bombBlastRadiusMeters);
+    // small mow radius, with a wider chain radius so neighbors still detonate
+    expect(BALANCE.bombBlastRadiusMeters).toBe(1.25);
+    expect(BALANCE.bombChainRadiusMeters).toBe(2.5);
   });
 });
 

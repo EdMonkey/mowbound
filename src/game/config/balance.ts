@@ -22,7 +22,7 @@ export const BALANCE = {
   // within `bombBlastRadiusMeters`; other bombs within the (smaller) chain
   // radius detonate too. Test bombs are scattered at run start, see
   // TEST_BOMB_COUNTS. Per-map counts/durations live in the lookups below.
-  bombBlastRadiusMeters: 5,
+  bombBlastRadiusMeters: 1.25,
   bombChainRadiusMeters: 2.5,
   bombTriggerRadiusMeters: 0.7,
   bombChainDelayMs: 110,

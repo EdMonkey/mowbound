@@ -91,18 +91,20 @@ export class Explosions {
 
   /** Fire an explosion: debris burst + a fast flash ring and a slower shock ring. */
   emit(x: number, z: number, radius: number): void {
-    this.spawnDebris(x, z);
+    this.spawnDebris(x, z, radius);
     this.spawnRing(x, z, radius * 0.5, 0.18, "#fff1c4", 0.85); // flash
     this.spawnRing(x, z, radius, 0.5, "#ff8a2a", 0.6); // shockwave
   }
 
-  private spawnDebris(x: number, z: number): void {
+  private spawnDebris(x: number, z: number, radius: number): void {
+    // Horizontal spread scales with the blast radius (tuned so radius 5 keeps
+    // the original feel); vertical pop stays fixed so chunks always arc up.
     for (let n = 0; n < DEBRIS_PER_BURST; n += 1) {
       const i = this.cursor;
       this.cursor = (this.cursor + 1) % DEBRIS_CAPACITY;
 
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2.2 + Math.random() * 3.2;
+      const speed = (0.45 + Math.random() * 0.65) * radius;
       this.px[i] = x;
       this.py[i] = 0.3 + Math.random() * 0.3;
       this.pz[i] = z;
