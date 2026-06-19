@@ -1,12 +1,21 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
-import { BALANCE, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS, type RuntimeStats } from "../config/balance";
+import {
+  BALANCE,
+  OBSTACLE_COUNTS_BY_MAP,
+  ROUND_DURATION_BY_MAP,
+  TEST_BOMB_COUNTS,
+  type RuntimeStats,
+} from "../config/balance";
 import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
+import { Debris } from "../entities/Debris";
 import { Explosions } from "../entities/Explosions";
+import { FallingLog } from "../entities/FallingLog";
 import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
-import { Player } from "../entities/Player";
+import { Obstacle } from "../entities/Obstacle";
+import { Player, PLAYER_COLLISION_RADIUS } from "../entities/Player";
 import {
   advanceChargeAttack,
   getSurvivingHitIds,
@@ -20,6 +29,15 @@ import {
   resolveChainDetonation,
   type BombState,
 } from "../systems/BombSystem";
+import {
+  createObstacleState,
+  OBSTACLE_BASE_RADIUS,
+  resolveObstacleAttack,
+  TREE_STUMP_BASE_RADIUS,
+  type Circle,
+  type ObstacleKind,
+  type ObstacleState,
+} from "../systems/ObstacleSystem";
 import { cloneModel } from "../assets/models";
 import { rewardForGrass } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
@@ -45,6 +63,32 @@ export class GameScene implements GameSceneController {
   private readonly bombs = new Map<string, Bomb>();
   private bombStates: BombState[] = [];
   private readonly pendingDetonations: { id: string; delayMs: number }[] = [];
+  private readonly obstacles = new Map<string, Obstacle>();
+  private obstacleStates: ObstacleState[] = [];
+  private readonly fallingLogs: FallingLog[] = [];
+  private readonly rockChips = new Debris(["#8a8a90", "#6f6f77", "#a6a6ac"], [0.09, 0.09, 0.09]);
+  private readonly woodChips = new Debris(["#7a5230", "#5e3d1f", "#9b6b3a"], [0.13, 0.05, 0.05]);
+  // Collision-circle debug overlay (toggled by a button); off by default.
+  private readonly debugGroup = new THREE.Group();
+  private readonly debugCircleGeo = new THREE.CircleGeometry(1, 28);
+  private readonly debugObstacleMat = new THREE.MeshBasicMaterial({
+    color: "#33e0ff",
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  private readonly debugPlayerMat = new THREE.MeshBasicMaterial({
+    color: "#ffd23f",
+    transparent: true,
+    opacity: 0.34,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  private readonly debugObstacleDiscs = new Map<string, THREE.Mesh>();
+  private debugPlayerDisc!: THREE.Mesh;
+  private debugButton!: HTMLButtonElement;
+  private debugVisible = false;
   private readonly stats: RuntimeStats;
   private readonly attackChargeGroup = new THREE.Group();
   private readonly attackRing: THREE.Mesh;
@@ -85,8 +129,13 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.grassField.group);
     this.scene.add(this.clippings.mesh);
     this.scene.add(this.explosions.group);
+    this.scene.add(this.rockChips.mesh);
+    this.scene.add(this.woodChips.mesh);
     this.spawnInitialGrass();
     this.spawnTestBombs();
+    this.spawnObstacles();
+    this.buildCollisionDebug();
+    this.createDebugButton();
     this.updateInputMode();
     window.addEventListener("resize", this.updateInputMode);
   }
@@ -98,7 +147,11 @@ export class GameScene implements GameSceneController {
     this.updateCoins(deltaSeconds);
     this.clippings.update(deltaSeconds);
     this.explosions.update(deltaSeconds);
+    this.rockChips.update(deltaSeconds);
+    this.woodChips.update(deltaSeconds);
+    this.updateFallingLogs(deltaSeconds);
     this.updateBombs(deltaSeconds);
+    this.updateCollisionDebug();
     this.hud.update(deltaSeconds);
 
     if (!this.ended) {
@@ -113,13 +166,16 @@ export class GameScene implements GameSceneController {
       }
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
-      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize);
+      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize, this.collisionBlockers());
 
-      const charge = advanceChargeAttack(this.chargeState, deltaSeconds * 1000);
-      this.chargeState = charge.state;
+      // A stunned player can't swing; the charge timer holds until they recover.
+      if (!this.player.stunned) {
+        const charge = advanceChargeAttack(this.chargeState, deltaSeconds * 1000);
+        this.chargeState = charge.state;
 
-      if (charge.ready) {
-        this.performAttack();
+        if (charge.ready) {
+          this.performAttack();
+        }
       }
 
       if (this.elapsedMs >= this.roundDurationMs) {
@@ -147,9 +203,18 @@ export class GameScene implements GameSceneController {
     this.grassField.dispose();
     this.clippings.dispose();
     this.explosions.dispose();
+    this.rockChips.dispose();
+    this.woodChips.dispose();
     this.coins.forEach((coin) => coin.dispose());
     this.bombs.forEach((bomb) => bomb.dispose());
     this.bombs.clear();
+    this.obstacles.forEach((obstacle) => obstacle.dispose());
+    this.obstacles.clear();
+    this.fallingLogs.forEach((log) => log.dispose());
+    this.debugButton.remove();
+    this.debugCircleGeo.dispose();
+    this.debugObstacleMat.dispose();
+    this.debugPlayerMat.dispose();
     this.attackRing.geometry.dispose();
     (this.attackRing.material as THREE.Material).dispose();
   }
@@ -253,6 +318,100 @@ export class GameScene implements GameSceneController {
       const bomb = new Bomb(position);
       this.bombs.set(id, bomb);
       this.scene.add(bomb.group);
+    }
+  }
+
+  private spawnObstacles(): void {
+    // Scatter rocks and trees randomly across the map (away from the start).
+    const counts = OBSTACLE_COUNTS_BY_MAP[this.mapSize] ?? { rocks: 0, trees: 0 };
+    const spawn = (kind: ObstacleKind, count: number): void => {
+      for (let index = 0; index < count; index += 1) {
+        const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
+        const id = `${kind}-${index + 1}`;
+        // One scale drives both the visual model and the collision radius.
+        const scale = 0.85 + Math.random() * 0.3;
+        const radius = OBSTACLE_BASE_RADIUS[kind] * scale;
+        this.obstacleStates.push(createObstacleState(id, kind, position, BALANCE.obstacleHp, radius));
+        const obstacle = new Obstacle(kind, position, scale);
+        this.obstacles.set(id, obstacle);
+        this.scene.add(obstacle.group);
+      }
+    };
+    spawn("rock", counts.rocks);
+    spawn("tree", counts.trees);
+  }
+
+  /**
+   * Collision circles: intact obstacles always block; once broken, a rock
+   * vanishes (passable) while a tree keeps blocking at its stump radius.
+   */
+  private collisionBlockers(): Circle[] {
+    const blockers: Circle[] = [];
+    for (const obstacle of this.obstacleStates) {
+      const blocks = obstacle.kind === "tree" || !obstacle.destroyed;
+      if (blocks) {
+        blockers.push({
+          x: obstacle.position.x,
+          z: obstacle.position.z,
+          radius: obstacle.radius,
+        });
+      }
+    }
+    return blockers;
+  }
+
+  private buildCollisionDebug(): void {
+    // A flat disc per obstacle collision circle (cyan) + one for the player
+    // (yellow) that follows them. Hidden until the debug button is toggled.
+    for (const state of this.obstacleStates) {
+      const disc = new THREE.Mesh(this.debugCircleGeo, this.debugObstacleMat);
+      disc.rotation.x = -Math.PI / 2;
+      disc.scale.setScalar(state.radius);
+      disc.position.set(state.position.x, 0.06, state.position.z);
+      disc.renderOrder = 13;
+      this.debugGroup.add(disc);
+      this.debugObstacleDiscs.set(state.id, disc);
+    }
+
+    this.debugPlayerDisc = new THREE.Mesh(this.debugCircleGeo, this.debugPlayerMat);
+    this.debugPlayerDisc.rotation.x = -Math.PI / 2;
+    this.debugPlayerDisc.scale.setScalar(PLAYER_COLLISION_RADIUS);
+    this.debugPlayerDisc.renderOrder = 13;
+    this.debugGroup.add(this.debugPlayerDisc);
+
+    this.debugGroup.visible = false;
+    this.scene.add(this.debugGroup);
+  }
+
+  private createDebugButton(): void {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "debug-toggle";
+    button.textContent = "충돌 박스";
+    // Don't let the tap also spawn the virtual joystick underneath.
+    button.addEventListener("pointerdown", (event) => event.stopPropagation());
+    button.addEventListener("click", () => {
+      this.debugVisible = !this.debugVisible;
+      this.debugGroup.visible = this.debugVisible;
+      button.classList.toggle("on", this.debugVisible);
+    });
+    this.app.uiRoot.appendChild(button);
+    this.debugButton = button;
+  }
+
+  private updateCollisionDebug(): void {
+    if (!this.debugVisible) {
+      return;
+    }
+    this.debugPlayerDisc.position.set(this.player.position.x, 0.06, this.player.position.z);
+    for (const state of this.obstacleStates) {
+      const disc = this.debugObstacleDiscs.get(state.id);
+      if (disc) {
+        // Trees keep blocking (stump) so their circle stays, resized to the
+        // stump; a broken rock stops blocking so its circle disappears.
+        disc.visible = state.kind === "tree" || !state.destroyed;
+        disc.scale.setScalar(state.radius);
+      }
     }
   }
 
@@ -390,6 +549,77 @@ export class GameScene implements GameSceneController {
     }
 
     this.roundGold += rewardForGrass(this.stats, result.destroyedIds.length);
+
+    this.attackObstacles();
+  }
+
+  private attackObstacles(): void {
+    // Same swing as grass, but all-or-nothing: only damage greater than an
+    // obstacle's HP breaks it, and breaking one recoils the player into a stun.
+    const result = resolveObstacleAttack({
+      origin: this.player.position,
+      direction: this.player.direction,
+      range: this.stats.attackRangeMeters,
+      arcDegrees: this.stats.attackArcDegrees,
+      damage: this.stats.attackDamage,
+      obstacles: this.obstacleStates,
+    });
+
+    if (result.destroyedIds.length === 0 && result.blockedIds.length === 0) {
+      return;
+    }
+
+    for (const id of result.destroyedIds) {
+      const state = this.obstacleStates.find((obstacle) => obstacle.id === id);
+      const obstacle = this.obstacles.get(id);
+      if (!state || !obstacle) {
+        continue;
+      }
+      state.destroyed = true;
+      obstacle.break(); // rock vanishes; tree leaves a stump
+
+      if (state.kind === "rock") {
+        this.rockChips.emit(state.position.x, state.position.z);
+      } else {
+        // Bigger, denser wood chips at the cut, plus the upper trunk topples away.
+        this.woodChips.emit(state.position.x, state.position.z, { count: 32, scale: 1.9 });
+        const scale = state.radius / OBSTACLE_BASE_RADIUS.tree;
+        const log = new FallingLog(state.position, scale);
+        this.fallingLogs.push(log);
+        this.scene.add(log.group);
+        // The stump keeps blocking, but at the (smaller) stump footprint.
+        state.radius = TREE_STUMP_BASE_RADIUS * scale;
+      }
+    }
+
+    this.player.strike();
+
+    // A chop that failed to break anything recoils the player: shove away from
+    // the obstacle(s) that resisted, flash red, and lock out actions.
+    if (result.blockedIds.length > 0) {
+      let awayX = 0;
+      let awayZ = 0;
+      for (const id of result.blockedIds) {
+        const state = this.obstacleStates.find((obstacle) => obstacle.id === id);
+        if (state) {
+          awayX += this.player.position.x - state.position.x;
+          awayZ += this.player.position.z - state.position.z;
+        }
+      }
+      this.player.applyKnockback(awayX, awayZ, BALANCE.obstacleKnockbackSpeed);
+      this.player.stun(BALANCE.obstacleStunSeconds);
+    }
+  }
+
+  private updateFallingLogs(deltaSeconds: number): void {
+    for (let index = this.fallingLogs.length - 1; index >= 0; index -= 1) {
+      const log = this.fallingLogs[index];
+      if (log.update(deltaSeconds)) {
+        this.scene.remove(log.group);
+        log.dispose();
+        this.fallingLogs.splice(index, 1);
+      }
+    }
   }
 
   private updateCoins(deltaSeconds: number): void {

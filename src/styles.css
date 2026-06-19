@@ -572,6 +572,29 @@ button:disabled {
   opacity: 0.55;
 }
 
+.debug-toggle {
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  z-index: 7;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #d8f3ff;
+  background: rgba(10, 18, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.debug-toggle.on {
+  color: #06222b;
+  background: #33e0ff;
+  border-color: #33e0ff;
+}
+
 .joystick-zone {
   position: absolute;
   inset: 0;
