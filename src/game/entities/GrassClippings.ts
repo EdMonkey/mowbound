@@ -2,7 +2,8 @@ import * as THREE from "three";
 
 const CAPACITY = 512; // pooled particles (ring buffer)
 const PER_BURST = 10; // particles spawned when a clump is mowed (dies)
-const HIT_BURST = Math.max(1, Math.round(PER_BURST / 4)); // 1/4 burst on a non-lethal hit
+const HIT_BURST = 2; // particles on a non-lethal hit
+const HIT_SCALE = 0.5; // non-lethal hit particles are half size
 const GRAVITY = 7;
 const COLORS = ["#4aa84f", "#3a8c42", "#69c46a"];
 
@@ -57,15 +58,15 @@ export class GrassClippings {
 
   /** Full burst — a clump was mowed (died). */
   emit(x: number, z: number): void {
-    this.spawn(x, z, PER_BURST);
+    this.spawn(x, z, PER_BURST, 1);
   }
 
-  /** Small burst — a clump was hit but survived. */
+  /** Small, half-size burst — a clump was hit but survived. */
   emitHit(x: number, z: number): void {
-    this.spawn(x, z, HIT_BURST);
+    this.spawn(x, z, HIT_BURST, HIT_SCALE);
   }
 
-  private spawn(x: number, z: number, count: number): void {
+  private spawn(x: number, z: number, count: number, scaleFactor: number): void {
     for (let n = 0; n < count; n += 1) {
       const i = this.cursor;
       this.cursor = (this.cursor + 1) % CAPACITY;
@@ -86,7 +87,7 @@ export class GrassClippings {
       this.spin[i * 3 + 2] = (Math.random() * 2 - 1) * 12;
       this.age[i] = 0;
       this.life[i] = 0.5 + Math.random() * 0.25;
-      this.baseScale[i] = 0.7 + Math.random() * 0.6;
+      this.baseScale[i] = (0.7 + Math.random() * 0.6) * scaleFactor;
       this.active[i] = 1;
     }
   }
