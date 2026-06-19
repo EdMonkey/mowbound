@@ -2,6 +2,9 @@ import * as THREE from "three";
 import type { VectorXZ } from "../types";
 import { cloneModel } from "../assets/models";
 
+const COIN_GROW_TIME = 0.12; // pop-in: grow to full size
+const COIN_SHRINK_TIME = 0.3; // shrink out over the last 0.3s before it vanishes
+
 export class Coin {
   readonly group = new THREE.Group();
   private age = 0;
@@ -20,7 +23,7 @@ export class Coin {
     this.group.position.set(position.x, this.startY, position.z);
 
     const angle = Math.random() * Math.PI * 2;
-    const speed = 0.25 + Math.random() * 0.18;
+    const speed = 0.5 + Math.random() * 0.36; // 2x scatter in all directions
     this.drift = {
       x: Math.cos(angle) * speed,
       z: Math.sin(angle) * speed,
@@ -50,7 +53,18 @@ export class Coin {
 
     this.group.rotation.y += deltaSeconds * 9;
     this.group.rotation.z += deltaSeconds * 6;
-    this.group.scale.setScalar(Math.max(0.05, 1 - t * 0.82));
+
+    // Pop in (grow), hold, then shrink away over the last 0.3s.
+    let scale: number;
+    if (this.age < COIN_GROW_TIME) {
+      scale = this.age / COIN_GROW_TIME;
+    } else if (this.age > this.lifetime - COIN_SHRINK_TIME) {
+      scale = Math.max(0, (this.lifetime - this.age) / COIN_SHRINK_TIME);
+    } else {
+      scale = 1;
+    }
+    this.group.scale.setScalar(scale);
+
     return t >= 1;
   }
 
