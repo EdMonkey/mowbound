@@ -31,35 +31,27 @@ export function createGrassState(id: string, position: VectorXZ, hp = BALANCE.ba
 }
 
 /**
- * Even, spread-out placement via a jittered grid: one clump per cell at the
- * cell centre plus a small random offset. Covers the map edge-to-edge without
- * the clumps-and-gaps look of independent uniform random scatter. Cells within
- * the avoid radius (the player) are skipped.
+ * Uniform grid placement: a square grid of `round(sqrt(count))` cells per side
+ * (e.g. 900 -> 30x30), one clump at each cell centre with no jitter, evenly
+ * covering the map edge-to-edge.
  */
 export function createGrassBatch(
   count: number,
   startId: number,
-  avoid?: VectorXZ,
   mapSize = BALANCE.mapSizeMeters,
 ): GrassState[] {
   const usable = mapSize - 0.7;
-  const cells = Math.max(1, Math.ceil(Math.sqrt(count)));
+  const cells = Math.max(1, Math.round(Math.sqrt(count)));
   const cell = usable / cells;
-  const jitter = cell * 0.45;
   const half = usable / 2;
 
   const states: GrassState[] = [];
   let id = startId;
 
-  for (let row = 0; row < cells && states.length < count; row += 1) {
-    for (let col = 0; col < cells && states.length < count; col += 1) {
-      const x = -half + (col + 0.5) * cell + (Math.random() * 2 - 1) * jitter;
-      const z = -half + (row + 0.5) * cell + (Math.random() * 2 - 1) * jitter;
-
-      if (avoid && Math.hypot(x - avoid.x, z - avoid.z) < 0.8) {
-        continue;
-      }
-
+  for (let row = 0; row < cells; row += 1) {
+    for (let col = 0; col < cells; col += 1) {
+      const x = -half + (col + 0.5) * cell;
+      const z = -half + (row + 0.5) * cell;
       states.push(createGrassState(`grass-${id}`, { x, z }));
       id += 1;
     }

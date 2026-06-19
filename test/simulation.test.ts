@@ -120,7 +120,7 @@ describe("runtime stats from skill nodes", () => {
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
     expect(stats.attackArcDegrees).toBe(360);
-    expect(stats.initialGrassCount).toBe(1620);
+    expect(stats.initialGrassCount).toBe(900);
     expect(stats.grassSpawnPerTick).toBe(0);
     expect(stats.roundDurationMs).toBe(10000);
     expect(BALANCE.roundDurationMs).toBe(10000);
@@ -138,20 +138,21 @@ describe("runtime stats from skill nodes", () => {
 });
 
 describe("grass and coins", () => {
-  it("spreads grass evenly on a jittered grid and avoids the player", () => {
-    const player = { x: 0, z: 0 };
-    const states = createGrassBatch(400, 1, player, 10);
+  it("places grass on a uniform 30x30 grid", () => {
+    const states = createGrassBatch(900, 1, 10);
 
-    expect(states.length).toBeGreaterThan(360);
-    expect(states.length).toBeLessThanOrEqual(400);
+    expect(states.length).toBe(900);
 
     for (const grass of states) {
       expect(Math.abs(grass.position.x)).toBeLessThanOrEqual(5);
       expect(Math.abs(grass.position.z)).toBeLessThanOrEqual(5);
-      expect(Math.hypot(grass.position.x, grass.position.z)).toBeGreaterThan(0.5);
     }
 
-    // even coverage: every quadrant of the map receives grass
+    // 30 evenly spaced columns and rows (no jitter), covering all quadrants
+    const xs = new Set(states.map((g) => Math.round(g.position.x * 1000)));
+    const zs = new Set(states.map((g) => Math.round(g.position.z * 1000)));
+    expect(xs.size).toBe(30);
+    expect(zs.size).toBe(30);
     const quadrants = new Set(
       states.map((g) => `${g.position.x >= 0 ? "E" : "W"}${g.position.z >= 0 ? "S" : "N"}`),
     );

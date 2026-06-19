@@ -17,7 +17,7 @@ import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSyst
 import { addGold, getRuntimeStats, loadSave, saveGame } from "../systems/SaveSystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
-import type { GrassState, VectorXZ } from "../types";
+import type { GrassState } from "../types";
 
 const ATTACK_FLASH_DURATION = 0.45;
 
@@ -57,7 +57,7 @@ export class GameScene implements GameSceneController {
     this.addMap();
     this.scene.add(this.player.group);
     this.scene.add(this.attackChargeGroup);
-    this.grassField = new GrassField(this.stats.initialGrassCount + 16);
+    this.grassField = new GrassField(this.stats.initialGrassCount + 64);
     this.scene.add(this.grassField.mesh);
     this.spawnInitialGrass();
     this.updateInputMode();
@@ -176,18 +176,7 @@ export class GameScene implements GameSceneController {
   }
 
   private spawnInitialGrass(): void {
-    const starterClump: VectorXZ[] = [
-      { x: 0.36, z: 0 },
-      { x: 0.42, z: 0.14 },
-      { x: 0.42, z: -0.14 },
-    ];
-
-    for (const position of starterClump) {
-      this.addGrassState(createGrassState(`grass-${this.nextGrassId}`, position));
-      this.nextGrassId += 1;
-    }
-
-    const batch = createGrassBatch(this.stats.initialGrassCount, this.nextGrassId, this.player.position);
+    const batch = createGrassBatch(this.stats.initialGrassCount, this.nextGrassId);
     this.nextGrassId += batch.length;
     for (const state of batch) {
       this.addGrassState(state);
