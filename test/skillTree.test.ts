@@ -95,4 +95,16 @@ describe("v2 skill runtime", () => {
     expect(isMapUnlocked(save, 30)).toBe(false);
     expect(isMapUnlocked({ ...save, levels: { open_acre: 1 } }, 30)).toBe(true);
   });
+
+  it("requires all prereqs before unlocking multi-prereq nodes", () => {
+    const partial = { ...defaultSave(), gold: 2000, levels: { clean_sweep_2: 1 } };
+    expect(canUnlockNode(partial, "cyclone_cut")).toBe(false);
+
+    const complete = {
+      ...defaultSave(),
+      gold: 2000,
+      levels: { clean_sweep_2: 1, quick_recovery_2: 1 },
+    };
+    expect(canUnlockNode(complete, "cyclone_cut")).toBe(true);
+  });
 });

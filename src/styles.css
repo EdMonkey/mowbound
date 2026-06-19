@@ -552,6 +552,35 @@ button:disabled {
     0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
+.tree-node.branch-blade {
+  border-color: rgba(155, 205, 255, 0.62);
+}
+
+.tree-node.branch-movement {
+  border-color: rgba(139, 222, 150, 0.62);
+}
+
+.tree-node.branch-harvest {
+  border-color: rgba(250, 210, 105, 0.66);
+}
+
+.tree-node.branch-obstacles {
+  border-color: rgba(190, 176, 160, 0.68);
+}
+
+.tree-node.branch-bombs {
+  border-color: rgba(255, 128, 105, 0.68);
+}
+
+.tree-node.branch-land {
+  border-color: rgba(120, 206, 196, 0.68);
+}
+
+.tree-node.branch-spectacle {
+  border-color: rgba(140, 180, 255, 0.82);
+  background: rgba(24, 34, 52, 0.94);
+}
+
 .tree-node.is-branch {
   border-style: solid;
   border-color: rgba(120, 200, 130, 0.65);

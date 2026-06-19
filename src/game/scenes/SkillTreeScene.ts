@@ -1,6 +1,13 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
-import { SKILL_NODES, SKILL_NODE_BY_ID, SKILL_ROOT, type SkillEffect, type SkillNode } from "../config/skillTree";
+import {
+  SKILL_NODES,
+  SKILL_NODE_BY_ID,
+  SKILL_ROOT,
+  type SkillEffect,
+  type SkillNode,
+  type UnlockGate,
+} from "../config/skillTree";
 import {
   canUnlockNode,
   getNodeCost,
@@ -93,6 +100,17 @@ function effectText(effect: SkillEffect): string {
 
 function effectLabel(node: SkillNode): string {
   return node.effects.length > 0 ? node.effects.map(effectText).join(" / ") : "Opens a branch";
+}
+
+function gateLabel(gate: UnlockGate): string {
+  switch (gate.kind) {
+    case "bestClearPercent":
+      return `${gate.mapSize}m clear ${gate.percent}%`;
+    case "lifetimeGrass":
+      return `Lifetime grass ${gate.count}`;
+    case "bestBombChain":
+      return `Bomb chain ${gate.length}+`;
+  }
 }
 
 export class SkillTreeScene implements GameSceneController {
@@ -566,6 +584,31 @@ export class SkillTreeScene implements GameSceneController {
     this.render();
   }
 
+  private gateProgress(gate: UnlockGate): string {
+    switch (gate.kind) {
+      case "bestClearPercent": {
+        const current = this.save.lifetimeStats.bestClearPercentByMap[String(gate.mapSize)] ?? 0;
+        return `${Math.min(current, gate.percent)}/${gate.percent}%`;
+      }
+      case "lifetimeGrass":
+        return `${Math.min(this.save.lifetimeStats.grassCut, gate.count)}/${gate.count}`;
+      case "bestBombChain":
+        return `${Math.min(this.save.lifetimeStats.bestBombChain, gate.length)}/${gate.length}`;
+    }
+  }
+
+  private gateRows(node: SkillNode): string {
+    if (node.gates.length === 0) {
+      return "";
+    }
+    return node.gates
+      .map(
+        (gate) =>
+          `<div class="tree-detail-row">Gate: ${gateLabel(gate)} <span class="tree-detail-cost">${this.gateProgress(gate)}</span></div>`,
+      )
+      .join("");
+  }
+
   private showDetail(nodeId: string, anchor: HTMLElement): void {
     const node = SKILL_NODE_BY_ID[nodeId];
     if (!node) {
@@ -579,6 +622,7 @@ export class SkillTreeScene implements GameSceneController {
       <p>${node.description}</p>
       <div class="tree-detail-row">${effectLabel(node)}</div>
       <div class="tree-detail-row">${unlocked ? "✓ Unlocked" : `Cost: <span class="tree-detail-cost">${cost} gold</span>`}</div>
+      ${this.gateRows(node)}
     `;
     this.detailEl.style.display = "block";
 
@@ -618,6 +662,7 @@ export class SkillTreeScene implements GameSceneController {
     card.innerHTML = `
       <h3>${node.icon} ${node.name}</h3>
       <p class="panel-copy" style="margin:0 0 8px">${node.description} (${effectLabel(node)})</p>
+      ${this.gateRows(node)}
       <div class="tree-detail-row">${
         unlocked
           ? "✓ Already unlocked"
