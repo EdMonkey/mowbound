@@ -112,6 +112,7 @@ export class GameScene implements GameSceneController {
     // parameter property, which isn't available when field initializers run.
     this.mapSize = this.app.mapSizeMeters;
     this.stats = getRuntimeStats(this.save);
+    this.player.setToolStyle(this.stats.selectedTool);
     // Round length depends on the chosen map; skill bonuses add on top.
     const skillRoundBonus = this.stats.roundDurationMs - BALANCE.roundDurationMs;
     this.roundDurationMs = (ROUND_DURATION_BY_MAP[this.mapSize] ?? BALANCE.roundDurationMs) + skillRoundBonus;

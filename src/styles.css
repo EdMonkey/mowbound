@@ -136,6 +136,11 @@ button:disabled {
 .menu-options-choices {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-options {
+  width: min(360px, 100%);
 }
 
 .option-button {

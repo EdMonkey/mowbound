@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { MAP_SIZE_OPTIONS } from "../config/balance";
+import type { ToolId } from "../config/skillTree";
 import { cloneModel } from "../assets/models";
 import { Player } from "../entities/Player";
-import { loadSave, resetSave } from "../systems/SaveSystem";
-import { isMapUnlocked } from "../systems/SkillSystem";
+import { loadSave, resetSave, saveGame } from "../systems/SaveSystem";
+import { canSelectTool, isMapUnlocked, selectTool } from "../systems/SkillSystem";
 import { clearElement, createButton } from "../ui/Menu";
 
 export class MainMenuScene implements GameSceneController {
@@ -84,6 +85,7 @@ export class MainMenuScene implements GameSceneController {
     panel.appendChild(subtitle);
 
     panel.appendChild(this.buildMapSizeSelector());
+    panel.appendChild(this.buildToolSelector());
 
     const stack = document.createElement("div");
     stack.className = "button-stack";
@@ -133,6 +135,53 @@ export class MainMenuScene implements GameSceneController {
           return;
         }
         this.app.mapSizeMeters = size;
+        for (const other of buttons) {
+          other.setAttribute("aria-pressed", String(other === button));
+        }
+      });
+      choices.appendChild(button);
+      return button;
+    });
+
+    wrap.appendChild(choices);
+    return wrap;
+  }
+
+  private buildToolSelector(): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "menu-options tool-options";
+
+    const label = document.createElement("span");
+    label.className = "menu-options-label";
+    label.textContent = "Tool";
+    wrap.appendChild(label);
+
+    const choices = document.createElement("div");
+    choices.className = "menu-options-choices";
+
+    const tools: Array<{ id: ToolId; label: string }> = [
+      { id: "default", label: "Default" },
+      { id: "wide_sickle", label: "Wide" },
+      { id: "fast_sickle", label: "Fast" },
+      { id: "bomb_sickle", label: "Bomb" },
+      { id: "tractor", label: "Tractor" },
+    ];
+
+    const buttons = tools.map(({ id, label: text }) => {
+      const unlocked = canSelectTool(this.save, id);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "option-button";
+      button.textContent = text;
+      button.disabled = !unlocked;
+      button.title = unlocked ? text : "Unlock this tool in the skill tree";
+      button.setAttribute("aria-pressed", String(unlocked && this.save.selectedTool === id));
+      button.addEventListener("click", () => {
+        if (!canSelectTool(this.save, id)) {
+          return;
+        }
+        this.save = selectTool(this.save, id);
+        saveGame(this.save);
         for (const other of buttons) {
           other.setAttribute("aria-pressed", String(other === button));
         }

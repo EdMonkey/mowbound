@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { SKILL_NODE_BY_ID, SKILL_NODES, SKILL_ROOT } from "../src/game/config/skillTree";
 import {
   canUnlockNode,
+  canSelectTool,
   getRuntimeStats,
   isMapUnlocked,
   nextAffordableGoals,
+  selectTool,
   unlockNode,
 } from "../src/game/systems/SkillSystem";
 import { defaultSave } from "../src/game/systems/SaveSystem";
@@ -121,5 +123,17 @@ describe("v2 skill runtime", () => {
       "sharp_edge_1",
       "market_cart_1",
     ]);
+  });
+
+  it("allows selecting only unlocked tools", () => {
+    const save = defaultSave();
+    expect(canSelectTool(save, "wide_sickle")).toBe(false);
+    expect(canSelectTool(save, "tractor")).toBe(false);
+    const unlocked = { ...save, levels: { wide_sickle: 1 } };
+    expect(canSelectTool(unlocked, "wide_sickle")).toBe(true);
+    expect(selectTool(unlocked, "wide_sickle").selectedTool).toBe("wide_sickle");
+    const tractorUnlocked = { ...save, levels: { tractor_license: 1 } };
+    expect(canSelectTool(tractorUnlocked, "tractor")).toBe(true);
+    expect(selectTool(tractorUnlocked, "tractor").selectedTool).toBe("tractor");
   });
 });

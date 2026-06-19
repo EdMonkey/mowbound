@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { ToolId } from "../config/skillTree";
 import type { VectorXZ } from "../types";
 import { cloneModel } from "../assets/models";
 import { resolveCollision, type Circle } from "../systems/ObstacleSystem";
@@ -11,6 +12,7 @@ export class Player {
   readonly position: VectorXZ = { x: 0, z: 0 };
   readonly direction: VectorXZ = { x: 1, z: 0 };
   private readonly tool = new THREE.Group();
+  private readonly tractorFrame = new THREE.Group();
   private strikeTimer = 0;
   private stunTimer = 0;
   private knockX = 0;
@@ -37,6 +39,7 @@ export class Player {
     this.tool.position.set(0.12, 0.42, 0.08);
     this.tool.scale.setScalar(0.8);
     this.group.add(this.tool);
+    this.addTractorFrame();
 
     this.cloneMaterials();
     this.syncTransform();
@@ -100,6 +103,26 @@ export class Player {
     this.strikeTimer = 0.18;
   }
 
+  setToolStyle(tool: ToolId): void {
+    this.tractorFrame.visible = tool === "tractor";
+    if (tool === "wide_sickle") {
+      this.tool.scale.setScalar(1.18);
+      this.tool.position.set(0.13, 0.42, 0.1);
+    } else if (tool === "fast_sickle") {
+      this.tool.scale.setScalar(0.68);
+      this.tool.position.set(0.1, 0.44, 0.08);
+    } else if (tool === "bomb_sickle") {
+      this.tool.scale.setScalar(0.9);
+      this.tool.position.set(0.12, 0.42, 0.08);
+    } else if (tool === "tractor") {
+      this.tool.scale.setScalar(0.55);
+      this.tool.position.set(0.16, 0.38, 0.08);
+    } else {
+      this.tool.scale.setScalar(0.8);
+      this.tool.position.set(0.12, 0.42, 0.08);
+    }
+  }
+
   update(deltaSeconds: number): void {
     this.strikeTimer = Math.max(0, this.strikeTimer - deltaSeconds);
     const strikeProgress = this.strikeTimer > 0 ? this.strikeTimer / 0.18 : 0;
@@ -138,6 +161,17 @@ export class Player {
         }
       }
     });
+  }
+
+  private addTractorFrame(): void {
+    const material = new THREE.MeshStandardMaterial({ color: "#5e8f62", roughness: 0.8 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.18, 0.36), material);
+    body.position.set(-0.05, 0.25, 0);
+    const front = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.28), material);
+    front.position.set(0.22, 0.22, 0);
+    this.tractorFrame.add(body, front);
+    this.tractorFrame.visible = false;
+    this.group.add(this.tractorFrame);
   }
 
   private setTint(on: boolean, intensity: number): void {
