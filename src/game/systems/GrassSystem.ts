@@ -1,7 +1,7 @@
 import { BALANCE } from "../config/balance";
 import type { GrassState, VectorXZ } from "../types";
 
-export function randomGrassPosition(mapSize = BALANCE.mapSizeMeters, avoid?: VectorXZ): VectorXZ {
+export function randomGrassPosition(mapSize: number = BALANCE.mapSizeMeters, avoid?: VectorXZ): VectorXZ {
   const half = mapSize / 2 - 0.35;
   let position: VectorXZ = { x: 0, z: 0 };
 
@@ -41,7 +41,7 @@ const GRASS_JITTER = 0.1; // ±10cm random offset per grid point
 export function createGrassBatch(
   count: number,
   startId: number,
-  mapSize = BALANCE.mapSizeMeters,
+  mapSize: number = BALANCE.mapSizeMeters,
 ): GrassState[] {
   const cells = Math.max(1, Math.round(Math.sqrt(count)));
   // Nodes span [-limit, limit] so node + jitter stays inside (half - margin).

@@ -14,18 +14,19 @@
 - Main scenes: main menu, game, skill tree.
 - View: isometric orthographic camera following the player.
 - Controls: WASD or arrow keys on desktop, virtual joystick on mobile.
-- Round length: 10 seconds.
-- Map: 10m x 10m.
+- Round length: 10 seconds on the 10x10 map, 30 seconds on the 30x30 map (ROUND_DURATION_BY_MAP; skill bonuses add on top).
+- Map: selectable on the main menu — 10m x 10m (default) or 30m x 30m.
 - Player movement speed: 0.7.
 - Attack cadence: one charged strike per second.
 - Attack shape: forward fan, 0.5m range, 140 degrees.
 - Damage: 3.
 - Grass HP: 5.
-- Grass density: 1600 initial grass objects on a 40x40 grid (±10cm jitter, 10cm edge margin), no mid-round grass spawning.
+- Grass density: 16/m^2 — 1600 grass objects on a 40x40 grid for the 10x10 map, scaled by map area for larger maps (e.g. 14400 on 30x30). Uniform grid with ±10cm jitter and a 10cm edge margin, chunked InstancedMesh with per-chunk frustum culling, no mid-round grass spawning.
 - Grass model: three rectangular blade meshes per grass object.
 - Hit feedback: only actually hit surviving grass shakes.
 - Death feedback: destroyed grass disappears, drops a bouncing coin, grants gold.
 - Damage text: white text floats upward, grows, then fades.
+- Bombs: touching a bomb sets off a 5m circular blast that mows all grass in range and emits explosion particles + shockwave rings; other bombs within the 2.5m chain radius detonate too (staggered, transitive). Logic is in `BombSystem` (pure); `Bomb`/`Explosions` are the visuals. Scattered as test bombs at run start per map (TEST_BOMB_COUNTS: none on 10x10, 30 on 30x30); not yet wired to a skill-tree node.
 
 ## Commands
 

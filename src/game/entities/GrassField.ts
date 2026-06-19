@@ -2,7 +2,18 @@ import * as THREE from "three";
 import { cloneModel } from "../assets/models";
 import type { GrassState } from "../types";
 
+const SHAKE_TIME = 0.24;
+const CHUNK_SIZE = 5; // world metres per chunk
+const CHUNK_CAPACITY = 1024; // max grass per chunk
+
+interface Chunk {
+  mesh: THREE.InstancedMesh;
+  count: number;
+  dirty: boolean;
+}
+
 interface Instance {
+  chunk: Chunk;
   index: number;
   x: number;
   z: number;
@@ -12,27 +23,28 @@ interface Instance {
   shakeTimer: number;
 }
 
-const SHAKE_TIME = 0.24;
-
 /**
- * Renders every grass clump as a single InstancedMesh (one draw call) while
- * keeping per-clump gameplay state. Each instance still gets a random heading
- * and 0.8x-1.2x scale, shakes when hit, and is hidden when destroyed.
+ * Grass rendered as one InstancedMesh **per spatial chunk** so the renderer can
+ * frustum-cull whole chunks that are off-screen (each chunk gets a bounding
+ * sphere covering its cell). On-screen cost stays roughly constant regardless
+ * of map size. Per-clump random heading/scale and shake-on-hit are preserved.
  */
 export class GrassField {
-  readonly mesh: THREE.InstancedMesh;
+  readonly group = new THREE.Group();
+  private readonly geometry: THREE.BufferGeometry;
+  private readonly material: THREE.Material;
+  private readonly chunks = new Map<string, Chunk>();
   private readonly instances = new Map<string, Instance>();
   private readonly shaking = new Set<string>();
-  private next = 0;
-  private dirty = false;
 
   private readonly tmpMatrix = new THREE.Matrix4();
   private readonly tmpQuat = new THREE.Quaternion();
   private readonly tmpEuler = new THREE.Euler();
   private readonly tmpPos = new THREE.Vector3();
   private readonly tmpScale = new THREE.Vector3();
+  private readonly hidden = new THREE.Matrix4().makeScale(0, 0, 0);
 
-  constructor(capacity: number) {
+  constructor() {
     const source = cloneModel("grass");
     source.updateMatrixWorld(true);
 
@@ -44,28 +56,22 @@ export class GrassField {
       }
     });
 
-    // Bake the model's world transform (incl. glTF Y-up) into the geometry so
-    // instance matrices only carry position/heading/scale.
-    const geometry = mesh ? mesh.geometry.clone() : new THREE.BufferGeometry();
+    // Bake the model world transform (incl. glTF Y-up) into the shared geometry.
+    this.geometry = mesh ? mesh.geometry.clone() : new THREE.BufferGeometry();
     if (mesh) {
-      geometry.applyMatrix4(mesh.matrixWorld);
+      this.geometry.applyMatrix4(mesh.matrixWorld);
     }
-    const material = (mesh?.material as THREE.Material) ?? new THREE.MeshStandardMaterial();
-
-    this.mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, capacity));
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-    this.mesh.frustumCulled = false;
-    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.mesh.count = 0;
+    this.material = (mesh?.material as THREE.Material) ?? new THREE.MeshStandardMaterial();
   }
 
   add(state: GrassState): void {
-    if (this.next >= this.mesh.instanceMatrix.count) {
-      return; // at capacity
+    const chunk = this.chunkFor(state.position.x, state.position.z);
+    if (chunk.count >= CHUNK_CAPACITY) {
+      return; // chunk full
     }
     const instance: Instance = {
-      index: this.next,
+      chunk,
+      index: chunk.count,
       x: state.position.x,
       z: state.position.z,
       hp: state.hp,
@@ -73,11 +79,11 @@ export class GrassField {
       scale: 0.8 + Math.random() * 0.4,
       shakeTimer: 0,
     };
+    chunk.count += 1;
+    chunk.mesh.count = chunk.count;
     this.instances.set(state.id, instance);
-    this.next += 1;
-    this.mesh.count = this.next;
     this.writeMatrix(instance, 0, 0);
-    this.dirty = true;
+    chunk.dirty = true;
   }
 
   getStates(): GrassState[] {
@@ -105,9 +111,8 @@ export class GrassField {
     }
     this.instances.delete(id);
     this.shaking.delete(id);
-    this.tmpMatrix.makeScale(0, 0, 0); // collapse to hide
-    this.mesh.setMatrixAt(instance.index, this.tmpMatrix);
-    this.dirty = true;
+    instance.chunk.mesh.setMatrixAt(instance.index, this.hidden);
+    instance.chunk.dirty = true;
   }
 
   update(deltaSeconds: number): void {
@@ -126,19 +131,52 @@ export class GrassField {
         const wobble = Math.sin((1 - progress) * Math.PI * 6) * progress;
         this.writeMatrix(instance, wobble * 0.16, wobble * 0.08);
       }
-      this.dirty = true;
+      instance.chunk.dirty = true;
     }
 
-    if (this.dirty) {
-      this.mesh.instanceMatrix.needsUpdate = true;
-      this.dirty = false;
+    for (const chunk of this.chunks.values()) {
+      if (chunk.dirty) {
+        chunk.mesh.instanceMatrix.needsUpdate = true;
+        chunk.dirty = false;
+      }
     }
   }
 
   dispose(): void {
-    this.mesh.geometry.dispose();
+    for (const chunk of this.chunks.values()) {
+      chunk.mesh.dispose();
+    }
+    this.geometry.dispose();
     // Material is shared with the cached model; do not dispose it.
-    this.mesh.dispose();
+  }
+
+  private chunkFor(x: number, z: number): Chunk {
+    const cx = Math.floor(x / CHUNK_SIZE);
+    const cz = Math.floor(z / CHUNK_SIZE);
+    const key = `${cx},${cz}`;
+    let chunk = this.chunks.get(key);
+    if (chunk) {
+      return chunk;
+    }
+
+    const mesh = new THREE.InstancedMesh(this.geometry, this.material, CHUNK_CAPACITY);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = true; // each chunk culls independently
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.count = 0;
+
+    // Bounding sphere covering this chunk's cell (+grass height/jitter margin).
+    // The mesh sits at origin with world-space instances, so matrixWorld is
+    // identity and this sphere is already in world space.
+    const halfXZ = CHUNK_SIZE / 2 + 0.4;
+    const center = new THREE.Vector3((cx + 0.5) * CHUNK_SIZE, 0.55, (cz + 0.5) * CHUNK_SIZE);
+    mesh.boundingSphere = new THREE.Sphere(center, Math.sqrt(2 * halfXZ * halfXZ + 0.6 * 0.6));
+
+    chunk = { mesh, count: 0, dirty: false };
+    this.chunks.set(key, chunk);
+    this.group.add(mesh);
+    return chunk;
   }
 
   private writeMatrix(instance: Instance, shakeY: number, shakeZ: number): void {
@@ -147,6 +185,6 @@ export class GrassField {
     this.tmpPos.set(instance.x, 0, instance.z);
     this.tmpScale.set(instance.scale, instance.scale, instance.scale);
     this.tmpMatrix.compose(this.tmpPos, this.tmpQuat, this.tmpScale);
-    this.mesh.setMatrixAt(instance.index, this.tmpMatrix);
+    instance.chunk.mesh.setMatrixAt(instance.index, this.tmpMatrix);
   }
 }

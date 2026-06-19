@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BALANCE } from "./config/balance";
 import { GameScene } from "./scenes/GameScene";
 import { MainMenuScene } from "./scenes/MainMenuScene";
 import { SkillTreeScene } from "./scenes/SkillTreeScene";
@@ -15,6 +16,8 @@ export class App {
   readonly renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   readonly camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 100);
   readonly uiRoot = document.createElement("div");
+  /** Player-selected map size (meters/side); set on the menu, read by GameScene. */
+  mapSizeMeters: number = BALANCE.mapSizeMeters;
   private activeScene: GameSceneController;
   private previousTime = 0;
   private orthoSize = 8;
