@@ -15,6 +15,9 @@ import {
 } from "../src/game/systems/ObstacleSystem";
 import {
   canUnlockNode,
+  computeCropMarkHits,
+  computeLaserHits,
+  computeTractorStripHits,
   getRuntimeStats,
   isNodeRevealed,
   isNodeUnlocked,
@@ -339,6 +342,55 @@ describe("skill tree unlocks", () => {
     const locked = unlockNode(save, "field_rhythm_2");
     expect(locked.gold).toBe(goldAfter);
     expect(isNodeUnlocked(locked, "field_rhythm_2")).toBe(false);
+  });
+});
+
+describe("spectacle skill targeting", () => {
+  it("alien crop mark cuts grass inside the stamped circle", () => {
+    const hits = computeCropMarkHits(
+      [
+        { id: "a", x: 0, z: 0, alive: true },
+        { id: "b", x: 1.3, z: 0, alive: true },
+        { id: "c", x: 3, z: 0, alive: true },
+      ],
+      { x: 0, z: 0 },
+      1.2,
+    );
+    expect(hits).toEqual(["a"]);
+  });
+
+  it("mower laser cuts a narrow forward line and can trigger bombs", () => {
+    const result = computeLaserHits({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      length: 6,
+      width: 0.3,
+      grass: [
+        { id: "g1", x: 2, z: 0.1, alive: true },
+        { id: "g2", x: 2, z: 0.4, alive: true },
+      ],
+      bombs: [
+        { id: "b1", x: 4, z: 0.05, triggered: false },
+        { id: "b2", x: 7, z: 0, triggered: false },
+      ],
+    });
+    expect(result.grassIds).toEqual(["g1"]);
+    expect(result.bombIds).toEqual(["b1"]);
+  });
+
+  it("tractor strip cuts a wide rectangle in front of the player", () => {
+    const hits = computeTractorStripHits({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      length: 1.2,
+      width: 1.2,
+      grass: [
+        { id: "front", x: 0.8, z: 0.4, alive: true },
+        { id: "side", x: 0.8, z: 0.8, alive: true },
+        { id: "back", x: -0.2, z: 0, alive: true },
+      ],
+    });
+    expect(hits).toEqual(["front"]);
   });
 });
 

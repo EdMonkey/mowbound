@@ -28,6 +28,37 @@ export interface RuntimeStats extends BaseRuntimeStats {
   hasTractor: boolean;
 }
 
+export interface CuttablePoint {
+  id: string;
+  x: number;
+  z: number;
+  alive: boolean;
+}
+
+export interface BombPoint {
+  id: string;
+  x: number;
+  z: number;
+  triggered: boolean;
+}
+
+export interface LaserHitRequest {
+  origin: { x: number; z: number };
+  direction: { x: number; z: number };
+  length: number;
+  width: number;
+  grass: CuttablePoint[];
+  bombs: BombPoint[];
+}
+
+export interface StripHitRequest {
+  origin: { x: number; z: number };
+  direction: { x: number; z: number };
+  length: number;
+  width: number;
+  grass: CuttablePoint[];
+}
+
 interface RuntimeTotals {
   attackDamage: number;
   attackRange: number;
@@ -362,4 +393,52 @@ export function nextAffordableGoals(save: SaveData, limit = 3): SkillNode[] {
     .filter((node) => canUnlockNode(normalized, node.id))
     .sort((a, b) => a.cost - b.cost)
     .slice(0, limit);
+}
+
+function normalize2(v: { x: number; z: number }): { x: number; z: number } {
+  const length = Math.hypot(v.x, v.z) || 1;
+  return { x: v.x / length, z: v.z / length };
+}
+
+function isInForwardStrip(
+  point: { x: number; z: number },
+  origin: { x: number; z: number },
+  direction: { x: number; z: number },
+  length: number,
+  width: number,
+): boolean {
+  const dir = normalize2(direction);
+  const dx = point.x - origin.x;
+  const dz = point.z - origin.z;
+  const forward = dx * dir.x + dz * dir.z;
+  const side = Math.abs(dx * -dir.z + dz * dir.x);
+  return forward >= 0 && forward <= length && side <= width / 2;
+}
+
+export function computeCropMarkHits(
+  grass: CuttablePoint[],
+  center: { x: number; z: number },
+  radius: number,
+): string[] {
+  const radiusSq = radius * radius;
+  return grass
+    .filter((item) => item.alive && (item.x - center.x) ** 2 + (item.z - center.z) ** 2 <= radiusSq)
+    .map((item) => item.id);
+}
+
+export function computeLaserHits(request: LaserHitRequest): { grassIds: string[]; bombIds: string[] } {
+  return {
+    grassIds: request.grass
+      .filter((item) => item.alive && isInForwardStrip(item, request.origin, request.direction, request.length, request.width))
+      .map((item) => item.id),
+    bombIds: request.bombs
+      .filter((item) => !item.triggered && isInForwardStrip(item, request.origin, request.direction, request.length, request.width))
+      .map((item) => item.id),
+  };
+}
+
+export function computeTractorStripHits(request: StripHitRequest): string[] {
+  return request.grass
+    .filter((item) => item.alive && isInForwardStrip(item, request.origin, request.direction, request.length, request.width))
+    .map((item) => item.id);
 }

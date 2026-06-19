@@ -8,13 +8,16 @@ import {
 } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
+import { CropMark } from "../entities/CropMark";
 import { Debris } from "../entities/Debris";
 import { Explosions } from "../entities/Explosions";
 import { FallingLog } from "../entities/FallingLog";
 import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
+import { LaserBeam } from "../entities/LaserBeam";
 import { Obstacle } from "../entities/Obstacle";
 import { Player, PLAYER_COLLISION_RADIUS } from "../entities/Player";
+import { TractorTrail } from "../entities/TractorTrail";
 import {
   advanceChargeAttack,
   getSurvivingHitIds,
@@ -42,13 +45,38 @@ import type { RunScoreEvent } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
 import { applyRunResultToSave, loadSave, saveGame } from "../systems/SaveSystem";
-import { getEconomyStats, getRuntimeStats, nextAffordableGoals, type RuntimeStats } from "../systems/SkillSystem";
+import {
+  computeCropMarkHits,
+  computeLaserHits,
+  computeTractorStripHits,
+  getEconomyStats,
+  getRuntimeStats,
+  nextAffordableGoals,
+  type RuntimeStats,
+} from "../systems/SkillSystem";
 import { summarizeRun } from "../systems/RunSummarySystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
-import type { GrassState } from "../types";
+import type { GrassState, VectorXZ } from "../types";
 
 const ATTACK_FLASH_DURATION = 0.45;
+const ALIEN_CROP_MARK_COOLDOWN_MS = 12_000;
+const ALIEN_CROP_MARK_DELAY_SECONDS = 0.4;
+const ALIEN_CROP_MARK_RADIUS = 1.2;
+const MOWER_LASER_EVERY_ATTACKS = 8;
+const MOWER_LASER_LENGTH = 6;
+const MOWER_LASER_WIDTH = 0.3;
+const TRACTOR_TICK_MS = 200;
+const TRACTOR_STRIP_LENGTH = 1.2;
+const TRACTOR_STRIP_WIDTH = 1.2;
+
+interface PendingCropMark {
+  effect: CropMark;
+  center: VectorXZ;
+  radius: number;
+  age: number;
+  fired: boolean;
+}
 
 export class GameScene implements GameSceneController {
   readonly scene = new THREE.Scene();
@@ -69,6 +97,9 @@ export class GameScene implements GameSceneController {
   private readonly fallingLogs: FallingLog[] = [];
   private readonly rockChips = new Debris(["#8a8a90", "#6f6f77", "#a6a6ac"], [0.09, 0.09, 0.09]);
   private readonly woodChips = new Debris(["#7a5230", "#5e3d1f", "#9b6b3a"], [0.13, 0.05, 0.05]);
+  private readonly cropMarks: PendingCropMark[] = [];
+  private readonly laserBeams: LaserBeam[] = [];
+  private readonly tractorTrails: TractorTrail[] = [];
   // Collision-circle debug overlay (toggled by a button); off by default.
   private readonly debugGroup = new THREE.Group();
   private readonly debugCircleGeo = new THREE.CircleGeometry(1, 28);
@@ -106,6 +137,9 @@ export class GameScene implements GameSceneController {
   private readonly mapSize: number;
   private readonly roundDurationMs: number;
   private readonly cameraTarget = new THREE.Vector3(0, 0, 0);
+  private alienCropMarkCooldownMs = 0;
+  private laserAttackCount = 0;
+  private tractorTimerMs = 0;
 
   constructor(private readonly app: App) {
     // Assigned in the body (not a field initializer): `app` is a constructor
@@ -155,11 +189,13 @@ export class GameScene implements GameSceneController {
     this.woodChips.update(deltaSeconds);
     this.updateFallingLogs(deltaSeconds);
     this.updateBombs(deltaSeconds);
+    this.updateSpectacleEffects(deltaSeconds);
     this.updateCollisionDebug();
     this.hud.update(deltaSeconds);
 
     if (!this.ended) {
       this.elapsedMs += deltaSeconds * 1000;
+      this.alienCropMarkCooldownMs = Math.max(0, this.alienCropMarkCooldownMs - deltaSeconds * 1000);
       if (this.stats.grassSpawnPerTick > 0) {
         this.spawnTimerMs += deltaSeconds * 1000;
 
@@ -171,6 +207,7 @@ export class GameScene implements GameSceneController {
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
       this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize, this.collisionBlockers());
+      this.updateTractorSkill(deltaSeconds, movement);
 
       // A stunned player can't swing; the charge timer holds until they recover.
       if (!this.player.stunned) {
@@ -215,6 +252,9 @@ export class GameScene implements GameSceneController {
     this.obstacles.forEach((obstacle) => obstacle.dispose());
     this.obstacles.clear();
     this.fallingLogs.forEach((log) => log.dispose());
+    this.cropMarks.forEach((mark) => mark.effect.dispose());
+    this.laserBeams.forEach((beam) => beam.dispose());
+    this.tractorTrails.forEach((trail) => trail.dispose());
     this.debugButton.remove();
     this.debugCircleGeo.dispose();
     this.debugObstacleMat.dispose();
@@ -485,33 +525,10 @@ export class GameScene implements GameSceneController {
 
     // Mow every grass clump inside the blast. Gold is granted for all of them,
     // but coin/clipping VFX are capped so a huge blast can't spike the frame.
-    const grassStates = this.grassField.getStates();
-    const positionById = new Map(grassStates.map((grass) => [grass.id, grass.position]));
-    const hitIds = grassInRadius(grassStates, center, radius);
-
-    let coinBudget = BALANCE.bombMaxCoinsPerBlast;
-    let clipBudget = BALANCE.bombMaxClippingsPerBlast;
-    for (const grassId of hitIds) {
-      const position = positionById.get(grassId);
-      this.grassField.destroy(grassId);
-      if (!position) {
-        continue;
-      }
-      if (clipBudget > 0) {
-        this.clippings.emit(position.x, position.z);
-        clipBudget -= 1;
-      }
-      if (coinBudget > 0) {
-        const coin = new Coin(position, center);
-        this.coins.push(coin);
-        this.scene.add(coin.group);
-        coinBudget -= 1;
-      }
-    }
-
-    if (hitIds.length > 0) {
-      this.recordScoreEvent({ kind: "grassCut", count: hitIds.length });
-    }
+    this.cutGrassIds(grassInRadius(this.grassField.getStates(), center, radius), center, {
+      coinLimit: BALANCE.bombMaxCoinsPerBlast,
+      clipLimit: BALANCE.bombMaxClippingsPerBlast,
+    });
   }
 
   private performAttack(): void {
@@ -530,17 +547,7 @@ export class GameScene implements GameSceneController {
 
     // (test) damage text disabled
 
-    for (const id of result.destroyedIds) {
-      const position = positionById.get(id);
-      if (!position) {
-        continue;
-      }
-      const coin = new Coin(position, this.player.position);
-      this.coins.push(coin);
-      this.scene.add(coin.group);
-      this.clippings.emit(position.x, position.z);
-      this.grassField.destroy(id);
-    }
+    this.cutGrassIds(result.destroyedIds, this.player.position);
 
     for (const id of getSurvivingHitIds(result)) {
       const state = resultById.get(id);
@@ -557,11 +564,191 @@ export class GameScene implements GameSceneController {
       this.player.strike();
     }
 
-    if (result.destroyedIds.length > 0) {
-      this.recordScoreEvent({ kind: "grassCut", count: result.destroyedIds.length });
+    this.tryCastAlienCropMark();
+    this.tryFireMowerLaser();
+    this.attackObstacles();
+  }
+
+  private cutGrassIds(
+    ids: readonly string[],
+    origin: VectorXZ,
+    options: { coinLimit?: number; clipLimit?: number } = {},
+  ): number {
+    if (ids.length === 0) {
+      return 0;
     }
 
-    this.attackObstacles();
+    const uniqueIds = Array.from(new Set(ids));
+    const positionById = new Map(this.grassField.getStates().map((grass) => [grass.id, grass.position]));
+    let coinBudget = options.coinLimit ?? uniqueIds.length;
+    let clipBudget = options.clipLimit ?? uniqueIds.length;
+    let cutCount = 0;
+
+    for (const id of uniqueIds) {
+      const position = positionById.get(id);
+      if (!position) {
+        continue;
+      }
+
+      this.grassField.destroy(id);
+      cutCount += 1;
+
+      if (clipBudget > 0) {
+        this.clippings.emit(position.x, position.z);
+        clipBudget -= 1;
+      }
+      if (coinBudget > 0) {
+        const coin = new Coin(position, origin);
+        this.coins.push(coin);
+        this.scene.add(coin.group);
+        coinBudget -= 1;
+      }
+    }
+
+    if (cutCount > 0) {
+      this.recordScoreEvent({ kind: "grassCut", count: cutCount });
+    }
+
+    return cutCount;
+  }
+
+  private grassPoints() {
+    return this.grassField.getStates().map((grass) => ({
+      id: grass.id,
+      x: grass.position.x,
+      z: grass.position.z,
+      alive: true,
+    }));
+  }
+
+  private bombPoints() {
+    return this.bombStates.map((bomb) => ({
+      id: bomb.id,
+      x: bomb.position.x,
+      z: bomb.position.z,
+      triggered: bomb.detonated,
+    }));
+  }
+
+  private forwardPoint(distance: number): VectorXZ {
+    const length = Math.hypot(this.player.direction.x, this.player.direction.z) || 1;
+    const half = this.mapSize / 2 - 0.2;
+    return {
+      x: THREE.MathUtils.clamp(this.player.position.x + (this.player.direction.x / length) * distance, -half, half),
+      z: THREE.MathUtils.clamp(this.player.position.z + (this.player.direction.z / length) * distance, -half, half),
+    };
+  }
+
+  private tryCastAlienCropMark(): void {
+    if (!this.stats.hasAlienCropMark || this.alienCropMarkCooldownMs > 0) {
+      return;
+    }
+
+    const center = this.forwardPoint(1.6);
+    const effect = new CropMark(center, ALIEN_CROP_MARK_RADIUS);
+    this.scene.add(effect.group);
+    this.cropMarks.push({
+      effect,
+      center,
+      radius: ALIEN_CROP_MARK_RADIUS,
+      age: 0,
+      fired: false,
+    });
+    this.alienCropMarkCooldownMs = ALIEN_CROP_MARK_COOLDOWN_MS;
+  }
+
+  private tryFireMowerLaser(): void {
+    if (!this.stats.hasMowerLaser) {
+      return;
+    }
+
+    this.laserAttackCount += 1;
+    if (this.laserAttackCount % MOWER_LASER_EVERY_ATTACKS !== 0) {
+      return;
+    }
+
+    const origin = this.forwardPoint(0.18);
+    const result = computeLaserHits({
+      origin,
+      direction: this.player.direction,
+      length: MOWER_LASER_LENGTH,
+      width: MOWER_LASER_WIDTH,
+      grass: this.grassPoints(),
+      bombs: this.bombPoints(),
+    });
+    this.cutGrassIds(result.grassIds, origin, { coinLimit: 40, clipLimit: 40 });
+    for (const bombId of result.bombIds) {
+      this.triggerChain(bombId);
+    }
+
+    const beam = new LaserBeam(origin, this.player.direction, MOWER_LASER_LENGTH, MOWER_LASER_WIDTH);
+    this.laserBeams.push(beam);
+    this.scene.add(beam.group);
+    this.player.strike();
+  }
+
+  private updateTractorSkill(deltaSeconds: number, movement: VectorXZ): void {
+    if (!this.stats.hasTractor || this.player.stunned || Math.hypot(movement.x, movement.z) <= 0.01) {
+      return;
+    }
+
+    this.tractorTimerMs += deltaSeconds * 1000;
+    if (this.tractorTimerMs < TRACTOR_TICK_MS) {
+      return;
+    }
+    this.tractorTimerMs = 0;
+
+    const origin = this.forwardPoint(0.15);
+    const grassIds = computeTractorStripHits({
+      origin,
+      direction: this.player.direction,
+      length: TRACTOR_STRIP_LENGTH,
+      width: TRACTOR_STRIP_WIDTH,
+      grass: this.grassPoints(),
+    });
+    this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24 });
+
+    const trail = new TractorTrail(origin, this.player.direction, TRACTOR_STRIP_LENGTH, TRACTOR_STRIP_WIDTH);
+    this.tractorTrails.push(trail);
+    this.scene.add(trail.group);
+  }
+
+  private updateSpectacleEffects(deltaSeconds: number): void {
+    for (let index = this.cropMarks.length - 1; index >= 0; index -= 1) {
+      const mark = this.cropMarks[index];
+      mark.age += deltaSeconds;
+      if (!mark.fired && mark.age >= ALIEN_CROP_MARK_DELAY_SECONDS) {
+        this.cutGrassIds(
+          computeCropMarkHits(this.grassPoints(), mark.center, mark.radius),
+          mark.center,
+          { coinLimit: 48, clipLimit: 48 },
+        );
+        mark.fired = true;
+      }
+      if (mark.effect.update(deltaSeconds)) {
+        this.scene.remove(mark.effect.group);
+        mark.effect.dispose();
+        this.cropMarks.splice(index, 1);
+      }
+    }
+
+    for (let index = this.laserBeams.length - 1; index >= 0; index -= 1) {
+      const beam = this.laserBeams[index];
+      if (beam.update(deltaSeconds)) {
+        this.scene.remove(beam.group);
+        beam.dispose();
+        this.laserBeams.splice(index, 1);
+      }
+    }
+
+    for (let index = this.tractorTrails.length - 1; index >= 0; index -= 1) {
+      const trail = this.tractorTrails[index];
+      if (trail.update(deltaSeconds)) {
+        this.scene.remove(trail.group);
+        trail.dispose();
+        this.tractorTrails.splice(index, 1);
+      }
+    }
   }
 
   private attackObstacles(): void {
