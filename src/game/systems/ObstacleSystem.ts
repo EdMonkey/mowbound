@@ -8,6 +8,8 @@ export interface ObstacleState {
   kind: ObstacleKind;
   position: VectorXZ;
   hp: number;
+  /** Ground-footprint radius (base radius * the instance's visual scale). */
+  radius: number;
   destroyed: boolean;
 }
 
@@ -16,8 +18,9 @@ export function createObstacleState(
   kind: ObstacleKind,
   position: VectorXZ,
   hp: number,
+  radius: number,
 ): ObstacleState {
-  return { id, kind, position, hp, destroyed: false };
+  return { id, kind, position, hp, radius, destroyed: false };
 }
 
 export interface ObstacleAttackRequest {
@@ -43,7 +46,9 @@ export interface ObstacleAttackResult {
  * **strictly greater** than the obstacle's HP destroys it (rock -> rubble,
  * tree -> stump). A hit that doesn't exceed the HP does nothing to the obstacle
  * but recoils the attacker into a stun (the caller applies the timer). Reuses
- * the attack fan so obstacles are caught by the same swing as grass.
+ * the attack fan, but extends the reach by each obstacle's radius so the swing
+ * lands when it touches the obstacle's edge (not only its center) — this keeps
+ * even a large rock reachable regardless of its collision circle.
  */
 export function resolveObstacleAttack(request: ObstacleAttackRequest): ObstacleAttackResult {
   const destroyedIds: string[] = [];
@@ -53,7 +58,8 @@ export function resolveObstacleAttack(request: ObstacleAttackRequest): ObstacleA
     if (obstacle.destroyed) {
       continue;
     }
-    if (!isInAttackFan(request.origin, request.direction, obstacle.position, request.range, request.arcDegrees)) {
+    const reach = request.range + obstacle.radius;
+    if (!isInAttackFan(request.origin, request.direction, obstacle.position, reach, request.arcDegrees)) {
       continue;
     }
     if (request.damage > obstacle.hp) {
@@ -72,9 +78,12 @@ export interface Circle {
   radius: number;
 }
 
-/** Per-kind collision radius for an intact obstacle (kept under the attack range
- *  + player radius so a pressed-up obstacle still lands inside the swing). */
-export const OBSTACLE_COLLISION_RADIUS: Record<ObstacleKind, number> = { rock: 0.3, tree: 0.24 };
+/**
+ * Per-kind base collision radius matching the model's ground footprint at scale
+ * 1 (rock mesh half-width ~0.33; tree trunk ~0.24). The spawner multiplies this
+ * by the instance's visual scale so the circle tracks the actual mesh size.
+ */
+export const OBSTACLE_BASE_RADIUS: Record<ObstacleKind, number> = { rock: 0.33, tree: 0.24 };
 
 /**
  * Push `point` (a mover of `pointRadius`) out of any blocker circle it overlaps,

@@ -249,7 +249,7 @@ describe("rock/tree obstacles", () => {
     });
 
   it("breaks an obstacle when damage exceeds its HP, without stunning", () => {
-    const rock = createObstacleState("r", "rock", { x: 0.3, z: 0 }, 5);
+    const rock = createObstacleState("r", "rock", { x: 0.3, z: 0 }, 5, 0.3);
     const result = attack(6, [rock]);
     expect(result.destroyedIds).toEqual(["r"]);
     expect(result.blockedIds).toEqual([]);
@@ -257,15 +257,24 @@ describe("rock/tree obstacles", () => {
   });
 
   it("stuns the attacker (no HP change) when damage fails to break the obstacle", () => {
-    const tree = createObstacleState("t", "tree", { x: 0.3, z: 0 }, 5);
+    const tree = createObstacleState("t", "tree", { x: 0.3, z: 0 }, 5, 0.24);
     // equal damage is not enough — must be strictly greater
     expect(attack(5, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: true });
     expect(attack(3, [tree])).toEqual({ destroyedIds: [], blockedIds: ["t"], stun: true });
   });
 
+  it("reaches an obstacle when the swing touches its edge, not only its center", () => {
+    // center at 0.7 is past the 0.5 range, but within range + radius (0.5 + 0.3)
+    const near = createObstacleState("near", "rock", { x: 0.7, z: 0 }, 5, 0.3);
+    expect(attack(6, [near]).destroyedIds).toEqual(["near"]);
+    // center at 0.95 is beyond reach (0.8) -> untouched
+    const far = createObstacleState("far", "rock", { x: 0.95, z: 0 }, 5, 0.3);
+    expect(attack(6, [far]).destroyedIds).toEqual([]);
+  });
+
   it("ignores out-of-range and already-destroyed obstacles", () => {
-    const far = createObstacleState("far", "rock", { x: 3, z: 0 }, 1);
-    const spent = { ...createObstacleState("spent", "tree", { x: 0.2, z: 0 }, 1), destroyed: true };
+    const far = createObstacleState("far", "rock", { x: 3, z: 0 }, 1, 0.3);
+    const spent = { ...createObstacleState("spent", "tree", { x: 0.2, z: 0 }, 1, 0.24), destroyed: true };
     const result = attack(99, [far, spent]);
     expect(result.destroyedIds).toEqual([]);
     expect(result.blockedIds).toEqual([]);

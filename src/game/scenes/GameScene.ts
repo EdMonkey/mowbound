@@ -30,7 +30,7 @@ import {
 } from "../systems/BombSystem";
 import {
   createObstacleState,
-  OBSTACLE_COLLISION_RADIUS,
+  OBSTACLE_BASE_RADIUS,
   resolveObstacleAttack,
   type Circle,
   type ObstacleKind,
@@ -323,8 +323,11 @@ export class GameScene implements GameSceneController {
       for (let index = 0; index < count; index += 1) {
         const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
         const id = `${kind}-${index + 1}`;
-        this.obstacleStates.push(createObstacleState(id, kind, position, BALANCE.obstacleHp));
-        const obstacle = new Obstacle(kind, position);
+        // One scale drives both the visual model and the collision radius.
+        const scale = 0.85 + Math.random() * 0.3;
+        const radius = OBSTACLE_BASE_RADIUS[kind] * scale;
+        this.obstacleStates.push(createObstacleState(id, kind, position, BALANCE.obstacleHp, radius));
+        const obstacle = new Obstacle(kind, position, scale);
         this.obstacles.set(id, obstacle);
         this.scene.add(obstacle.group);
       }
@@ -341,7 +344,7 @@ export class GameScene implements GameSceneController {
         blockers.push({
           x: obstacle.position.x,
           z: obstacle.position.z,
-          radius: OBSTACLE_COLLISION_RADIUS[obstacle.kind],
+          radius: obstacle.radius,
         });
       }
     }
@@ -353,9 +356,8 @@ export class GameScene implements GameSceneController {
     // (yellow) that follows them. Hidden until the debug button is toggled.
     for (const state of this.obstacleStates) {
       const disc = new THREE.Mesh(this.debugCircleGeo, this.debugObstacleMat);
-      const radius = OBSTACLE_COLLISION_RADIUS[state.kind];
       disc.rotation.x = -Math.PI / 2;
-      disc.scale.setScalar(radius);
+      disc.scale.setScalar(state.radius);
       disc.position.set(state.position.x, 0.06, state.position.z);
       disc.renderOrder = 13;
       this.debugGroup.add(disc);

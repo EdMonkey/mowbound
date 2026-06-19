@@ -16,13 +16,14 @@ export class Obstacle {
   private current: THREE.Object3D;
   private readonly brokenModel: ModelKey;
 
-  constructor(kind: ObstacleKind, position: VectorXZ) {
+  constructor(kind: ObstacleKind, position: VectorXZ, scale: number) {
     this.brokenModel = BROKEN_MODEL[kind];
     this.current = cloneModel(INTACT_MODEL[kind]);
     this.group.add(this.current);
     this.group.position.set(position.x, 0, position.z);
     this.group.rotation.y = Math.random() * Math.PI * 2;
-    this.group.scale.setScalar(0.85 + Math.random() * 0.3);
+    // Caller picks the scale so the collision radius can track it (see GameScene).
+    this.group.scale.setScalar(scale);
   }
 
   break(): void {
