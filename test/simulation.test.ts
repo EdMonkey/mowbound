@@ -20,7 +20,7 @@ import {
   mapScreenInputToWorldMovement,
   normalizeInputVector,
 } from "../src/game/systems/InputSystem";
-import { BALANCE, defaultSave } from "../src/game/config/balance";
+import { BALANCE, defaultSave, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
 
 class FakeInputTarget {
   innerWidth = 1000;
@@ -219,6 +219,15 @@ describe("bomb chain detonation", () => {
       { id: "outside", position: { x: 6, z: 0 }, hp: 5 },
     ];
     expect(grassInRadius(grass, { x: 0, z: 0 }, 5)).toEqual(["near", "edge"]);
+  });
+
+  it("places test bombs only on the large map and runs it longer", () => {
+    expect(TEST_BOMB_COUNTS[10]).toBe(0);
+    expect(TEST_BOMB_COUNTS[30]).toBe(30);
+    expect(ROUND_DURATION_BY_MAP[10]).toBe(10000);
+    expect(ROUND_DURATION_BY_MAP[30]).toBe(30000);
+    // chain radius is smaller than the mow radius so chains stay local
+    expect(BALANCE.bombChainRadiusMeters).toBeLessThan(BALANCE.bombBlastRadiusMeters);
   });
 });
 

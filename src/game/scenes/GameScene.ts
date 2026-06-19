@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
-import { BALANCE, type RuntimeStats } from "../config/balance";
+import { BALANCE, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS, type RuntimeStats } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
 import { Explosions } from "../entities/Explosions";
@@ -57,6 +57,7 @@ export class GameScene implements GameSceneController {
   private ended = false;
   private save = loadSave();
   private readonly mapSize: number;
+  private readonly roundDurationMs: number;
   private readonly cameraTarget = new THREE.Vector3(0, 0, 0);
 
   constructor(private readonly app: App) {
@@ -64,6 +65,9 @@ export class GameScene implements GameSceneController {
     // parameter property, which isn't available when field initializers run.
     this.mapSize = this.app.mapSizeMeters;
     this.stats = getRuntimeStats(this.save);
+    // Round length depends on the chosen map; skill bonuses add on top.
+    const skillRoundBonus = this.stats.roundDurationMs - BALANCE.roundDurationMs;
+    this.roundDurationMs = (ROUND_DURATION_BY_MAP[this.mapSize] ?? BALANCE.roundDurationMs) + skillRoundBonus;
     this.hud = new Hud(this.app.uiRoot);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
     this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
@@ -118,7 +122,7 @@ export class GameScene implements GameSceneController {
         this.performAttack();
       }
 
-      if (this.elapsedMs >= this.stats.roundDurationMs) {
+      if (this.elapsedMs >= this.roundDurationMs) {
         this.endRound();
       }
     }
@@ -126,7 +130,7 @@ export class GameScene implements GameSceneController {
     this.updateIndicator(deltaSeconds);
 
     this.hud.updateGame({
-      timeMs: this.stats.roundDurationMs - this.elapsedMs,
+      timeMs: this.roundDurationMs - this.elapsedMs,
       roundGold: this.roundGold,
       totalGold: this.save.totalGold + this.roundGold,
       damage: this.stats.attackDamage,
@@ -238,11 +242,10 @@ export class GameScene implements GameSceneController {
   }
 
   private spawnTestBombs(): void {
-    // Scatter test bombs across the map; count scales with area (like grass),
-    // capped so a big map doesn't spawn too many entities. Kept away from the
-    // player's start so a run doesn't begin mid-explosion.
-    const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
-    const count = Math.min(BALANCE.testBombMaxCount, Math.round(BALANCE.testBombBaseCount * areaScale));
+    // Scatter a fixed batch of test bombs for the chosen map (none on 10x10,
+    // a handful on 30x30). Kept away from the player's start so a run doesn't
+    // begin mid-explosion.
+    const count = TEST_BOMB_COUNTS[this.mapSize] ?? 0;
     for (let index = 0; index < count; index += 1) {
       const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
       const id = `bomb-${index + 1}`;
@@ -281,7 +284,7 @@ export class GameScene implements GameSceneController {
   }
 
   private triggerChain(triggerId: string): void {
-    const order = resolveChainDetonation(this.bombStates, triggerId, BALANCE.bombBlastRadiusMeters);
+    const order = resolveChainDetonation(this.bombStates, triggerId, BALANCE.bombChainRadiusMeters);
     if (order.length === 0) {
       return;
     }

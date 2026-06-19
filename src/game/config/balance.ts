@@ -18,17 +18,23 @@ export const BALANCE = {
   virtualJoystickRadiusPx: 64,
   virtualJoystickDeadZone: 0.12,
   minAttackIntervalMs: 150,
-  // Bomb skill: touch a bomb to set off a circular blast that mows all grass in
-  // range; bombs within the blast radius chain-detonate. Test bombs are
-  // scattered at run start (count scales with map area, capped).
+  // Bomb skill: touch a bomb to set off a circular blast that mows all grass
+  // within `bombBlastRadiusMeters`; other bombs within the (smaller) chain
+  // radius detonate too. Test bombs are scattered at run start, see
+  // TEST_BOMB_COUNTS. Per-map counts/durations live in the lookups below.
   bombBlastRadiusMeters: 5,
+  bombChainRadiusMeters: 2.5,
   bombTriggerRadiusMeters: 0.7,
   bombChainDelayMs: 110,
   bombMaxCoinsPerBlast: 30,
   bombMaxClippingsPerBlast: 40,
-  testBombBaseCount: 16,
-  testBombMaxCount: 80,
 } as const;
+
+/** Test bombs scattered at run start, per selected map size (meters/side). */
+export const TEST_BOMB_COUNTS: Record<number, number> = { 10: 0, 30: 30 };
+
+/** Base round duration per map size (ms); skill bonuses add on top. */
+export const ROUND_DURATION_BY_MAP: Record<number, number> = { 10: 10000, 30: 30000 };
 
 /** Selectable map sizes (meters per side) offered on the main menu. */
 export const MAP_SIZE_OPTIONS = [10, 30] as const;
