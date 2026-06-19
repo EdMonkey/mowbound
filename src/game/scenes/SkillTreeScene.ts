@@ -2,7 +2,6 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { SKILL_NODES, SKILL_NODE_BY_ID, SKILL_ROOT, type SkillNode } from "../config/balance";
 import {
-  addGold,
   canUnlockNode,
   getNodeCost,
   isNodeRevealed,
@@ -318,12 +317,6 @@ export class SkillTreeScene implements GameSceneController {
     };
 
     box.append(
-      // TODO(test): temporary debug grant for skill-tree testing; remove before prod.
-      make("+100 Gold", "tree-test-gold", () => {
-        this.save = addGold(this.save, 100);
-        saveGame(this.save);
-        this.render();
-      }),
       make("+", "", () => {
         const c = center();
         this.zoomAtPoint(c.x, c.y, 1.2);
