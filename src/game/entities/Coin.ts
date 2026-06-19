@@ -13,6 +13,8 @@ export class Coin {
   private verticalVelocity = 3.6;
   private bounceCount = 0;
   private readonly drift: VectorXZ;
+  private readonly spinY: number;
+  private readonly spinZ: number;
 
   constructor(position: VectorXZ, origin: VectorXZ = position) {
     // The exported coin already lies flat (face up), so no extra rotation.
@@ -32,6 +34,11 @@ export class Coin {
       x: Math.cos(angle) * speed,
       z: Math.sin(angle) * speed,
     };
+
+    this.verticalVelocity *= 1 + Math.random() * 0.5; // pop 1x–1.5x height
+    this.spinY = (Math.random() < 0.5 ? -1 : 1) * 9; // random spin direction
+    this.spinZ = (Math.random() < 0.5 ? -1 : 1) * 6;
+    this.group.rotation.y = Math.random() * Math.PI * 2;
   }
 
   update(deltaSeconds: number): boolean {
@@ -55,8 +62,8 @@ export class Coin {
       }
     }
 
-    this.group.rotation.y += deltaSeconds * 9;
-    this.group.rotation.z += deltaSeconds * 6;
+    this.group.rotation.y += this.spinY * deltaSeconds;
+    this.group.rotation.z += this.spinZ * deltaSeconds;
 
     // Pop in (grow), hold, then shrink away over the last 0.3s.
     let scale: number;
