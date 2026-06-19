@@ -314,7 +314,7 @@ export class GameScene implements GameSceneController {
     // Scatter a fixed batch of test bombs for the chosen map (none on 10x10,
     // a handful on 30x30). Kept away from the player's start so a run doesn't
     // begin mid-explosion.
-    const count = TEST_BOMB_COUNTS[this.mapSize] ?? 0;
+    const count = (TEST_BOMB_COUNTS[this.mapSize] ?? 0) + (this.mapSize === 10 ? this.stats.bombCount10m : 0);
     for (let index = 0; index < count; index += 1) {
       const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
       const id = `bomb-${index + 1}`;
@@ -352,7 +352,8 @@ export class GameScene implements GameSceneController {
   private collisionBlockers(): Circle[] {
     const blockers: Circle[] = [];
     for (const obstacle of this.obstacleStates) {
-      const blocks = obstacle.kind === "tree" || !obstacle.destroyed;
+      const stumpPassable = obstacle.kind === "tree" && obstacle.destroyed && this.stats.stumpNoCollision;
+      const blocks = !stumpPassable && (obstacle.kind === "tree" || !obstacle.destroyed);
       if (blocks) {
         blockers.push({
           x: obstacle.position.x,
@@ -447,10 +448,11 @@ export class GameScene implements GameSceneController {
   }
 
   private triggerChain(triggerId: string): void {
-    const order = resolveChainDetonation(this.bombStates, triggerId, BALANCE.bombChainRadiusMeters);
+    const order = resolveChainDetonation(this.bombStates, triggerId, this.stats.bombChainRadiusMeters);
     if (order.length === 0) {
       return;
     }
+    this.recordScoreEvent({ kind: "bombChain", chainLength: order.length, firstBomb: this.scoreEvents.every((event) => event.kind !== "bombChain") });
 
     // Mark the whole chain detonated up front so nothing retriggers; the visual
     // explosions are staggered for a cascading "chain" feel.
@@ -469,7 +471,7 @@ export class GameScene implements GameSceneController {
       return;
     }
     const center = state.position;
-    const radius = BALANCE.bombBlastRadiusMeters;
+    const radius = this.stats.bombBlastRadiusMeters;
 
     this.explosions.emit(center.x, center.z, radius);
 
@@ -570,6 +572,7 @@ export class GameScene implements GameSceneController {
       range: this.stats.attackRangeMeters,
       arcDegrees: this.stats.attackArcDegrees,
       damage: this.stats.attackDamage,
+      obstacleDamageBonus: this.stats.obstacleDamageBonus,
       obstacles: this.obstacleStates,
     });
 
@@ -588,6 +591,7 @@ export class GameScene implements GameSceneController {
 
       if (state.kind === "rock") {
         this.rockChips.emit(state.position.x, state.position.z);
+        this.recordScoreEvent({ kind: "rockBroken", count: 1 });
       } else {
         // Bigger, denser wood chips at the cut, plus the upper trunk topples away.
         this.woodChips.emit(state.position.x, state.position.z, { count: 32, scale: 1.9 });
@@ -596,7 +600,8 @@ export class GameScene implements GameSceneController {
         this.fallingLogs.push(log);
         this.scene.add(log.group);
         // The stump keeps blocking, but at the (smaller) stump footprint.
-        state.radius = TREE_STUMP_BASE_RADIUS * scale;
+        state.radius = this.stats.stumpNoCollision ? 0 : TREE_STUMP_BASE_RADIUS * scale;
+        this.recordScoreEvent({ kind: "treeBroken", count: 1 });
       }
     }
 
@@ -615,7 +620,7 @@ export class GameScene implements GameSceneController {
         }
       }
       this.player.applyKnockback(awayX, awayZ, BALANCE.obstacleKnockbackSpeed);
-      this.player.stun(BALANCE.obstacleStunSeconds);
+      this.player.stun(BALANCE.obstacleStunSeconds * this.stats.obstacleStunMultiplier);
     }
   }
 

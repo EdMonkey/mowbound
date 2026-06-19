@@ -257,6 +257,20 @@ describe("rock/tree obstacles", () => {
     expect(result.stun).toBe(false);
   });
 
+  it("applies obstacle bonus damage", () => {
+    const rock = createObstacleState("r", "rock", { x: 0.3, z: 0 }, 5, 0.3);
+    const result = resolveObstacleAttack({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      range: 0.5,
+      arcDegrees: 360,
+      damage: 4,
+      obstacleDamageBonus: 2,
+      obstacles: [rock],
+    });
+    expect(result.destroyedIds).toEqual(["r"]);
+  });
+
   it("stuns the attacker (no HP change) when damage fails to break the obstacle", () => {
     const tree = createObstacleState("t", "tree", { x: 0.3, z: 0 }, 5, 0.24);
     // equal damage is not enough — must be strictly greater
