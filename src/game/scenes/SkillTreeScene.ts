@@ -16,6 +16,7 @@ import {
   unlockNode,
 } from "../systems/SkillSystem";
 import { loadSave, saveGame } from "../systems/SaveSystem";
+import { SoundSystem } from "../systems/SoundSystem";
 import { createButton } from "../ui/Menu";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -116,6 +117,7 @@ function gateLabel(gate: UnlockGate): string {
 export class SkillTreeScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
+  private readonly sound = new SoundSystem();
   private save = loadSave();
 
   private readonly positions: Record<string, Pos> = {};
@@ -155,6 +157,7 @@ export class SkillTreeScene implements GameSceneController {
   }
 
   dispose(): void {
+    this.sound.dispose();
     this.layer.remove();
   }
 
@@ -579,7 +582,12 @@ export class SkillTreeScene implements GameSceneController {
     if (!canUnlockNode(this.save, nodeId)) {
       return;
     }
+    const node = SKILL_NODE_BY_ID[nodeId];
     this.save = unlockNode(this.save, nodeId);
+    this.sound.play("purchase");
+    if (node?.effects.some((effect) => ["toolUnlock", "unlockMap", "special"].includes(effect.kind))) {
+      this.sound.play("unlock");
+    }
     saveGame(this.save);
     this.render();
   }

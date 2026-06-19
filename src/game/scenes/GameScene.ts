@@ -55,6 +55,7 @@ import {
   type RuntimeStats,
 } from "../systems/SkillSystem";
 import { summarizeRun } from "../systems/RunSummarySystem";
+import { SoundSystem } from "../systems/SoundSystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
 import type { GrassState, VectorXZ } from "../types";
@@ -84,6 +85,7 @@ export class GameScene implements GameSceneController {
   private readonly hud: Hud;
   private readonly joystick: VirtualJoystick;
   private readonly player = new Player();
+  private readonly sound = new SoundSystem();
   private grassField!: GrassField;
   private sun!: THREE.DirectionalLight;
   private readonly clippings = new GrassClippings();
@@ -241,6 +243,7 @@ export class GameScene implements GameSceneController {
     this.input.dispose();
     this.joystick.dispose();
     this.hud.dispose();
+    this.sound.dispose();
     this.grassField.dispose();
     this.clippings.dispose();
     this.explosions.dispose();
@@ -515,6 +518,7 @@ export class GameScene implements GameSceneController {
     const radius = this.stats.bombBlastRadiusMeters;
 
     this.explosions.emit(center.x, center.z, radius);
+    this.sound.play("bomb");
 
     const bomb = this.bombs.get(id);
     if (bomb) {
@@ -533,6 +537,7 @@ export class GameScene implements GameSceneController {
 
   private performAttack(): void {
     this.attackFlash = 1; // flash the range ring on every strike
+    this.sound.play("swing");
     const grassStates = this.grassField.getStates();
     const result = resolveAttack({
       origin: this.player.position,
@@ -607,6 +612,10 @@ export class GameScene implements GameSceneController {
 
     if (cutCount > 0) {
       this.recordScoreEvent({ kind: "grassCut", count: cutCount });
+      this.sound.play("grass");
+      if ((options.coinLimit ?? uniqueIds.length) > 0) {
+        this.sound.play("coin");
+      }
     }
 
     return cutCount;
@@ -646,6 +655,7 @@ export class GameScene implements GameSceneController {
 
     const center = this.forwardPoint(1.6);
     const effect = new CropMark(center, ALIEN_CROP_MARK_RADIUS);
+    this.sound.play("alienStamp");
     this.scene.add(effect.group);
     this.cropMarks.push({
       effect,
@@ -682,6 +692,7 @@ export class GameScene implements GameSceneController {
     }
 
     const beam = new LaserBeam(origin, this.player.direction, MOWER_LASER_LENGTH, MOWER_LASER_WIDTH);
+    this.sound.play("laser");
     this.laserBeams.push(beam);
     this.scene.add(beam.group);
     this.player.strike();
@@ -709,6 +720,7 @@ export class GameScene implements GameSceneController {
     this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24 });
 
     const trail = new TractorTrail(origin, this.player.direction, TRACTOR_STRIP_LENGTH, TRACTOR_STRIP_WIDTH);
+    this.sound.play("tractor");
     this.tractorTrails.push(trail);
     this.scene.add(trail.group);
   }
@@ -779,10 +791,12 @@ export class GameScene implements GameSceneController {
 
       if (state.kind === "rock") {
         this.rockChips.emit(state.position.x, state.position.z);
+        this.sound.play("rock");
         this.recordScoreEvent({ kind: "rockBroken", count: 1 });
       } else {
         // Bigger, denser wood chips at the cut, plus the upper trunk topples away.
         this.woodChips.emit(state.position.x, state.position.z, { count: 32, scale: 1.9 });
+        this.sound.play("tree");
         const scale = state.radius / OBSTACLE_BASE_RADIUS.tree;
         const log = new FallingLog(state.position, scale);
         this.fallingLogs.push(log);

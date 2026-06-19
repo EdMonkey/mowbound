@@ -6,12 +6,14 @@ import { cloneModel } from "../assets/models";
 import { Player } from "../entities/Player";
 import { loadSave, resetSave, saveGame } from "../systems/SaveSystem";
 import { canSelectTool, isMapUnlocked, selectTool } from "../systems/SkillSystem";
+import { SoundSystem } from "../systems/SoundSystem";
 import { clearElement, createButton } from "../ui/Menu";
 
 export class MainMenuScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
   private readonly previewGroup = new THREE.Group();
+  private readonly sound = new SoundSystem();
   private save = loadSave();
 
   constructor(private readonly app: App) {
@@ -31,6 +33,7 @@ export class MainMenuScene implements GameSceneController {
   }
 
   dispose(): void {
+    this.sound.dispose();
     this.layer.remove();
     clearElement(this.layer);
   }
@@ -181,6 +184,7 @@ export class MainMenuScene implements GameSceneController {
           return;
         }
         this.save = selectTool(this.save, id);
+        this.sound.play("tool");
         saveGame(this.save);
         for (const other of buttons) {
           other.setAttribute("aria-pressed", String(other === button));
