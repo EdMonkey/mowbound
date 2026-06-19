@@ -1245,17 +1245,33 @@ git commit -m "feat: add demo feedback hooks"
 
 ```ts
 import { describe, expect, it } from "vitest";
+import { SKILL_NODES } from "../src/game/config/skillTree";
 import { defaultSave } from "../src/game/systems/SaveSystem";
-import { canUnlockNode, nextAffordableGoals, unlockNode } from "../src/game/systems/SkillSystem";
+import { canUnlockNode, isNodeRevealed, isNodeUnlocked, nextAffordableGoals, unlockNode } from "../src/game/systems/SkillSystem";
 
 const demoGoldByRun = [
-  18, 22, 26, 32, 38,
-  46, 55, 66, 80, 96,
-  115, 138, 165, 198, 235,
-  275, 320, 370, 430, 500,
-  580, 660, 740, 820, 900,
-  980, 1060, 1140, 1220, 1300,
+  12, 11, 13, 16, 19,
+  23, 28, 33, 40, 48,
+  58, 69, 83, 99, 118,
+  138, 160, 185, 215, 250,
+  290, 330, 370, 410, 450,
+  490, 530, 570, 610, 650,
 ];
+
+const spectacleIds = ["alien_crop_mark", "mower_laser", "tractor_license"] as const;
+
+function chooseNextPurchase(save) {
+  const firstSpectacle = spectacleIds.find((id) => !isNodeUnlocked(save, id) && canUnlockNode(save, id));
+  if (firstSpectacle) {
+    return SKILL_NODES.find((node) => node.id === firstSpectacle);
+  }
+  // Once alien_crop_mark is revealed, the demo route saves toward it instead
+  // of spending the last hour on cheaper side goals.
+  if (!isNodeUnlocked(save, "alien_crop_mark") && isNodeRevealed(save, "alien_crop_mark")) {
+    return undefined;
+  }
+  return nextAffordableGoals(save, 1)[0];
+}
 
 describe("one hour demo progression", () => {
   it("allows early purchases in the first two runs", () => {
@@ -1271,7 +1287,7 @@ describe("one hour demo progression", () => {
       let bought = true;
       while (bought) {
         bought = false;
-        const next = nextAffordableGoals(save, 1)[0];
+        const next = chooseNextPurchase(save);
         if (next && canUnlockNode(save, next.id)) {
           save = unlockNode(save, next.id);
           bought = true;
