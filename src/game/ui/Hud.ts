@@ -1,3 +1,6 @@
+import type { SkillNode } from "../config/skillTree";
+import type { RunSummary } from "../systems/RunSummarySystem";
+
 interface DamageText {
   element: HTMLDivElement;
   x: number;
@@ -94,7 +97,7 @@ export class Hud {
     }
   }
 
-  showResult(roundGold: number, callbacks: ResultCallbacks): void {
+  showResult(roundGold: number, callbacks: ResultCallbacks, summary?: RunSummary, goals: SkillNode[] = []): void {
     this.resultOverlay?.remove();
 
     const overlay = document.createElement("div");
@@ -106,6 +109,58 @@ export class Hud {
       <h2 class="panel-title">Run Complete</h2>
       <p class="panel-copy">Earned <strong>${roundGold}</strong> gold.</p>
     `;
+
+    if (summary) {
+      const breakdown = document.createElement("div");
+      breakdown.className = "result-breakdown";
+      const rows = [
+        ["Grass", summary.score.breakdown.grass],
+        ["Clean Rows", summary.score.breakdown.cleanRows],
+        ["Obstacles", summary.score.breakdown.obstacles],
+        ["Bomb Chains", summary.score.breakdown.bombChains],
+        ["Clear Bonus", summary.score.breakdown.clearBonus],
+        ["Total Score", summary.score.totalScore],
+      ] as const;
+
+      for (const [label, value] of rows) {
+        const row = document.createElement("div");
+        row.className = "result-breakdown-row";
+        row.innerHTML = `<span>${label}</span><strong>${Math.floor(value)}</strong>`;
+        breakdown.appendChild(row);
+      }
+      panel.appendChild(breakdown);
+    }
+
+    if (goals.length > 0) {
+      const next = document.createElement("div");
+      next.className = "next-goals";
+      next.innerHTML = "<h3>Next Goals</h3>";
+      for (const goal of goals) {
+        const row = document.createElement("div");
+        row.className = "result-breakdown-row";
+        row.innerHTML = `<span>${goal.name}</span><strong>${goal.cost}g</strong>`;
+        next.appendChild(row);
+      }
+      panel.appendChild(next);
+    }
+
+    if (summary) {
+      const milestones = document.createElement("div");
+      milestones.className = "next-goals";
+      milestones.innerHTML = "<h3>Milestones</h3>";
+      const clear = Math.floor(summary.clearPercent);
+      const rows = [
+        ["Bombs", `${Math.min(clear, 15)}/15%`],
+        ["Open Acre", `${Math.min(clear, 30)}/30%`],
+      ] as const;
+      for (const [label, value] of rows) {
+        const row = document.createElement("div");
+        row.className = "milestone-row";
+        row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+        milestones.appendChild(row);
+      }
+      panel.appendChild(milestones);
+    }
 
     const stack = document.createElement("div");
     stack.className = "button-stack";

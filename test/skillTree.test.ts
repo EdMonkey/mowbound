@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { SKILL_NODE_BY_ID, SKILL_NODES, SKILL_ROOT } from "../src/game/config/skillTree";
-import { canUnlockNode, getRuntimeStats, isMapUnlocked, unlockNode } from "../src/game/systems/SkillSystem";
+import {
+  canUnlockNode,
+  getRuntimeStats,
+  isMapUnlocked,
+  nextAffordableGoals,
+  unlockNode,
+} from "../src/game/systems/SkillSystem";
 import { defaultSave } from "../src/game/systems/SaveSystem";
 
 describe("v2 skill tree data", () => {
@@ -106,5 +112,14 @@ describe("v2 skill runtime", () => {
       levels: { clean_sweep_2: 1, quick_recovery_2: 1 },
     };
     expect(canUnlockNode(complete, "cyclone_cut")).toBe(true);
+  });
+
+  it("returns next goals sorted by affordable cost", () => {
+    const save = { ...defaultSave(), gold: 25, levels: { root_sharpen: 1 } };
+    expect(nextAffordableGoals(save, 3).map((node) => node.id)).toEqual([
+      "light_boots_1",
+      "sharp_edge_1",
+      "market_cart_1",
+    ]);
   });
 });

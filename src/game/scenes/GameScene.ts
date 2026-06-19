@@ -42,7 +42,7 @@ import type { RunScoreEvent } from "../systems/EconomySystem";
 import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
 import { applyRunResultToSave, loadSave, saveGame } from "../systems/SaveSystem";
-import { getEconomyStats, getRuntimeStats, type RuntimeStats } from "../systems/SkillSystem";
+import { getEconomyStats, getRuntimeStats, nextAffordableGoals, type RuntimeStats } from "../systems/SkillSystem";
 import { summarizeRun } from "../systems/RunSummarySystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
@@ -703,7 +703,7 @@ export class GameScene implements GameSceneController {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
       onMenu: () => this.app.show("menu"),
-    });
+    }, summary, nextAffordableGoals(this.save, 3));
   }
 
   private readonly updateInputMode = (): void => {

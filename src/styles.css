@@ -248,6 +248,41 @@ button:disabled {
   text-align: center;
 }
 
+.result-breakdown,
+.next-goals {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 247, 239, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 18, 14, 0.34);
+  text-align: left;
+}
+
+.next-goals h3 {
+  margin: 0 0 4px;
+  color: #fbf8e7;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.result-breakdown-row,
+.milestone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #cfe0d2;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.result-breakdown-row strong,
+.milestone-row strong {
+  color: #ffe08a;
+}
+
 .panel-title {
   margin: 0 0 8px;
   color: #fbf8e7;
