@@ -136,6 +136,11 @@ button:disabled {
 .menu-options-choices {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-options {
+  width: min(360px, 100%);
 }
 
 .option-button {
@@ -156,10 +161,22 @@ button:disabled {
   font-weight: 600;
 }
 
+.option-button:disabled {
+  cursor: not-allowed;
+  color: #96a69a;
+  background: rgba(80, 88, 82, 0.26);
+  border-color: rgba(180, 190, 178, 0.16);
+}
+
 .button-stack {
   display: grid;
   gap: 10px;
   width: min(260px, 100%);
+}
+
+.result-panel .button-stack {
+  margin: 14px auto 0;
+  justify-items: center;
 }
 
 .secondary-button {
@@ -241,6 +258,41 @@ button:disabled {
   text-align: center;
 }
 
+.result-breakdown,
+.next-goals {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 247, 239, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 18, 14, 0.34);
+  text-align: left;
+}
+
+.next-goals h3 {
+  margin: 0 0 4px;
+  color: #fbf8e7;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.result-breakdown-row,
+.milestone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #cfe0d2;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.result-breakdown-row strong,
+.milestone-row strong {
+  color: #ffe08a;
+}
+
 .panel-title {
   margin: 0 0 8px;
   color: #fbf8e7;
@@ -271,7 +323,7 @@ button:disabled {
 .skill-layer {
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: 12px;
   background: linear-gradient(180deg, rgba(9, 20, 14, 0.12), rgba(9, 20, 14, 0.52));
   pointer-events: auto;
 }
@@ -282,6 +334,42 @@ button:disabled {
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.skill-header-main {
+  min-width: 0;
+}
+
+.skill-header-side {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.skill-gold-badge {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 224, 138, 0.38);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(72, 54, 14, 0.96), rgba(40, 32, 12, 0.94));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), inset 0 0 18px rgba(255, 210, 63, 0.08);
+}
+
+.skill-gold-label {
+  color: #fff7d5;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.skill-gold-value {
+  color: #ffd23f;
+  font-size: clamp(28px, 3.2vw, 46px);
+  font-weight: 950;
+  line-height: 0.95;
+  text-shadow: 0 2px 0 rgba(46, 30, 0, 0.72), 0 8px 24px rgba(255, 210, 63, 0.22);
 }
 
 .skill-grid {
@@ -320,18 +408,23 @@ button:disabled {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 12px;
   flex-wrap: wrap;
 }
 
 .skilltree-panel {
-  width: min(760px, 100%);
+  width: calc(100vw - 24px);
+  height: calc(100vh - 24px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: clamp(14px, 2.2vw, 24px);
 }
 
 .tree-viewport {
   position: relative;
   width: 100%;
-  height: min(540px, 60vh);
+  height: 100%;
+  min-height: 0;
   margin: 2px 0 8px;
   overflow: hidden;
   touch-action: none;
@@ -482,9 +575,9 @@ button:disabled {
 
 .tree-node {
   position: absolute;
-  width: 124px;
+  width: 150px;
   min-height: 0;
-  padding: 9px 11px;
+  padding: 10px 12px;
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-areas:
@@ -513,12 +606,15 @@ button:disabled {
   font-size: 13px;
   font-weight: 900;
   line-height: 1.05;
+  word-break: keep-all;
 }
 
 .tree-node-meta {
   grid-area: meta;
   font-size: 11px;
   color: #b6cdba;
+  line-height: 1.22;
+  word-break: keep-all;
 }
 
 .tree-node-cost {
@@ -550,6 +646,35 @@ button:disabled {
   box-shadow:
     0 0 0 2px rgba(240, 200, 90, 0.4),
     0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.tree-node.branch-blade {
+  border-color: rgba(155, 205, 255, 0.62);
+}
+
+.tree-node.branch-movement {
+  border-color: rgba(139, 222, 150, 0.62);
+}
+
+.tree-node.branch-harvest {
+  border-color: rgba(250, 210, 105, 0.66);
+}
+
+.tree-node.branch-obstacles {
+  border-color: rgba(190, 176, 160, 0.68);
+}
+
+.tree-node.branch-bombs {
+  border-color: rgba(255, 128, 105, 0.68);
+}
+
+.tree-node.branch-land {
+  border-color: rgba(120, 206, 196, 0.68);
+}
+
+.tree-node.branch-spectacle {
+  border-color: rgba(140, 180, 255, 0.82);
+  background: rgba(24, 34, 52, 0.94);
 }
 
 .tree-node.is-branch {
@@ -665,7 +790,22 @@ button:disabled {
   }
 
   .skill-header {
-    display: block;
+    display: grid;
+    gap: 8px;
+  }
+
+  .skill-header-side {
+    justify-items: stretch;
+    min-width: 0;
+  }
+
+  .skill-gold-badge {
+    justify-items: end;
+    padding: 8px 12px;
+  }
+
+  .skill-gold-value {
+    font-size: 28px;
   }
 
   .skill-actions {
@@ -676,6 +816,20 @@ button:disabled {
   .button-stack button,
   .result-panel button {
     width: 100%;
+  }
+
+  .result-panel .button-stack {
+    justify-items: stretch;
+  }
+
+  .skilltree-panel {
+    width: calc(100vw - 12px);
+    height: calc(100vh - 12px);
+    padding: 12px;
+  }
+
+  .tree-node {
+    width: 138px;
   }
 }
 

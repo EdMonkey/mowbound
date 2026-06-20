@@ -3,6 +3,9 @@ import { BALANCE } from "./config/balance";
 import { GameScene } from "./scenes/GameScene";
 import { MainMenuScene } from "./scenes/MainMenuScene";
 import { SkillTreeScene } from "./scenes/SkillTreeScene";
+import { loadLanguage, saveLanguage, type Language } from "./i18n";
+import { loadSave } from "./systems/SaveSystem";
+import { isMapUnlocked } from "./systems/SkillSystem";
 import type { SceneName } from "./types";
 
 export interface GameSceneController {
@@ -18,6 +21,7 @@ export class App {
   readonly uiRoot = document.createElement("div");
   /** Player-selected map size (meters/side); set on the menu, read by GameScene. */
   mapSizeMeters: number = BALANCE.mapSizeMeters;
+  language: Language = loadLanguage();
   private activeScene: GameSceneController;
   private previousTime = 0;
   private orthoSize = 8;
@@ -47,6 +51,9 @@ export class App {
     this.activeScene.dispose();
 
     if (sceneName === "game") {
+      if (!isMapUnlocked(loadSave(), this.mapSizeMeters)) {
+        this.mapSizeMeters = BALANCE.mapSizeMeters;
+      }
       this.activeScene = new GameScene(this);
     } else if (sceneName === "skills") {
       this.activeScene = new SkillTreeScene(this);
@@ -56,6 +63,12 @@ export class App {
 
     this.previousTime = performance.now();
     this.onResize();
+  }
+
+  setLanguage(language: Language): void {
+    this.language = language;
+    saveLanguage(language);
+    this.show("menu");
   }
 
   setOrthoSize(size: number): void {

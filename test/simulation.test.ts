@@ -15,17 +15,21 @@ import {
 } from "../src/game/systems/ObstacleSystem";
 import {
   canUnlockNode,
+  computeCropMarkHits,
+  computeLaserHits,
+  computeTractorStripHits,
   getRuntimeStats,
   isNodeRevealed,
   isNodeUnlocked,
   unlockNode,
-} from "../src/game/systems/SaveSystem";
+} from "../src/game/systems/SkillSystem";
 import {
   InputSystem,
   mapScreenInputToWorldMovement,
   normalizeInputVector,
 } from "../src/game/systems/InputSystem";
-import { BALANCE, defaultSave, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
+import { BALANCE, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
+import { defaultSave } from "../src/game/systems/SaveSystem";
 
 class FakeInputTarget {
   innerWidth = 1000;
@@ -138,13 +142,13 @@ describe("runtime stats from skill nodes", () => {
   });
 
   it("accumulates the effects of unlocked nodes", () => {
-    const save = { ...defaultSave(), unlocked: ["dmg1", "dmg2"] };
+    const save = { ...defaultSave(), levels: { root_sharpen: 1, sharp_edge_1: 1 } };
     expect(getRuntimeStats(save).attackDamage).toBe(5); // 3 + 1 + 1
   });
 
   it("applies the play-time skill to round duration", () => {
-    const save = { ...defaultSave(), unlocked: ["time1", "time2"] };
-    expect(getRuntimeStats(save).roundDurationMs).toBe(10000 + 2000 + 3000);
+    const save = { ...defaultSave(), levels: { field_rhythm_1: 1, field_rhythm_2: 1 } };
+    expect(getRuntimeStats(save).roundDurationMs).toBe(11600);
   });
 });
 
@@ -164,6 +168,18 @@ describe("grass and coins", () => {
       states.map((g) => `${g.position.x >= 0 ? "E" : "W"}${g.position.z >= 0 ? "S" : "N"}`),
     );
     expect(quadrants.size).toBe(4);
+  });
+
+  it("keeps initial grass outside rock exclusion circles", () => {
+    const exclusion = { x: 0, z: 0, radius: 1.8 };
+    const states = createGrassBatch(400, 1, 10, [exclusion]);
+
+    expect(states.length).toBeLessThan(400);
+    for (const grass of states) {
+      expect(Math.hypot(grass.position.x - exclusion.x, grass.position.z - exclusion.z)).toBeGreaterThan(
+        exclusion.radius,
+      );
+    }
   });
 
   it("bounces coins on the floor before they disappear", () => {
@@ -256,6 +272,20 @@ describe("rock/tree obstacles", () => {
     expect(result.stun).toBe(false);
   });
 
+  it("applies obstacle bonus damage", () => {
+    const rock = createObstacleState("r", "rock", { x: 0.3, z: 0 }, 5, 0.3);
+    const result = resolveObstacleAttack({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      range: 0.5,
+      arcDegrees: 360,
+      damage: 4,
+      obstacleDamageBonus: 2,
+      obstacles: [rock],
+    });
+    expect(result.destroyedIds).toEqual(["r"]);
+  });
+
   it("stuns the attacker (no HP change) when damage fails to break the obstacle", () => {
     const tree = createObstacleState("t", "tree", { x: 0.3, z: 0 }, 5, 0.24);
     // equal damage is not enough — must be strictly greater
@@ -292,37 +322,87 @@ describe("rock/tree obstacles", () => {
 
 describe("skill tree unlocks", () => {
   it("reveals a node only after its prerequisite is unlocked", () => {
-    const save = { ...defaultSave(), totalGold: 9999 };
+    const save = { ...defaultSave(), gold: 9999 };
 
-    expect(isNodeRevealed(save, "dmg1")).toBe(true); // root
-    expect(isNodeRevealed(save, "dmg2")).toBe(false);
-    expect(canUnlockNode(save, "dmg2")).toBe(false);
+    expect(isNodeRevealed(save, "root_sharpen")).toBe(true); // root
+    expect(isNodeRevealed(save, "sharp_edge_1")).toBe(false);
+    expect(canUnlockNode(save, "sharp_edge_1")).toBe(false);
 
-    const afterRoot = unlockNode(save, "dmg1");
-    expect(isNodeUnlocked(afterRoot, "dmg1")).toBe(true);
-    expect(afterRoot.totalGold).toBeLessThan(9999);
-    expect(isNodeRevealed(afterRoot, "dmg2")).toBe(true);
-    expect(isNodeRevealed(afterRoot, "combat")).toBe(true);
-    expect(canUnlockNode(afterRoot, "dmg2")).toBe(true);
+    const afterRoot = unlockNode(save, "root_sharpen");
+    expect(isNodeUnlocked(afterRoot, "root_sharpen")).toBe(true);
+    expect(afterRoot.gold).toBeLessThan(9999);
+    expect(isNodeRevealed(afterRoot, "sharp_edge_1")).toBe(true);
+    expect(isNodeRevealed(afterRoot, "clean_sweep_1")).toBe(true);
+    expect(canUnlockNode(afterRoot, "sharp_edge_1")).toBe(true);
     // deeper tier stays hidden until its own prerequisite is unlocked
-    expect(isNodeRevealed(afterRoot, "dmg3")).toBe(false);
+    expect(isNodeRevealed(afterRoot, "sharp_edge_2")).toBe(false);
   });
 
   it("unlocks each node once and refuses locked nodes", () => {
-    let save = { ...defaultSave(), totalGold: 9999, unlocked: ["dmg1"] };
-    save = unlockNode(save, "dmg2");
-    expect(isNodeUnlocked(save, "dmg2")).toBe(true);
+    let save = defaultSave();
+    save = { ...save, gold: 9999, levels: { root_sharpen: 1 } };
+    save = unlockNode(save, "sharp_edge_1");
+    expect(isNodeUnlocked(save, "sharp_edge_1")).toBe(true);
 
     // unlocking again is a no-op: no duplicate, no extra spend
-    const goldAfter = save.totalGold;
-    const again = unlockNode(save, "dmg2");
-    expect(again.totalGold).toBe(goldAfter);
-    expect(again.unlocked.filter((id) => id === "dmg2").length).toBe(1);
+    const goldAfter = save.gold;
+    const again = unlockNode(save, "sharp_edge_1");
+    expect(again.gold).toBe(goldAfter);
+    expect(again.levels.sharp_edge_1).toBe(1);
 
     // a node whose prerequisite isn't unlocked is refused
-    const locked = unlockNode(save, "field");
-    expect(locked.totalGold).toBe(goldAfter);
-    expect(isNodeUnlocked(locked, "field")).toBe(false);
+    const locked = unlockNode(save, "field_rhythm_2");
+    expect(locked.gold).toBe(goldAfter);
+    expect(isNodeUnlocked(locked, "field_rhythm_2")).toBe(false);
+  });
+});
+
+describe("spectacle skill targeting", () => {
+  it("alien crop mark cuts grass inside the stamped circle", () => {
+    const hits = computeCropMarkHits(
+      [
+        { id: "a", x: 0, z: 0, alive: true },
+        { id: "b", x: 1.3, z: 0, alive: true },
+        { id: "c", x: 3, z: 0, alive: true },
+      ],
+      { x: 0, z: 0 },
+      1.2,
+    );
+    expect(hits).toEqual(["a"]);
+  });
+
+  it("mower laser cuts a narrow forward line and can trigger bombs", () => {
+    const result = computeLaserHits({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      length: 6,
+      width: 0.3,
+      grass: [
+        { id: "g1", x: 2, z: 0.1, alive: true },
+        { id: "g2", x: 2, z: 0.4, alive: true },
+      ],
+      bombs: [
+        { id: "b1", x: 4, z: 0.05, triggered: false },
+        { id: "b2", x: 7, z: 0, triggered: false },
+      ],
+    });
+    expect(result.grassIds).toEqual(["g1"]);
+    expect(result.bombIds).toEqual(["b1"]);
+  });
+
+  it("tractor strip cuts a wide rectangle in front of the player", () => {
+    const hits = computeTractorStripHits({
+      origin: { x: 0, z: 0 },
+      direction: { x: 1, z: 0 },
+      length: 1.2,
+      width: 1.2,
+      grass: [
+        { id: "front", x: 0.8, z: 0.4, alive: true },
+        { id: "side", x: 0.8, z: 0.8, alive: true },
+        { id: "back", x: -0.2, z: 0, alive: true },
+      ],
+    });
+    expect(hits).toEqual(["front"]);
   });
 });
 

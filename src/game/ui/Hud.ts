@@ -1,3 +1,7 @@
+import type { SkillNode } from "../config/skillTree";
+import { skillName, type Language } from "../i18n";
+import type { RunSummary } from "../systems/RunSummarySystem";
+
 interface DamageText {
   element: HTMLDivElement;
   x: number;
@@ -17,7 +21,7 @@ export class Hud {
   private readonly damageTexts: DamageText[] = [];
   private resultOverlay?: HTMLDivElement;
 
-  constructor(private readonly parent: HTMLElement) {
+  constructor(private readonly parent: HTMLElement, private readonly language: Language) {
     this.element.className = "hud-layer";
     this.parent.appendChild(this.element);
 
@@ -26,12 +30,12 @@ export class Hud {
     this.element.appendChild(top);
 
     const fields = [
-      ["time", "Time"],
-      ["roundGold", "Run Gold"],
-      ["totalGold", "Total"],
-      ["damage", "Damage"],
-      ["speed", "Rate"],
-      ["range", "Range"],
+      ["time", language === "ko" ? "시간" : "Time"],
+      ["roundGold", language === "ko" ? "런 골드" : "Run Gold"],
+      ["totalGold", language === "ko" ? "보유" : "Total"],
+      ["damage", language === "ko" ? "피해" : "Damage"],
+      ["speed", language === "ko" ? "속도" : "Rate"],
+      ["range", language === "ko" ? "범위" : "Range"],
     ] as const;
 
     for (const [id, label] of fields) {
@@ -94,7 +98,7 @@ export class Hud {
     }
   }
 
-  showResult(roundGold: number, callbacks: ResultCallbacks): void {
+  showResult(roundGold: number, callbacks: ResultCallbacks, summary?: RunSummary, goals: SkillNode[] = []): void {
     this.resultOverlay?.remove();
 
     const overlay = document.createElement("div");
@@ -103,30 +107,82 @@ export class Hud {
     const panel = document.createElement("div");
     panel.className = "result-panel";
     panel.innerHTML = `
-      <h2 class="panel-title">Run Complete</h2>
-      <p class="panel-copy">Earned <strong>${roundGold}</strong> gold.</p>
+      <h2 class="panel-title">${this.language === "ko" ? "라운드 완료" : "Run Complete"}</h2>
+      <p class="panel-copy">${this.language === "ko" ? "획득 골드" : "Earned"} <strong>${roundGold}</strong>${this.language === "ko" ? "" : " gold"}.</p>
     `;
+
+    if (summary) {
+      const breakdown = document.createElement("div");
+      breakdown.className = "result-breakdown";
+      const rows = [
+        [this.language === "ko" ? "풀" : "Grass", summary.score.breakdown.grass],
+        [this.language === "ko" ? "깔끔한 줄" : "Clean Rows", summary.score.breakdown.cleanRows],
+        [this.language === "ko" ? "장애물" : "Obstacles", summary.score.breakdown.obstacles],
+        [this.language === "ko" ? "폭탄 연쇄" : "Bomb Chains", summary.score.breakdown.bombChains],
+        [this.language === "ko" ? "클리어 보너스" : "Clear Bonus", summary.score.breakdown.clearBonus],
+        [this.language === "ko" ? "총점" : "Total Score", summary.score.totalScore],
+      ] as const;
+
+      for (const [label, value] of rows) {
+        const row = document.createElement("div");
+        row.className = "result-breakdown-row";
+        row.innerHTML = `<span>${label}</span><strong>${Math.floor(value)}</strong>`;
+        breakdown.appendChild(row);
+      }
+      panel.appendChild(breakdown);
+    }
+
+    if (goals.length > 0) {
+      const next = document.createElement("div");
+      next.className = "next-goals";
+      next.innerHTML = `<h3>${this.language === "ko" ? "다음 목표" : "Next Goals"}</h3>`;
+      for (const goal of goals) {
+        const row = document.createElement("div");
+        row.className = "result-breakdown-row";
+        row.innerHTML = `<span>${skillName(goal, this.language)}</span><strong>${goal.cost}g</strong>`;
+        next.appendChild(row);
+      }
+      panel.appendChild(next);
+    }
+
+    if (summary) {
+      const milestones = document.createElement("div");
+      milestones.className = "next-goals";
+      milestones.innerHTML = `<h3>${this.language === "ko" ? "마일스톤" : "Milestones"}</h3>`;
+      const clear = Math.floor(summary.clearPercent);
+      const rows = [
+        [this.language === "ko" ? "폭탄" : "Bombs", `${Math.min(clear, 15)}/15%`],
+        [this.language === "ko" ? "넓은 밭 계약" : "Open Acre", `${Math.min(clear, 30)}/30%`],
+      ] as const;
+      for (const [label, value] of rows) {
+        const row = document.createElement("div");
+        row.className = "milestone-row";
+        row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+        milestones.appendChild(row);
+      }
+      panel.appendChild(milestones);
+    }
 
     const stack = document.createElement("div");
     stack.className = "button-stack";
 
     const retry = document.createElement("button");
     retry.type = "button";
-    retry.textContent = "Retry";
+    retry.textContent = this.language === "ko" ? "다시 하기" : "Retry";
     retry.addEventListener("click", callbacks.onRetry);
     stack.appendChild(retry);
 
     const skills = document.createElement("button");
     skills.type = "button";
     skills.className = "secondary-button";
-    skills.textContent = "Skill Tree";
+    skills.textContent = this.language === "ko" ? "스킬 트리" : "Skill Tree";
     skills.addEventListener("click", callbacks.onSkills);
     stack.appendChild(skills);
 
     const menu = document.createElement("button");
     menu.type = "button";
     menu.className = "secondary-button";
-    menu.textContent = "Main Menu";
+    menu.textContent = this.language === "ko" ? "메인 메뉴" : "Main Menu";
     menu.addEventListener("click", callbacks.onMenu);
     stack.appendChild(menu);
 

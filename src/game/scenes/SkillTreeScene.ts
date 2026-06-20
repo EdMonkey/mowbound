@@ -1,21 +1,28 @@
-import * as THREE from "three";
+﻿import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
-import { SKILL_NODES, SKILL_NODE_BY_ID, SKILL_ROOT, type SkillNode } from "../config/balance";
+import {
+  SKILL_NODES,
+  SKILL_NODE_BY_ID,
+  SKILL_ROOT,
+  type SkillNode,
+  type UnlockGate,
+} from "../config/skillTree";
+import { effectLabel, gateLabel, skillDescription, skillName } from "../i18n";
 import {
   canUnlockNode,
   getNodeCost,
   isNodeRevealed,
   isNodeUnlocked,
-  loadSave,
-  saveGame,
   unlockNode,
-} from "../systems/SaveSystem";
+} from "../systems/SkillSystem";
+import { loadSave, saveGame } from "../systems/SaveSystem";
+import { SoundSystem } from "../systems/SoundSystem";
 import { createButton } from "../ui/Menu";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const RADIUS_STEP = 195;
-const LAYOUT_MARGIN = 120;
-const MIN_ZOOM = 0.35;
+const RADIUS_STEP = 320;
+const LAYOUT_MARGIN = 220;
+const MIN_ZOOM = 0.22;
 const MAX_ZOOM = 2.5;
 const TAP_MOVE = 8;
 const LONG_PRESS_MS = 450;
@@ -37,34 +44,10 @@ interface PressState {
   timer: number;
 }
 
-function effectLabel(node: SkillNode): string {
-  const e = node.effect;
-  if (!e) {
-    return "Opens a branch";
-  }
-  switch (e.kind) {
-    case "damage":
-      return `Damage +${e.amount}`;
-    case "range":
-      return `Range +${e.amount}m`;
-    case "arc":
-      return `Fan +${e.amount}°`;
-    case "attackInterval":
-      return `Attack speed +${(Math.abs(e.amount) / 1000).toFixed(2)}s`;
-    case "moveSpeed":
-      return `Move speed +${e.amount}`;
-    case "gold":
-      return `Gold +${e.amount}/grass`;
-    case "grassCount":
-      return `Grass +${e.amount}`;
-    case "roundDuration":
-      return `Round time +${(e.amount / 1000).toFixed(0)}s`;
-  }
-}
-
 export class SkillTreeScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
+  private readonly sound = new SoundSystem();
   private save = loadSave();
 
   private readonly positions: Record<string, Pos> = {};
@@ -104,6 +87,7 @@ export class SkillTreeScene implements GameSceneController {
   }
 
   dispose(): void {
+    this.sound.dispose();
     this.layer.remove();
   }
 
@@ -126,10 +110,11 @@ export class SkillTreeScene implements GameSceneController {
   private computeLayout(): void {
     const children = new Map<string, SkillNode[]>();
     for (const node of SKILL_NODES) {
-      if (node.prereq) {
-        const list = children.get(node.prereq) ?? [];
+      const primaryParent = node.prereq[0];
+      if (primaryParent) {
+        const list = children.get(primaryParent) ?? [];
         list.push(node);
-        children.set(node.prereq, list);
+        children.set(primaryParent, list);
       }
     }
 
@@ -158,9 +143,11 @@ export class SkillTreeScene implements GameSceneController {
           : { x: Math.cos(angle) * depth * RADIUS_STEP, y: Math.sin(angle) * depth * RADIUS_STEP };
       const kids = children.get(id) ?? [];
       const total = leaves.get(id) ?? 1;
+      const equalFan = id === SKILL_ROOT || kids.length > 4;
       let a = a0;
-      for (const kid of kids) {
-        const span = ((leaves.get(kid.id) ?? 1) / total) * (a1 - a0);
+      for (let index = 0; index < kids.length; index += 1) {
+        const kid = kids[index];
+        const span = equalFan ? (a1 - a0) / kids.length : ((leaves.get(kid.id) ?? 1) / total) * (a1 - a0);
         place(kid.id, a, a + span, depth + 1);
         a += span;
       }
@@ -191,13 +178,27 @@ export class SkillTreeScene implements GameSceneController {
 
     const header = document.createElement("div");
     header.className = "skill-header";
-    const owned = this.save.unlocked.length;
+    const owned = Object.keys(this.save.levels).length;
     header.innerHTML = `
-      <div>
-        <h2 class="panel-title">Skill Tree</h2>
-        <p class="panel-copy">Unlock to grow new branches — ${owned}/${SKILL_NODES.length} skills. Total gold: <strong>${this.save.totalGold}</strong></p>
+      <div class="skill-header-main">
+        <h2 class="panel-title">${this.app.language === "ko" ? "스킬 트리" : "Skill Tree"}</h2>
+        <p class="panel-copy">${
+          this.app.language === "ko"
+            ? `스킬을 해금해 새 가지를 여세요 - ${owned}/${SKILL_NODES.length}개`
+            : `Unlock to grow new branches - ${owned}/${SKILL_NODES.length} skills`
+        }</p>
       </div>
-      <p class="skill-meta">Drag to pan · scroll / pinch to zoom · hover or long-press for details</p>
+      <div class="skill-header-side">
+        <div class="skill-gold-badge" aria-label="${this.app.language === "ko" ? "보유 골드" : "Total gold"}">
+          <span class="skill-gold-label">${this.app.language === "ko" ? "보유 골드" : "Gold"}</span>
+          <strong class="skill-gold-value">${this.save.gold}</strong>
+        </div>
+        <p class="skill-meta">${
+          this.app.language === "ko"
+            ? "드래그 이동 / 스크롤·핀치 확대 / 길게 누르기 상세"
+            : "Drag to pan / scroll or pinch to zoom / hover or long-press for details"
+        }</p>
+      </div>
     `;
     panel.appendChild(header);
 
@@ -224,8 +225,8 @@ export class SkillTreeScene implements GameSceneController {
     const actions = document.createElement("div");
     actions.className = "skill-actions";
     actions.append(
-      createButton("Start Run", () => this.app.show("game")),
-      createButton("Main Menu", () => this.app.show("menu"), "secondary-button"),
+      createButton(this.app.language === "ko" ? "런 시작" : "Start Run", () => this.app.show("game")),
+      createButton(this.app.language === "ko" ? "메인 메뉴" : "Main Menu", () => this.app.show("menu"), "secondary-button"),
     );
     panel.appendChild(actions);
 
@@ -251,10 +252,11 @@ export class SkillTreeScene implements GameSceneController {
     svg.setAttribute("height", `${this.worldH}`);
 
     for (const node of SKILL_NODES) {
-      if (!node.prereq || !isNodeRevealed(this.save, node.id)) {
+      const primaryParent = node.prereq[0];
+      if (!primaryParent || !isNodeRevealed(this.save, node.id)) {
         continue;
       }
-      const from = this.positions[node.prereq];
+      const from = this.positions[primaryParent];
       const to = this.positions[node.id];
       const grown = isNodeUnlocked(this.save, node.id);
 
@@ -278,15 +280,15 @@ export class SkillTreeScene implements GameSceneController {
     const el = document.createElement("button");
     el.type = "button";
     el.dataset.node = node.id;
-    const branch = node.effect === null ? " is-branch" : "";
+    const branch = ` branch-${node.branch}`;
     el.className = `tree-node ${unlocked ? "is-owned" : "is-available"}${affordable ? " can-buy" : ""}${branch}`;
     el.style.left = `${pos.x}px`;
     el.style.top = `${pos.y}px`;
     el.innerHTML = `
       <span class="tree-node-icon">${node.icon}</span>
-      <span class="tree-node-name">${node.name}</span>
-      <span class="tree-node-meta">${effectLabel(node)}</span>
-      <span class="tree-node-cost">${unlocked ? "✓ Owned" : `${cost}g`}</span>
+      <span class="tree-node-name">${skillName(node, this.app.language)}</span>
+      <span class="tree-node-meta">${effectLabel(node, this.app.language)}</span>
+      <span class="tree-node-cost">${unlocked ? (this.app.language === "ko" ? "해금됨" : "Owned") : `${cost}g`}</span>
     `;
 
     el.addEventListener("mouseenter", () => {
@@ -321,8 +323,8 @@ export class SkillTreeScene implements GameSceneController {
         const c = center();
         this.zoomAtPoint(c.x, c.y, 1.2);
       }),
-      make("⟲", "", () => this.fitView()),
-      make("−", "", () => {
+      make("◎", "", () => this.fitView()),
+      make("-", "", () => {
         const c = center();
         this.zoomAtPoint(c.x, c.y, 1 / 1.2);
       }),
@@ -352,7 +354,7 @@ export class SkillTreeScene implements GameSceneController {
     const vw = r.width || 600;
     const vh = r.height || 440;
     const revealed = SKILL_NODES.filter((n) => isNodeRevealed(this.save, n.id)).map((n) => this.positions[n.id]);
-    const pad = 110;
+    const pad = 180;
     const minX = Math.min(...revealed.map((p) => p.x)) - pad;
     const maxX = Math.max(...revealed.map((p) => p.x)) + pad;
     const minY = Math.min(...revealed.map((p) => p.y)) - pad;
@@ -526,9 +528,39 @@ export class SkillTreeScene implements GameSceneController {
     if (!canUnlockNode(this.save, nodeId)) {
       return;
     }
+    const node = SKILL_NODE_BY_ID[nodeId];
     this.save = unlockNode(this.save, nodeId);
+    this.sound.play("purchase");
+    if (node?.effects.some((effect) => ["toolUnlock", "unlockMap", "special"].includes(effect.kind))) {
+      this.sound.play("unlock");
+    }
     saveGame(this.save);
     this.render();
+  }
+
+  private gateProgress(gate: UnlockGate): string {
+    switch (gate.kind) {
+      case "bestClearPercent": {
+        const current = this.save.lifetimeStats.bestClearPercentByMap[String(gate.mapSize)] ?? 0;
+        return `${Math.min(current, gate.percent)}/${gate.percent}%`;
+      }
+      case "lifetimeGrass":
+        return `${Math.min(this.save.lifetimeStats.grassCut, gate.count)}/${gate.count}`;
+      case "bestBombChain":
+        return `${Math.min(this.save.lifetimeStats.bestBombChain, gate.length)}/${gate.length}`;
+    }
+  }
+
+  private gateRows(node: SkillNode): string {
+    if (node.gates.length === 0) {
+      return "";
+    }
+    return node.gates
+      .map(
+        (gate) =>
+          `<div class="tree-detail-row">${this.app.language === "ko" ? "조건" : "Gate"}: ${gateLabel(gate, this.app.language)} <span class="tree-detail-cost">${this.gateProgress(gate)}</span></div>`,
+      )
+      .join("");
   }
 
   private showDetail(nodeId: string, anchor: HTMLElement): void {
@@ -540,10 +572,17 @@ export class SkillTreeScene implements GameSceneController {
     const cost = getNodeCost(nodeId);
 
     this.detailEl.innerHTML = `
-      <h4><span>${node.icon}</span>${node.name}</h4>
-      <p>${node.description}</p>
-      <div class="tree-detail-row">${effectLabel(node)}</div>
-      <div class="tree-detail-row">${unlocked ? "✓ Unlocked" : `Cost: <span class="tree-detail-cost">${cost} gold</span>`}</div>
+      <h4><span>${node.icon}</span>${skillName(node, this.app.language)}</h4>
+      <p>${skillDescription(node, this.app.language)}</p>
+      <div class="tree-detail-row">${effectLabel(node, this.app.language)}</div>
+      <div class="tree-detail-row">${
+        unlocked
+          ? this.app.language === "ko" ? "해금됨" : "Unlocked"
+          : this.app.language === "ko"
+            ? `비용: <span class="tree-detail-cost">${cost} 골드</span>`
+            : `Cost: <span class="tree-detail-cost">${cost} gold</span>`
+      }</div>
+      ${this.gateRows(node)}
     `;
     this.detailEl.style.display = "block";
 
@@ -581,12 +620,15 @@ export class SkillTreeScene implements GameSceneController {
     const card = document.createElement("div");
     card.className = "tree-modal-card";
     card.innerHTML = `
-      <h3>${node.icon} ${node.name}</h3>
-      <p class="panel-copy" style="margin:0 0 8px">${node.description} (${effectLabel(node)})</p>
+      <h3>${node.icon} ${skillName(node, this.app.language)}</h3>
+      <p class="panel-copy" style="margin:0 0 8px">${skillDescription(node, this.app.language)} (${effectLabel(node, this.app.language)})</p>
+      ${this.gateRows(node)}
       <div class="tree-detail-row">${
         unlocked
-          ? "✓ Already unlocked"
-          : `Unlock for <span class="tree-detail-cost">${cost} gold</span> (you have ${this.save.totalGold})`
+          ? this.app.language === "ko" ? "이미 해금됨" : "Already unlocked"
+          : this.app.language === "ko"
+            ? `<span class="tree-detail-cost">${cost} 골드</span>로 해금 (보유 ${this.save.gold})`
+            : `Unlock for <span class="tree-detail-cost">${cost} gold</span> (you have ${this.save.gold})`
       }</div>
     `;
 
@@ -594,7 +636,7 @@ export class SkillTreeScene implements GameSceneController {
     buttons.className = "tree-modal-actions";
     const yes = document.createElement("button");
     yes.type = "button";
-    yes.textContent = "Yes";
+    yes.textContent = this.app.language === "ko" ? "예" : "Yes";
     yes.disabled = !affordable;
     yes.addEventListener("click", () => {
       modal.remove();
@@ -603,7 +645,7 @@ export class SkillTreeScene implements GameSceneController {
     const no = document.createElement("button");
     no.type = "button";
     no.className = "secondary-button";
-    no.textContent = "No";
+    no.textContent = this.app.language === "ko" ? "아니오" : "No";
     no.addEventListener("click", () => modal.remove());
     buttons.append(yes, no);
     card.appendChild(buttons);

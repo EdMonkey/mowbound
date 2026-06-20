@@ -29,6 +29,7 @@ export interface ObstacleAttackRequest {
   range: number;
   arcDegrees: number;
   damage: number;
+  obstacleDamageBonus?: number;
   obstacles: readonly ObstacleState[];
 }
 
@@ -53,6 +54,7 @@ export interface ObstacleAttackResult {
 export function resolveObstacleAttack(request: ObstacleAttackRequest): ObstacleAttackResult {
   const destroyedIds: string[] = [];
   const blockedIds: string[] = [];
+  const damage = request.damage + (request.obstacleDamageBonus ?? 0);
 
   for (const obstacle of request.obstacles) {
     if (obstacle.destroyed) {
@@ -62,7 +64,7 @@ export function resolveObstacleAttack(request: ObstacleAttackRequest): ObstacleA
     if (!isInAttackFan(request.origin, request.direction, obstacle.position, reach, request.arcDegrees)) {
       continue;
     }
-    if (request.damage > obstacle.hp) {
+    if (damage > obstacle.hp) {
       destroyedIds.push(obstacle.id);
     } else {
       blockedIds.push(obstacle.id);

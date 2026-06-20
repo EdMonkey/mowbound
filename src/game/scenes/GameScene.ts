@@ -5,17 +5,19 @@ import {
   OBSTACLE_COUNTS_BY_MAP,
   ROUND_DURATION_BY_MAP,
   TEST_BOMB_COUNTS,
-  type RuntimeStats,
 } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
 import { Coin } from "../entities/Coin";
+import { CropMark } from "../entities/CropMark";
 import { Debris } from "../entities/Debris";
 import { Explosions } from "../entities/Explosions";
 import { FallingLog } from "../entities/FallingLog";
 import { GrassClippings } from "../entities/GrassClippings";
 import { GrassField } from "../entities/GrassField";
+import { LaserBeam } from "../entities/LaserBeam";
 import { Obstacle } from "../entities/Obstacle";
 import { Player, PLAYER_COLLISION_RADIUS } from "../entities/Player";
+import { TractorTrail } from "../entities/TractorTrail";
 import {
   advanceChargeAttack,
   getSurvivingHitIds,
@@ -39,15 +41,48 @@ import {
   type ObstacleState,
 } from "../systems/ObstacleSystem";
 import { cloneModel } from "../assets/models";
-import { rewardForGrass } from "../systems/EconomySystem";
-import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
+import type { RunScoreEvent } from "../systems/EconomySystem";
+import {
+  createGrassBatch,
+  createGrassState,
+  randomGrassPosition,
+  type GrassExclusionCircle,
+} from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
-import { addGold, getRuntimeStats, loadSave, saveGame } from "../systems/SaveSystem";
+import { applyRunResultToSave, loadSave, saveGame } from "../systems/SaveSystem";
+import {
+  computeCropMarkHits,
+  computeLaserHits,
+  computeTractorStripHits,
+  getEconomyStats,
+  getRuntimeStats,
+  nextAffordableGoals,
+  type RuntimeStats,
+} from "../systems/SkillSystem";
+import { summarizeRun } from "../systems/RunSummarySystem";
+import { SoundSystem } from "../systems/SoundSystem";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
-import type { GrassState } from "../types";
+import type { GrassState, VectorXZ } from "../types";
 
 const ATTACK_FLASH_DURATION = 0.45;
+const ALIEN_CROP_MARK_COOLDOWN_MS = 12_000;
+const ALIEN_CROP_MARK_DELAY_SECONDS = 0.4;
+const ALIEN_CROP_MARK_RADIUS = 1.2;
+const MOWER_LASER_EVERY_ATTACKS = 8;
+const MOWER_LASER_LENGTH = 6;
+const MOWER_LASER_WIDTH = 0.3;
+const TRACTOR_TICK_MS = 200;
+const TRACTOR_STRIP_LENGTH = 1.2;
+const TRACTOR_STRIP_WIDTH = 1.2;
+
+interface PendingCropMark {
+  effect: CropMark;
+  center: VectorXZ;
+  radius: number;
+  age: number;
+  fired: boolean;
+}
 
 export class GameScene implements GameSceneController {
   readonly scene = new THREE.Scene();
@@ -55,6 +90,7 @@ export class GameScene implements GameSceneController {
   private readonly hud: Hud;
   private readonly joystick: VirtualJoystick;
   private readonly player = new Player();
+  private readonly sound = new SoundSystem();
   private grassField!: GrassField;
   private sun!: THREE.DirectionalLight;
   private readonly clippings = new GrassClippings();
@@ -68,6 +104,9 @@ export class GameScene implements GameSceneController {
   private readonly fallingLogs: FallingLog[] = [];
   private readonly rockChips = new Debris(["#8a8a90", "#6f6f77", "#a6a6ac"], [0.09, 0.09, 0.09]);
   private readonly woodChips = new Debris(["#7a5230", "#5e3d1f", "#9b6b3a"], [0.13, 0.05, 0.05]);
+  private readonly cropMarks: PendingCropMark[] = [];
+  private readonly laserBeams: LaserBeam[] = [];
+  private readonly tractorTrails: TractorTrail[] = [];
   // Collision-circle debug overlay (toggled by a button); off by default.
   private readonly debugGroup = new THREE.Group();
   private readonly debugCircleGeo = new THREE.CircleGeometry(1, 28);
@@ -97,22 +136,28 @@ export class GameScene implements GameSceneController {
   private attackFlash = 0;
   private spawnTimerMs = 0;
   private roundGold = 0;
+  private initialGrassTotal = 0;
+  private readonly scoreEvents: RunScoreEvent[] = [];
   private nextGrassId = 1;
   private ended = false;
   private save = loadSave();
   private readonly mapSize: number;
   private readonly roundDurationMs: number;
   private readonly cameraTarget = new THREE.Vector3(0, 0, 0);
+  private alienCropMarkCooldownMs = 0;
+  private laserAttackCount = 0;
+  private tractorTimerMs = 0;
 
   constructor(private readonly app: App) {
     // Assigned in the body (not a field initializer): `app` is a constructor
     // parameter property, which isn't available when field initializers run.
     this.mapSize = this.app.mapSizeMeters;
     this.stats = getRuntimeStats(this.save);
+    this.player.setToolStyle(this.stats.selectedTool);
     // Round length depends on the chosen map; skill bonuses add on top.
     const skillRoundBonus = this.stats.roundDurationMs - BALANCE.roundDurationMs;
     this.roundDurationMs = (ROUND_DURATION_BY_MAP[this.mapSize] ?? BALANCE.roundDurationMs) + skillRoundBonus;
-    this.hud = new Hud(this.app.uiRoot);
+    this.hud = new Hud(this.app.uiRoot, this.app.language);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
     this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
     this.attackRing = this.createIndicator();
@@ -131,9 +176,9 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.explosions.group);
     this.scene.add(this.rockChips.mesh);
     this.scene.add(this.woodChips.mesh);
+    this.spawnObstacles();
     this.spawnInitialGrass();
     this.spawnTestBombs();
-    this.spawnObstacles();
     this.buildCollisionDebug();
     this.createDebugButton();
     this.updateInputMode();
@@ -151,11 +196,13 @@ export class GameScene implements GameSceneController {
     this.woodChips.update(deltaSeconds);
     this.updateFallingLogs(deltaSeconds);
     this.updateBombs(deltaSeconds);
+    this.updateSpectacleEffects(deltaSeconds);
     this.updateCollisionDebug();
     this.hud.update(deltaSeconds);
 
     if (!this.ended) {
       this.elapsedMs += deltaSeconds * 1000;
+      this.alienCropMarkCooldownMs = Math.max(0, this.alienCropMarkCooldownMs - deltaSeconds * 1000);
       if (this.stats.grassSpawnPerTick > 0) {
         this.spawnTimerMs += deltaSeconds * 1000;
 
@@ -167,6 +214,7 @@ export class GameScene implements GameSceneController {
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
       this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize, this.collisionBlockers());
+      this.updateTractorSkill(deltaSeconds, movement);
 
       // A stunned player can't swing; the charge timer holds until they recover.
       if (!this.player.stunned) {
@@ -188,7 +236,7 @@ export class GameScene implements GameSceneController {
     this.hud.updateGame({
       timeMs: this.roundDurationMs - this.elapsedMs,
       roundGold: this.roundGold,
-      totalGold: this.save.totalGold + this.roundGold,
+      totalGold: this.save.gold + this.roundGold,
       damage: this.stats.attackDamage,
       attackIntervalMs: this.stats.attackChargeDurationMs,
       range: this.stats.attackRangeMeters,
@@ -200,6 +248,7 @@ export class GameScene implements GameSceneController {
     this.input.dispose();
     this.joystick.dispose();
     this.hud.dispose();
+    this.sound.dispose();
     this.grassField.dispose();
     this.clippings.dispose();
     this.explosions.dispose();
@@ -211,6 +260,9 @@ export class GameScene implements GameSceneController {
     this.obstacles.forEach((obstacle) => obstacle.dispose());
     this.obstacles.clear();
     this.fallingLogs.forEach((log) => log.dispose());
+    this.cropMarks.forEach((mark) => mark.effect.dispose());
+    this.laserBeams.forEach((beam) => beam.dispose());
+    this.tractorTrails.forEach((trail) => trail.dispose());
     this.debugButton.remove();
     this.debugCircleGeo.dispose();
     this.debugObstacleMat.dispose();
@@ -286,7 +338,8 @@ export class GameScene implements GameSceneController {
     // Scale the base count (tuned for 10x10) by map area so density is constant.
     const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
     const count = Math.round(this.stats.initialGrassCount * areaScale);
-    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize);
+    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize, this.rockGrassExclusions());
+    this.initialGrassTotal = batch.length;
     this.nextGrassId += batch.length;
     for (const state of batch) {
       this.addGrassState(state);
@@ -296,7 +349,10 @@ export class GameScene implements GameSceneController {
   private spawnGrass(count: number): void {
     for (let index = 0; index < count; index += 1) {
       this.addGrassState(
-        createGrassState(`grass-${this.nextGrassId}`, randomGrassPosition(this.mapSize, this.player.position)),
+        createGrassState(
+          `grass-${this.nextGrassId}`,
+          randomGrassPosition(this.mapSize, this.player.position, this.rockGrassExclusions()),
+        ),
       );
       this.nextGrassId += 1;
     }
@@ -310,7 +366,7 @@ export class GameScene implements GameSceneController {
     // Scatter a fixed batch of test bombs for the chosen map (none on 10x10,
     // a handful on 30x30). Kept away from the player's start so a run doesn't
     // begin mid-explosion.
-    const count = TEST_BOMB_COUNTS[this.mapSize] ?? 0;
+    const count = (TEST_BOMB_COUNTS[this.mapSize] ?? 0) + (this.mapSize === 10 ? this.stats.bombCount10m : 0);
     for (let index = 0; index < count; index += 1) {
       const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
       const id = `bomb-${index + 1}`;
@@ -341,6 +397,16 @@ export class GameScene implements GameSceneController {
     spawn("tree", counts.trees);
   }
 
+  private rockGrassExclusions(): GrassExclusionCircle[] {
+    return this.obstacleStates
+      .filter((obstacle) => obstacle.kind === "rock" && !obstacle.destroyed)
+      .map((obstacle) => ({
+        x: obstacle.position.x,
+        z: obstacle.position.z,
+        radius: obstacle.radius * 0.9,
+      }));
+  }
+
   /**
    * Collision circles: intact obstacles always block; once broken, a rock
    * vanishes (passable) while a tree keeps blocking at its stump radius.
@@ -348,7 +414,8 @@ export class GameScene implements GameSceneController {
   private collisionBlockers(): Circle[] {
     const blockers: Circle[] = [];
     for (const obstacle of this.obstacleStates) {
-      const blocks = obstacle.kind === "tree" || !obstacle.destroyed;
+      const stumpPassable = obstacle.kind === "tree" && obstacle.destroyed && this.stats.stumpNoCollision;
+      const blocks = !stumpPassable && (obstacle.kind === "tree" || !obstacle.destroyed);
       if (blocks) {
         blockers.push({
           x: obstacle.position.x,
@@ -443,10 +510,11 @@ export class GameScene implements GameSceneController {
   }
 
   private triggerChain(triggerId: string): void {
-    const order = resolveChainDetonation(this.bombStates, triggerId, BALANCE.bombChainRadiusMeters);
+    const order = resolveChainDetonation(this.bombStates, triggerId, this.stats.bombChainRadiusMeters);
     if (order.length === 0) {
       return;
     }
+    this.recordScoreEvent({ kind: "bombChain", chainLength: order.length, firstBomb: this.scoreEvents.every((event) => event.kind !== "bombChain") });
 
     // Mark the whole chain detonated up front so nothing retriggers; the visual
     // explosions are staggered for a cascading "chain" feel.
@@ -465,9 +533,10 @@ export class GameScene implements GameSceneController {
       return;
     }
     const center = state.position;
-    const radius = BALANCE.bombBlastRadiusMeters;
+    const radius = this.stats.bombBlastRadiusMeters;
 
     this.explosions.emit(center.x, center.z, radius);
+    this.sound.play("bomb");
 
     const bomb = this.bombs.get(id);
     if (bomb) {
@@ -478,35 +547,15 @@ export class GameScene implements GameSceneController {
 
     // Mow every grass clump inside the blast. Gold is granted for all of them,
     // but coin/clipping VFX are capped so a huge blast can't spike the frame.
-    const grassStates = this.grassField.getStates();
-    const positionById = new Map(grassStates.map((grass) => [grass.id, grass.position]));
-    const hitIds = grassInRadius(grassStates, center, radius);
-
-    let coinBudget = BALANCE.bombMaxCoinsPerBlast;
-    let clipBudget = BALANCE.bombMaxClippingsPerBlast;
-    for (const grassId of hitIds) {
-      const position = positionById.get(grassId);
-      this.grassField.destroy(grassId);
-      if (!position) {
-        continue;
-      }
-      if (clipBudget > 0) {
-        this.clippings.emit(position.x, position.z);
-        clipBudget -= 1;
-      }
-      if (coinBudget > 0) {
-        const coin = new Coin(position, center);
-        this.coins.push(coin);
-        this.scene.add(coin.group);
-        coinBudget -= 1;
-      }
-    }
-
-    this.roundGold += rewardForGrass(this.stats, hitIds.length);
+    this.cutGrassIds(grassInRadius(this.grassField.getStates(), center, radius), center, {
+      coinLimit: BALANCE.bombMaxCoinsPerBlast,
+      clipLimit: BALANCE.bombMaxClippingsPerBlast,
+    });
   }
 
   private performAttack(): void {
     this.attackFlash = 1; // flash the range ring on every strike
+    this.sound.play("swing");
     const grassStates = this.grassField.getStates();
     const result = resolveAttack({
       origin: this.player.position,
@@ -521,17 +570,7 @@ export class GameScene implements GameSceneController {
 
     // (test) damage text disabled
 
-    for (const id of result.destroyedIds) {
-      const position = positionById.get(id);
-      if (!position) {
-        continue;
-      }
-      const coin = new Coin(position, this.player.position);
-      this.coins.push(coin);
-      this.scene.add(coin.group);
-      this.clippings.emit(position.x, position.z);
-      this.grassField.destroy(id);
-    }
+    this.cutGrassIds(result.destroyedIds, this.player.position);
 
     for (const id of getSurvivingHitIds(result)) {
       const state = resultById.get(id);
@@ -548,9 +587,198 @@ export class GameScene implements GameSceneController {
       this.player.strike();
     }
 
-    this.roundGold += rewardForGrass(this.stats, result.destroyedIds.length);
-
+    this.tryCastAlienCropMark();
+    this.tryFireMowerLaser();
     this.attackObstacles();
+  }
+
+  private cutGrassIds(
+    ids: readonly string[],
+    origin: VectorXZ,
+    options: { coinLimit?: number; clipLimit?: number } = {},
+  ): number {
+    if (ids.length === 0) {
+      return 0;
+    }
+
+    const uniqueIds = Array.from(new Set(ids));
+    const positionById = new Map(this.grassField.getStates().map((grass) => [grass.id, grass.position]));
+    let coinBudget = options.coinLimit ?? uniqueIds.length;
+    let clipBudget = options.clipLimit ?? uniqueIds.length;
+    let cutCount = 0;
+
+    for (const id of uniqueIds) {
+      const position = positionById.get(id);
+      if (!position) {
+        continue;
+      }
+
+      this.grassField.destroy(id);
+      cutCount += 1;
+
+      if (clipBudget > 0) {
+        this.clippings.emit(position.x, position.z);
+        clipBudget -= 1;
+      }
+      if (coinBudget > 0) {
+        const coin = new Coin(position, origin);
+        this.coins.push(coin);
+        this.scene.add(coin.group);
+        coinBudget -= 1;
+      }
+    }
+
+    if (cutCount > 0) {
+      this.recordScoreEvent({ kind: "grassCut", count: cutCount });
+      this.sound.play("grass");
+      if ((options.coinLimit ?? uniqueIds.length) > 0) {
+        this.sound.play("coin");
+      }
+    }
+
+    return cutCount;
+  }
+
+  private grassPoints() {
+    return this.grassField.getStates().map((grass) => ({
+      id: grass.id,
+      x: grass.position.x,
+      z: grass.position.z,
+      alive: true,
+    }));
+  }
+
+  private bombPoints() {
+    return this.bombStates.map((bomb) => ({
+      id: bomb.id,
+      x: bomb.position.x,
+      z: bomb.position.z,
+      triggered: bomb.detonated,
+    }));
+  }
+
+  private forwardPoint(distance: number): VectorXZ {
+    const length = Math.hypot(this.player.direction.x, this.player.direction.z) || 1;
+    const half = this.mapSize / 2 - 0.2;
+    return {
+      x: THREE.MathUtils.clamp(this.player.position.x + (this.player.direction.x / length) * distance, -half, half),
+      z: THREE.MathUtils.clamp(this.player.position.z + (this.player.direction.z / length) * distance, -half, half),
+    };
+  }
+
+  private tryCastAlienCropMark(): void {
+    if (!this.stats.hasAlienCropMark || this.alienCropMarkCooldownMs > 0) {
+      return;
+    }
+
+    const center = this.forwardPoint(1.6);
+    const effect = new CropMark(center, ALIEN_CROP_MARK_RADIUS);
+    this.sound.play("alienStamp");
+    this.scene.add(effect.group);
+    this.cropMarks.push({
+      effect,
+      center,
+      radius: ALIEN_CROP_MARK_RADIUS,
+      age: 0,
+      fired: false,
+    });
+    this.alienCropMarkCooldownMs = ALIEN_CROP_MARK_COOLDOWN_MS;
+  }
+
+  private tryFireMowerLaser(): void {
+    if (!this.stats.hasMowerLaser) {
+      return;
+    }
+
+    this.laserAttackCount += 1;
+    if (this.laserAttackCount % MOWER_LASER_EVERY_ATTACKS !== 0) {
+      return;
+    }
+
+    const origin = this.forwardPoint(0.18);
+    const result = computeLaserHits({
+      origin,
+      direction: this.player.direction,
+      length: MOWER_LASER_LENGTH,
+      width: MOWER_LASER_WIDTH,
+      grass: this.grassPoints(),
+      bombs: this.bombPoints(),
+    });
+    this.cutGrassIds(result.grassIds, origin, { coinLimit: 40, clipLimit: 40 });
+    for (const bombId of result.bombIds) {
+      this.triggerChain(bombId);
+    }
+
+    const beam = new LaserBeam(origin, this.player.direction, MOWER_LASER_LENGTH, MOWER_LASER_WIDTH);
+    this.sound.play("laser");
+    this.laserBeams.push(beam);
+    this.scene.add(beam.group);
+    this.player.strike();
+  }
+
+  private updateTractorSkill(deltaSeconds: number, movement: VectorXZ): void {
+    if (!this.stats.hasTractor || this.player.stunned || Math.hypot(movement.x, movement.z) <= 0.01) {
+      return;
+    }
+
+    this.tractorTimerMs += deltaSeconds * 1000;
+    if (this.tractorTimerMs < TRACTOR_TICK_MS) {
+      return;
+    }
+    this.tractorTimerMs = 0;
+
+    const origin = this.forwardPoint(0.15);
+    const grassIds = computeTractorStripHits({
+      origin,
+      direction: this.player.direction,
+      length: TRACTOR_STRIP_LENGTH,
+      width: TRACTOR_STRIP_WIDTH,
+      grass: this.grassPoints(),
+    });
+    this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24 });
+
+    const trail = new TractorTrail(origin, this.player.direction, TRACTOR_STRIP_LENGTH, TRACTOR_STRIP_WIDTH);
+    this.sound.play("tractor");
+    this.tractorTrails.push(trail);
+    this.scene.add(trail.group);
+  }
+
+  private updateSpectacleEffects(deltaSeconds: number): void {
+    for (let index = this.cropMarks.length - 1; index >= 0; index -= 1) {
+      const mark = this.cropMarks[index];
+      mark.age += deltaSeconds;
+      if (!mark.fired && mark.age >= ALIEN_CROP_MARK_DELAY_SECONDS) {
+        this.cutGrassIds(
+          computeCropMarkHits(this.grassPoints(), mark.center, mark.radius),
+          mark.center,
+          { coinLimit: 48, clipLimit: 48 },
+        );
+        mark.fired = true;
+      }
+      if (mark.effect.update(deltaSeconds)) {
+        this.scene.remove(mark.effect.group);
+        mark.effect.dispose();
+        this.cropMarks.splice(index, 1);
+      }
+    }
+
+    for (let index = this.laserBeams.length - 1; index >= 0; index -= 1) {
+      const beam = this.laserBeams[index];
+      if (beam.update(deltaSeconds)) {
+        this.scene.remove(beam.group);
+        beam.dispose();
+        this.laserBeams.splice(index, 1);
+      }
+    }
+
+    for (let index = this.tractorTrails.length - 1; index >= 0; index -= 1) {
+      const trail = this.tractorTrails[index];
+      if (trail.update(deltaSeconds)) {
+        this.scene.remove(trail.group);
+        trail.dispose();
+        this.tractorTrails.splice(index, 1);
+      }
+    }
   }
 
   private attackObstacles(): void {
@@ -562,6 +790,7 @@ export class GameScene implements GameSceneController {
       range: this.stats.attackRangeMeters,
       arcDegrees: this.stats.attackArcDegrees,
       damage: this.stats.attackDamage,
+      obstacleDamageBonus: this.stats.obstacleDamageBonus,
       obstacles: this.obstacleStates,
     });
 
@@ -580,15 +809,19 @@ export class GameScene implements GameSceneController {
 
       if (state.kind === "rock") {
         this.rockChips.emit(state.position.x, state.position.z);
+        this.sound.play("rock");
+        this.recordScoreEvent({ kind: "rockBroken", count: 1 });
       } else {
         // Bigger, denser wood chips at the cut, plus the upper trunk topples away.
         this.woodChips.emit(state.position.x, state.position.z, { count: 32, scale: 1.9 });
+        this.sound.play("tree");
         const scale = state.radius / OBSTACLE_BASE_RADIUS.tree;
         const log = new FallingLog(state.position, scale);
         this.fallingLogs.push(log);
         this.scene.add(log.group);
         // The stump keeps blocking, but at the (smaller) stump footprint.
-        state.radius = TREE_STUMP_BASE_RADIUS * scale;
+        state.radius = this.stats.stumpNoCollision ? 0 : TREE_STUMP_BASE_RADIUS * scale;
+        this.recordScoreEvent({ kind: "treeBroken", count: 1 });
       }
     }
 
@@ -607,7 +840,7 @@ export class GameScene implements GameSceneController {
         }
       }
       this.player.applyKnockback(awayX, awayZ, BALANCE.obstacleKnockbackSpeed);
-      this.player.stun(BALANCE.obstacleStunSeconds);
+      this.player.stun(BALANCE.obstacleStunSeconds * this.stats.obstacleStunMultiplier);
     }
   }
 
@@ -669,16 +902,33 @@ export class GameScene implements GameSceneController {
     };
   }
 
+  private recordScoreEvent(event: RunScoreEvent): void {
+    this.scoreEvents.push(event);
+    this.roundGold = summarizeRun(this.scoreEvents, getEconomyStats(this.save), this.mapSize).gold;
+  }
+
+  private clearPercent(): number {
+    if (this.initialGrassTotal <= 0) {
+      return 0;
+    }
+    const remaining = this.grassField.getStates().length;
+    const cut = Math.max(0, this.initialGrassTotal - remaining);
+    return Math.floor((cut / this.initialGrassTotal) * 100);
+  }
+
   private endRound(): void {
     this.ended = true;
-    this.save = addGold(this.save, this.roundGold);
+    this.scoreEvents.push({ kind: "clearPercent", percent: this.clearPercent(), mapSize: this.mapSize });
+    const summary = summarizeRun(this.scoreEvents, getEconomyStats(this.save), this.mapSize);
+    this.roundGold = summary.gold;
+    this.save = applyRunResultToSave(this.save, summary);
     saveGame(this.save);
     this.joystick.setVisible(false);
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
       onMenu: () => this.app.show("menu"),
-    });
+    }, summary, nextAffordableGoals(this.save, 3));
   }
 
   private readonly updateInputMode = (): void => {
