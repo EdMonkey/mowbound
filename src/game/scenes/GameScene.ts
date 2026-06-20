@@ -75,6 +75,9 @@ const MOWER_LASER_WIDTH = 0.3;
 const TRACTOR_TICK_MS = 200;
 const TRACTOR_STRIP_LENGTH = 1.2;
 const TRACTOR_STRIP_WIDTH = 1.2;
+const RESULT_SNAPSHOT_WIDTH = 1280;
+const RESULT_SNAPSHOT_HEIGHT = 720;
+const RESULT_SNAPSHOT_ASPECT = RESULT_SNAPSHOT_WIDTH / RESULT_SNAPSHOT_HEIGHT;
 
 interface PendingCropMark {
   effect: CropMark;
@@ -916,6 +919,61 @@ export class GameScene implements GameSceneController {
     return Math.floor((cut / this.initialGrassTotal) * 100);
   }
 
+  private createResultSnapshotCamera(): THREE.OrthographicCamera {
+    const distance = Math.max(18, this.mapSize * 1.35);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, distance * 4);
+    camera.position.set(distance, distance * 1.05, distance);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+
+    const half = this.mapSize / 2;
+    const points: THREE.Vector3[] = [];
+    for (const y of [0, 3.5]) {
+      points.push(
+        new THREE.Vector3(-half, y, -half),
+        new THREE.Vector3(half, y, -half),
+        new THREE.Vector3(half, y, half),
+        new THREE.Vector3(-half, y, half),
+      );
+    }
+    const viewPoints = points.map((point) => point.applyMatrix4(camera.matrixWorldInverse));
+    const minX = Math.min(...viewPoints.map((point) => point.x));
+    const maxX = Math.max(...viewPoints.map((point) => point.x));
+    const minY = Math.min(...viewPoints.map((point) => point.y));
+    const maxY = Math.max(...viewPoints.map((point) => point.y));
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const viewH = Math.max(contentH, contentW / RESULT_SNAPSHOT_ASPECT) * 1.16;
+    const viewW = viewH * RESULT_SNAPSHOT_ASPECT;
+
+    camera.left = -viewW / 2;
+    camera.right = viewW / 2;
+    camera.top = viewH / 2;
+    camera.bottom = -viewH / 2;
+    camera.updateProjectionMatrix();
+    return camera;
+  }
+
+  private captureResultSnapshot(): string | undefined {
+    const hiddenGroups = [this.player.group, this.attackChargeGroup, this.debugGroup];
+    const previousVisibility = hiddenGroups.map((group) => group.visible);
+    const previousFog = this.scene.fog;
+    const camera = this.createResultSnapshotCamera();
+    try {
+      hiddenGroups.forEach((group) => {
+        group.visible = false;
+      });
+      this.scene.fog = null;
+      this.scene.updateMatrixWorld(true);
+      return this.app.captureSceneSnapshot(this.scene, camera, RESULT_SNAPSHOT_WIDTH, RESULT_SNAPSHOT_HEIGHT);
+    } finally {
+      this.scene.fog = previousFog;
+      hiddenGroups.forEach((group, index) => {
+        group.visible = previousVisibility[index];
+      });
+    }
+  }
+
   private endRound(): void {
     this.ended = true;
     this.scoreEvents.push({ kind: "clearPercent", percent: this.clearPercent(), mapSize: this.mapSize });
@@ -924,7 +982,7 @@ export class GameScene implements GameSceneController {
     this.save = applyRunResultToSave(this.save, summary);
     saveGame(this.save);
     this.joystick.setVisible(false);
-    const snapshotUrl = this.app.captureSceneSnapshot(this.scene);
+    const snapshotUrl = this.captureResultSnapshot();
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),

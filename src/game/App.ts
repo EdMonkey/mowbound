@@ -76,12 +76,23 @@ export class App {
     this.onResize();
   }
 
-  captureSceneSnapshot(scene: THREE.Scene): string | undefined {
+  captureSceneSnapshot(scene: THREE.Scene, camera: THREE.Camera, width = 1280, height = 720): string | undefined {
+    const previousTarget = this.renderer.getRenderTarget();
+    const previousSize = this.renderer.getSize(new THREE.Vector2());
+    const previousPixelRatio = this.renderer.getPixelRatio();
+
     try {
-      this.renderer.render(scene, this.camera);
-      return this.renderer.domElement.toDataURL("image/jpeg", 0.86);
+      this.renderer.setRenderTarget(null);
+      this.renderer.setPixelRatio(1);
+      this.renderer.setSize(width, height, false);
+      this.renderer.render(scene, camera);
+      return this.renderer.domElement.toDataURL("image/jpeg", 0.9);
     } catch {
       return undefined;
+    } finally {
+      this.renderer.setRenderTarget(previousTarget);
+      this.renderer.setPixelRatio(previousPixelRatio);
+      this.renderer.setSize(previousSize.x, previousSize.y, false);
     }
   }
 
