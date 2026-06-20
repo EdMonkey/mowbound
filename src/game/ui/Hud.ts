@@ -19,6 +19,8 @@ export class Hud {
   readonly element = document.createElement("div");
   private readonly values = new Map<string, HTMLSpanElement>();
   private readonly damageTexts: DamageText[] = [];
+  private readonly resultTimers: number[] = [];
+  private readonly resultFrames: number[] = [];
   private resultOverlay?: HTMLDivElement;
 
   constructor(private readonly parent: HTMLElement, private readonly language: Language) {
@@ -105,6 +107,7 @@ export class Hud {
     goals: SkillNode[] = [],
     snapshotUrl?: string,
   ): void {
+    this.clearResultAnimations();
     this.resultOverlay?.remove();
 
     const overlay = document.createElement("div");
@@ -143,7 +146,7 @@ export class Hud {
 
     if (summary) {
       const breakdown = document.createElement("div");
-      breakdown.className = "result-breakdown";
+      breakdown.className = "result-breakdown is-score-reveal";
       const rows = [
         [this.language === "ko" ? "풀" : "Grass", summary.score.breakdown.grass],
         [this.language === "ko" ? "깔끔한 줄" : "Clean Rows", summary.score.breakdown.cleanRows],
@@ -153,11 +156,26 @@ export class Hud {
         [this.language === "ko" ? "총점" : "Total Score", summary.score.totalScore],
       ] as const;
 
-      for (const [label, value] of rows) {
+      const rowDelayMs = 140;
+      for (let index = 0; index < rows.length; index += 1) {
+        const [label, value] = rows[index];
+        const isTotal = index === rows.length - 1;
+        const delayMs = 180 + index * rowDelayMs;
         const row = document.createElement("div");
-        row.className = "result-breakdown-row";
-        row.innerHTML = `<span>${label}</span><strong>${Math.floor(value)}</strong>`;
+        row.className = `result-breakdown-row result-score-row${isTotal ? " is-total-score" : ""}`;
+        row.style.setProperty("--score-delay", `${delayMs}ms`);
+
+        const labelElement = document.createElement("span");
+        labelElement.textContent = label;
+        row.appendChild(labelElement);
+
+        const valueElement = document.createElement("strong");
+        valueElement.className = "result-score-value";
+        valueElement.textContent = "0";
+        row.appendChild(valueElement);
+
         breakdown.appendChild(row);
+        this.animateResultValue(valueElement, Math.floor(value), delayMs + 120, isTotal ? 620 : 420, isTotal);
       }
       appendRoot.appendChild(breakdown);
     }
@@ -222,7 +240,62 @@ export class Hud {
     this.resultOverlay = overlay;
   }
 
+  private animateResultValue(
+    element: HTMLElement,
+    target: number,
+    delayMs: number,
+    durationMs: number,
+    boom = false,
+  ): void {
+    const finalValue = Math.floor(target);
+    const reducedMotion =
+      typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reducedMotion) {
+      element.textContent = `${finalValue}`;
+      return;
+    }
+
+    element.textContent = "0";
+    const timer = window.setTimeout(() => {
+      const start = performance.now();
+
+      const step = (now: number) => {
+        const progress = Math.min(1, (now - start) / durationMs);
+        const eased = 1 - (1 - progress) ** 3;
+        element.textContent = `${Math.floor(finalValue * eased)}`;
+
+        if (progress < 1) {
+          this.resultFrames.push(window.requestAnimationFrame(step));
+          return;
+        }
+
+        element.textContent = `${finalValue}`;
+        if (boom) {
+          element.classList.add("score-value-boom");
+        }
+      };
+
+      this.resultFrames.push(window.requestAnimationFrame(step));
+    }, delayMs);
+
+    this.resultTimers.push(timer);
+  }
+
+  private clearResultAnimations(): void {
+    for (const timer of this.resultTimers) {
+      window.clearTimeout(timer);
+    }
+    this.resultTimers.length = 0;
+
+    for (const frame of this.resultFrames) {
+      window.cancelAnimationFrame(frame);
+    }
+    this.resultFrames.length = 0;
+  }
+
   dispose(): void {
+    this.clearResultAnimations();
     this.element.remove();
   }
 }
