@@ -182,6 +182,14 @@ export function resetSave(): SaveData {
   return fresh;
 }
 
+export function unlockAllSkillsForTest(save: SaveData): SaveData {
+  const normalized = normalizeSave(save);
+  return normalizeSave({
+    ...normalized,
+    levels: Object.fromEntries(SKILL_NODES.map((node) => [node.id, 1])),
+  });
+}
+
 export function applyRunResultToSave(save: SaveData, result: RunSaveResult): SaveData {
   const normalized = normalizeSave(save);
   const mapKey = String(result.mapSize);
