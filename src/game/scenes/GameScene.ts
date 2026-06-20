@@ -43,6 +43,11 @@ import {
 import { cloneModel } from "../assets/models";
 import type { RunScoreEvent } from "../systems/EconomySystem";
 import {
+  createCleanMowState,
+  recordCleanMowCut,
+  type CleanMowState,
+} from "../systems/CleanMowSystem";
+import {
   createGrassBatch,
   createGrassState,
   randomGrassPosition,
@@ -150,6 +155,7 @@ export class GameScene implements GameSceneController {
   private alienCropMarkCooldownMs = 0;
   private laserAttackCount = 0;
   private tractorTimerMs = 0;
+  private cleanMowState: CleanMowState = createCleanMowState();
 
   constructor(private readonly app: App) {
     // Assigned in the body (not a field initializer): `app` is a constructor
@@ -553,6 +559,7 @@ export class GameScene implements GameSceneController {
     this.cutGrassIds(grassInRadius(this.grassField.getStates(), center, radius), center, {
       coinLimit: BALANCE.bombMaxCoinsPerBlast,
       clipLimit: BALANCE.bombMaxClippingsPerBlast,
+      cleanMowEligible: false,
     });
   }
 
@@ -598,7 +605,7 @@ export class GameScene implements GameSceneController {
   private cutGrassIds(
     ids: readonly string[],
     origin: VectorXZ,
-    options: { coinLimit?: number; clipLimit?: number } = {},
+    options: { coinLimit?: number; clipLimit?: number; cleanMowEligible?: boolean } = {},
   ): number {
     if (ids.length === 0) {
       return 0;
@@ -633,6 +640,9 @@ export class GameScene implements GameSceneController {
 
     if (cutCount > 0) {
       this.recordScoreEvent({ kind: "grassCut", count: cutCount });
+      if (options.cleanMowEligible ?? true) {
+        this.recordCleanMow(cutCount);
+      }
       this.sound.play("grass");
       if ((options.coinLimit ?? uniqueIds.length) > 0) {
         this.sound.play("coin");
@@ -640,6 +650,31 @@ export class GameScene implements GameSceneController {
     }
 
     return cutCount;
+  }
+
+  private recordCleanMow(cutCount: number): void {
+    if (getEconomyStats(this.save).cleanPatchScore <= 0) {
+      return;
+    }
+
+    const result = recordCleanMowCut(this.cleanMowState, {
+      position: { x: this.player.position.x, z: this.player.position.z },
+      timeMs: this.elapsedMs,
+      cutCount,
+    });
+    this.cleanMowState = result.state;
+
+    if (result.bonuses <= 0) {
+      return;
+    }
+
+    this.recordScoreEvent({ kind: "cleanPatch", count: result.bonuses });
+    const screen = this.worldToScreen(new THREE.Vector3(this.player.position.x, 1.35, this.player.position.z));
+    this.hud.spawnBonusText(
+      screen.x,
+      screen.y,
+      this.app.language === "ko" ? `깔끔한 잔디 +${result.bonuses}` : `Clean Mow +${result.bonuses}`,
+    );
   }
 
   private grassPoints() {
@@ -707,7 +742,7 @@ export class GameScene implements GameSceneController {
       grass: this.grassPoints(),
       bombs: this.bombPoints(),
     });
-    this.cutGrassIds(result.grassIds, origin, { coinLimit: 40, clipLimit: 40 });
+    this.cutGrassIds(result.grassIds, origin, { coinLimit: 40, clipLimit: 40, cleanMowEligible: false });
     for (const bombId of result.bombIds) {
       this.triggerChain(bombId);
     }
@@ -738,7 +773,7 @@ export class GameScene implements GameSceneController {
       width: TRACTOR_STRIP_WIDTH,
       grass: this.grassPoints(),
     });
-    this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24 });
+    this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24, cleanMowEligible: false });
 
     const trail = new TractorTrail(origin, this.player.direction, TRACTOR_STRIP_LENGTH, TRACTOR_STRIP_WIDTH);
     this.sound.play("tractor");
@@ -754,7 +789,7 @@ export class GameScene implements GameSceneController {
         this.cutGrassIds(
           computeCropMarkHits(this.grassPoints(), mark.center, mark.radius),
           mark.center,
-          { coinLimit: 48, clipLimit: 48 },
+          { coinLimit: 48, clipLimit: 48, cleanMowEligible: false },
         );
         mark.fired = true;
       }

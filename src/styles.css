@@ -435,6 +435,24 @@ button:disabled {
   will-change: transform, opacity;
 }
 
+.bonus-text {
+  position: absolute;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 224, 138, 0.5);
+  border-radius: 999px;
+  color: #fff7d5;
+  background: rgba(29, 54, 24, 0.86);
+  font-size: 0.82rem;
+  font-weight: 950;
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32), inset 0 0 14px rgba(255, 210, 63, 0.12);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
 .skill-layer {
   display: grid;
   place-items: center;

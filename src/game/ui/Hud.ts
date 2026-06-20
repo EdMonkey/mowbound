@@ -85,6 +85,16 @@ export class Hud {
     this.damageTexts.push({ element, x, y, age: 0 });
   }
 
+  spawnBonusText(x: number, y: number, text: string): void {
+    const element = document.createElement("div");
+    element.className = "bonus-text";
+    element.textContent = text;
+    element.style.left = `${x}px`;
+    element.style.top = `${y}px`;
+    this.element.appendChild(element);
+    this.damageTexts.push({ element, x, y, age: 0 });
+  }
+
   update(deltaSeconds: number): void {
     for (let index = this.damageTexts.length - 1; index >= 0; index -= 1) {
       const text = this.damageTexts[index];
@@ -147,14 +157,17 @@ export class Hud {
     if (summary) {
       const breakdown = document.createElement("div");
       breakdown.className = "result-breakdown is-score-reveal";
-      const rows = [
+      const rows: [string, number][] = [
         [this.language === "ko" ? "풀" : "Grass", summary.score.breakdown.grass],
-        [this.language === "ko" ? "깔끔한 줄" : "Clean Rows", summary.score.breakdown.cleanRows],
         [this.language === "ko" ? "장애물" : "Obstacles", summary.score.breakdown.obstacles],
         [this.language === "ko" ? "폭탄 연쇄" : "Bomb Chains", summary.score.breakdown.bombChains],
         [this.language === "ko" ? "클리어 보너스" : "Clear Bonus", summary.score.breakdown.clearBonus],
         [this.language === "ko" ? "총점" : "Total Score", summary.score.totalScore],
-      ] as const;
+      ];
+
+      if (summary.score.breakdown.cleanRows > 0) {
+        rows.splice(1, 0, [this.language === "ko" ? "깔끔한 잔디" : "Clean Mow", summary.score.breakdown.cleanRows]);
+      }
 
       const rowDelayMs = 140;
       for (let index = 0; index < rows.length; index += 1) {
