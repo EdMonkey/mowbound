@@ -5,7 +5,8 @@ import type { GrassState } from "../types";
 const SHAKE_TIME = 0.24;
 const CHUNK_SIZE = 5; // world metres per chunk
 const CHUNK_CAPACITY = 1024; // max grass per chunk
-const SNAPSHOT_GRASS_SCALE = 2;
+const SNAPSHOT_GRASS_POINT_SIZE = 4;
+const SNAPSHOT_GRASS_Y = 0.18;
 
 interface Chunk {
   mesh: THREE.InstancedMesh;
@@ -178,20 +179,28 @@ export class GrassField {
       mesh: chunk.mesh,
       visible: chunk.mesh.visible,
     }));
-    const snapshotMesh = this.createSnapshotMesh();
+    const snapshotLayer = this.createSnapshotLayer();
 
     try {
       for (const state of chunkVisibility) {
         state.mesh.visible = false;
       }
-      if (snapshotMesh) {
-        this.group.add(snapshotMesh);
+      if (snapshotLayer) {
+        this.group.add(snapshotLayer);
       }
       return callback();
     } finally {
-      if (snapshotMesh) {
-        this.group.remove(snapshotMesh);
-        snapshotMesh.dispose();
+      if (snapshotLayer) {
+        this.group.remove(snapshotLayer);
+        snapshotLayer.geometry.dispose();
+        const material = snapshotLayer.material;
+        if (Array.isArray(material)) {
+          for (const entry of material) {
+            entry.dispose();
+          }
+        } else {
+          material.dispose();
+        }
       }
       for (const state of chunkVisibility) {
         state.mesh.visible = state.visible;
@@ -199,30 +208,50 @@ export class GrassField {
     }
   }
 
-  private createSnapshotMesh(): THREE.InstancedMesh | undefined {
+  private createSnapshotLayer(): THREE.Points | undefined {
     if (this.instances.size === 0) {
       return undefined;
     }
 
-    const mesh = new THREE.InstancedMesh(this.geometry, this.material, this.instances.size);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.frustumCulled = false;
-    mesh.count = this.instances.size;
+    const positions = new Float32Array(this.instances.size * 3);
+    const colors = new Float32Array(this.instances.size * 3);
 
     let index = 0;
     for (const instance of this.instances.values()) {
-      this.tmpEuler.set(0, instance.baseRotationY, 0);
-      this.tmpQuat.setFromEuler(this.tmpEuler);
-      this.tmpPos.set(instance.x, 0, instance.z);
-      const scale = instance.scale * SNAPSHOT_GRASS_SCALE;
-      this.tmpScale.set(scale, scale, scale);
-      this.tmpMatrix.compose(this.tmpPos, this.tmpQuat, this.tmpScale);
-      mesh.setMatrixAt(index, this.tmpMatrix);
+      const offset = index * 3;
+      const shade = this.snapshotShade(instance.x, instance.z);
+      positions[offset] = instance.x;
+      positions[offset + 1] = SNAPSHOT_GRASS_Y;
+      positions[offset + 2] = instance.z;
+      colors[offset] = 0.22 + shade * 0.16;
+      colors[offset + 1] = 0.78 + shade * 0.2;
+      colors[offset + 2] = 0.14 + shade * 0.1;
       index += 1;
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    return mesh;
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: SNAPSHOT_GRASS_POINT_SIZE,
+      sizeAttenuation: false,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    const layer = new THREE.Points(geometry, material);
+    layer.frustumCulled = false;
+    layer.renderOrder = 40;
+    return layer;
+  }
+
+  private snapshotShade(x: number, z: number): number {
+    const value = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+    return value - Math.floor(value);
   }
 
   private chunkFor(x: number, z: number): Chunk {
