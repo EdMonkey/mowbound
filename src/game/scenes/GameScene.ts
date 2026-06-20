@@ -66,6 +66,7 @@ import {
 } from "../systems/SkillSystem";
 import { summarizeRun } from "../systems/RunSummarySystem";
 import { SoundSystem } from "../systems/SoundSystem";
+import { prepareResultSnapshotShadows } from "../render/ResultSnapshotShadows";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
 import type { GrassState, VectorXZ } from "../types";
@@ -994,6 +995,9 @@ export class GameScene implements GameSceneController {
     const previousVisibility = hiddenGroups.map((group) => group.visible);
     const previousFog = this.scene.fog;
     const camera = this.createResultSnapshotCamera();
+    const restoreSnapshotShadows = prepareResultSnapshotShadows(this.sun, this.mapSize, {
+      maxTextureSize: this.app.renderer.capabilities.maxTextureSize,
+    });
     try {
       hiddenGroups.forEach((group) => {
         group.visible = false;
@@ -1004,6 +1008,7 @@ export class GameScene implements GameSceneController {
         this.app.captureSceneSnapshot(this.scene, camera, RESULT_SNAPSHOT_WIDTH, RESULT_SNAPSHOT_HEIGHT),
       );
     } finally {
+      restoreSnapshotShadows();
       this.scene.fog = previousFog;
       hiddenGroups.forEach((group, index) => {
         group.visible = previousVisibility[index];
