@@ -172,7 +172,7 @@ describe("grass and coins", () => {
     field.dispose();
   });
 
-  it("uses a dedicated alive-grass minimap layer while result snapshots render", () => {
+  it("uses a dedicated alive-grass snapshot mesh while result snapshots render", () => {
     const field = new GrassField();
     field.add({ id: "alive-a", position: { x: 0, z: 0 }, hp: 5 });
     field.add({ id: "cut", position: { x: 3, z: 3 }, hp: 5 });
@@ -183,22 +183,14 @@ describe("grass and coins", () => {
     expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
 
     field.withSnapshotGrassVisible(() => {
-      const snapshotLayer = field.group.children.find((child) =>
-        !chunkMeshes.includes(child as { visible: boolean }) && (child as { isPoints?: boolean }).isPoints
+      const snapshotMesh = field.group.children.find((child) =>
+        !chunkMeshes.includes(child as { visible: boolean }) &&
+        (child as { isInstancedMesh?: boolean }).isInstancedMesh
       );
-      expect(snapshotLayer).toBeDefined();
-      expect(snapshotLayer).toBeInstanceOf(THREE.Points);
-      const geometry = (snapshotLayer as THREE.Points).geometry;
-      const colors = geometry.getAttribute("color");
-      const aliveAGreen = colors.getY(0);
-      const aliveBGreen = colors.getY(1);
-      const cutGreen = colors.getY(2);
-      expect(geometry.getAttribute("position").count).toBe(3);
-      expect(colors.count).toBe(3);
-      expect(Math.max(aliveAGreen, aliveBGreen)).toBeLessThanOrEqual(0.27);
-      expect(cutGreen).toBeGreaterThan(Math.max(aliveAGreen, aliveBGreen) + 0.3);
-      expect((snapshotLayer as THREE.Points).frustumCulled).toBe(false);
-      expect(((snapshotLayer as THREE.Points).material as THREE.PointsMaterial).sizeAttenuation).toBe(false);
+      expect(snapshotMesh).toBeDefined();
+      expect(snapshotMesh).toBeInstanceOf(THREE.InstancedMesh);
+      expect((snapshotMesh as THREE.InstancedMesh).count).toBe(2);
+      expect((snapshotMesh as THREE.InstancedMesh).frustumCulled).toBe(false);
       expect(chunkMeshes.every((mesh) => !mesh.visible)).toBe(true);
     });
 

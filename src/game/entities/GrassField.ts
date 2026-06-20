@@ -5,12 +5,7 @@ import type { GrassState } from "../types";
 const SHAKE_TIME = 0.24;
 const CHUNK_SIZE = 5; // world metres per chunk
 const CHUNK_CAPACITY = 1024; // max grass per chunk
-const SNAPSHOT_GRASS_POINT_SIZE = 4;
-const SNAPSHOT_GRASS_Y = 0.18;
-const SNAPSHOT_UNCUT_COLOR = { r: 0.12, g: 0.23, b: 0.115 };
-const SNAPSHOT_UNCUT_VARIATION = { r: 0.025, g: 0.04, b: 0.02 };
-const SNAPSHOT_CUT_COLOR = { r: 0.38, g: 0.62, b: 0.32 };
-const SNAPSHOT_CUT_VARIATION = { r: 0.05, g: 0.07, b: 0.04 };
+const SNAPSHOT_GRASS_SCALE = 2;
 
 interface Chunk {
   mesh: THREE.InstancedMesh;
@@ -29,11 +24,6 @@ interface Instance {
   shakeTimer: number;
 }
 
-interface SnapshotDot {
-  x: number;
-  z: number;
-}
-
 /**
  * Grass rendered as one InstancedMesh **per spatial chunk** so the renderer can
  * frustum-cull whole chunks that are off-screen (each chunk gets a bounding
@@ -46,7 +36,6 @@ export class GrassField {
   private readonly material: THREE.Material;
   private readonly chunks = new Map<string, Chunk>();
   private readonly instances = new Map<string, Instance>();
-  private readonly cutSnapshotDots: SnapshotDot[] = [];
   private readonly shaking = new Set<string>();
 
   private readonly tmpMatrix = new THREE.Matrix4();
@@ -123,7 +112,6 @@ export class GrassField {
     }
     this.instances.delete(id);
     this.shaking.delete(id);
-    this.cutSnapshotDots.push({ x: instance.x, z: instance.z });
     instance.chunk.mesh.setMatrixAt(instance.index, this.hidden);
     instance.chunk.dirty = true;
   }
@@ -190,28 +178,20 @@ export class GrassField {
       mesh: chunk.mesh,
       visible: chunk.mesh.visible,
     }));
-    const snapshotLayer = this.createSnapshotLayer();
+    const snapshotMesh = this.createSnapshotMesh();
 
     try {
       for (const state of chunkVisibility) {
         state.mesh.visible = false;
       }
-      if (snapshotLayer) {
-        this.group.add(snapshotLayer);
+      if (snapshotMesh) {
+        this.group.add(snapshotMesh);
       }
       return callback();
     } finally {
-      if (snapshotLayer) {
-        this.group.remove(snapshotLayer);
-        snapshotLayer.geometry.dispose();
-        const material = snapshotLayer.material;
-        if (Array.isArray(material)) {
-          for (const entry of material) {
-            entry.dispose();
-          }
-        } else {
-          material.dispose();
-        }
+      if (snapshotMesh) {
+        this.group.remove(snapshotMesh);
+        snapshotMesh.dispose();
       }
       for (const state of chunkVisibility) {
         state.mesh.visible = state.visible;
@@ -219,67 +199,30 @@ export class GrassField {
     }
   }
 
-  private createSnapshotLayer(): THREE.Points | undefined {
-    const dotCount = this.instances.size + this.cutSnapshotDots.length;
-    if (dotCount === 0) {
+  private createSnapshotMesh(): THREE.InstancedMesh | undefined {
+    if (this.instances.size === 0) {
       return undefined;
     }
 
-    const positions = new Float32Array(dotCount * 3);
-    const colors = new Float32Array(dotCount * 3);
+    const mesh = new THREE.InstancedMesh(this.geometry, this.material, this.instances.size);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    mesh.count = this.instances.size;
 
     let index = 0;
     for (const instance of this.instances.values()) {
-      this.writeSnapshotDot(positions, colors, index, instance, false);
+      this.tmpEuler.set(0, instance.baseRotationY, 0);
+      this.tmpQuat.setFromEuler(this.tmpEuler);
+      this.tmpPos.set(instance.x, 0, instance.z);
+      const scale = instance.scale * SNAPSHOT_GRASS_SCALE;
+      this.tmpScale.set(scale, scale, scale);
+      this.tmpMatrix.compose(this.tmpPos, this.tmpQuat, this.tmpScale);
+      mesh.setMatrixAt(index, this.tmpMatrix);
       index += 1;
     }
-    for (const dot of this.cutSnapshotDots) {
-      this.writeSnapshotDot(positions, colors, index, dot, true);
-      index += 1;
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-      size: SNAPSHOT_GRASS_POINT_SIZE,
-      sizeAttenuation: false,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.95,
-      depthTest: false,
-      depthWrite: false,
-    });
-
-    const layer = new THREE.Points(geometry, material);
-    layer.frustumCulled = false;
-    layer.renderOrder = 40;
-    return layer;
-  }
-
-  private writeSnapshotDot(
-    positions: Float32Array,
-    colors: Float32Array,
-    index: number,
-    dot: SnapshotDot,
-    cut: boolean,
-  ): void {
-    const offset = index * 3;
-    const shade = this.snapshotShade(dot.x, dot.z);
-    const base = cut ? SNAPSHOT_CUT_COLOR : SNAPSHOT_UNCUT_COLOR;
-    const variation = cut ? SNAPSHOT_CUT_VARIATION : SNAPSHOT_UNCUT_VARIATION;
-    positions[offset] = dot.x;
-    positions[offset + 1] = SNAPSHOT_GRASS_Y;
-    positions[offset + 2] = dot.z;
-    colors[offset] = base.r + shade * variation.r;
-    colors[offset + 1] = base.g + shade * variation.g;
-    colors[offset + 2] = base.b + shade * variation.b;
-  }
-
-  private snapshotShade(x: number, z: number): number {
-    const value = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
-    return value - Math.floor(value);
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
   }
 
   private chunkFor(x: number, z: number): Chunk {
