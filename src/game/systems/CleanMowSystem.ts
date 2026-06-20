@@ -1,8 +1,8 @@
 import type { VectorXZ } from "../types";
 
-export const CLEAN_MOW_DISTANCE_METERS = 3;
-const CLEAN_MOW_MAX_GAP_MS = 1200;
-const CLEAN_MOW_MAX_TURN_DEGREES = 45;
+export const CLEAN_MOW_DISTANCE_METERS = 2;
+const CLEAN_MOW_MAX_GAP_MS = 1600;
+const CLEAN_MOW_MAX_TURN_DEGREES = 55;
 const CLEAN_MOW_MIN_SEGMENT_METERS = 0.05;
 
 export interface CleanMowState {
