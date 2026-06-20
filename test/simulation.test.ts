@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Coin } from "../src/game/entities/Coin";
+import { GrassField } from "../src/game/entities/GrassField";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
 import {
   bombsTriggeredBy,
@@ -153,6 +154,23 @@ describe("runtime stats from skill nodes", () => {
 });
 
 describe("grass and coins", () => {
+  it("temporarily disables grass chunk culling for result snapshots", () => {
+    const field = new GrassField();
+    field.add({ id: "a", position: { x: 0, z: 0 }, hp: 5 });
+    field.add({ id: "b", position: { x: 8, z: 8 }, hp: 5 });
+
+    const meshes = field.group.children as Array<{ frustumCulled: boolean }>;
+    expect(meshes.length).toBeGreaterThan(1);
+    expect(meshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+
+    field.withFrustumCullingDisabled(() => {
+      expect(meshes.every((mesh) => !mesh.frustumCulled)).toBe(true);
+    });
+
+    expect(meshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+    field.dispose();
+  });
+
   it("places grass on a 40x40 jittered grid inside a 10cm edge margin", () => {
     const states = createGrassBatch(1600, 1, 10);
 
