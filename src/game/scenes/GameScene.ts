@@ -42,7 +42,12 @@ import {
 } from "../systems/ObstacleSystem";
 import { cloneModel } from "../assets/models";
 import type { RunScoreEvent } from "../systems/EconomySystem";
-import { createGrassBatch, createGrassState, randomGrassPosition } from "../systems/GrassSystem";
+import {
+  createGrassBatch,
+  createGrassState,
+  randomGrassPosition,
+  type GrassExclusionCircle,
+} from "../systems/GrassSystem";
 import { InputSystem, mapScreenInputToWorldMovement } from "../systems/InputSystem";
 import { applyRunResultToSave, loadSave, saveGame } from "../systems/SaveSystem";
 import {
@@ -152,7 +157,7 @@ export class GameScene implements GameSceneController {
     // Round length depends on the chosen map; skill bonuses add on top.
     const skillRoundBonus = this.stats.roundDurationMs - BALANCE.roundDurationMs;
     this.roundDurationMs = (ROUND_DURATION_BY_MAP[this.mapSize] ?? BALANCE.roundDurationMs) + skillRoundBonus;
-    this.hud = new Hud(this.app.uiRoot);
+    this.hud = new Hud(this.app.uiRoot, this.app.language);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
     this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
     this.attackRing = this.createIndicator();
@@ -171,9 +176,9 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.explosions.group);
     this.scene.add(this.rockChips.mesh);
     this.scene.add(this.woodChips.mesh);
+    this.spawnObstacles();
     this.spawnInitialGrass();
     this.spawnTestBombs();
-    this.spawnObstacles();
     this.buildCollisionDebug();
     this.createDebugButton();
     this.updateInputMode();
@@ -333,8 +338,8 @@ export class GameScene implements GameSceneController {
     // Scale the base count (tuned for 10x10) by map area so density is constant.
     const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
     const count = Math.round(this.stats.initialGrassCount * areaScale);
-    this.initialGrassTotal = count;
-    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize);
+    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize, this.rockGrassExclusions());
+    this.initialGrassTotal = batch.length;
     this.nextGrassId += batch.length;
     for (const state of batch) {
       this.addGrassState(state);
@@ -344,7 +349,10 @@ export class GameScene implements GameSceneController {
   private spawnGrass(count: number): void {
     for (let index = 0; index < count; index += 1) {
       this.addGrassState(
-        createGrassState(`grass-${this.nextGrassId}`, randomGrassPosition(this.mapSize, this.player.position)),
+        createGrassState(
+          `grass-${this.nextGrassId}`,
+          randomGrassPosition(this.mapSize, this.player.position, this.rockGrassExclusions()),
+        ),
       );
       this.nextGrassId += 1;
     }
@@ -387,6 +395,16 @@ export class GameScene implements GameSceneController {
     };
     spawn("rock", counts.rocks);
     spawn("tree", counts.trees);
+  }
+
+  private rockGrassExclusions(): GrassExclusionCircle[] {
+    return this.obstacleStates
+      .filter((obstacle) => obstacle.kind === "rock" && !obstacle.destroyed)
+      .map((obstacle) => ({
+        x: obstacle.position.x,
+        z: obstacle.position.z,
+        radius: obstacle.radius * 0.9,
+      }));
   }
 
   /**

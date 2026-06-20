@@ -170,6 +170,18 @@ describe("grass and coins", () => {
     expect(quadrants.size).toBe(4);
   });
 
+  it("keeps initial grass outside rock exclusion circles", () => {
+    const exclusion = { x: 0, z: 0, radius: 1.8 };
+    const states = createGrassBatch(400, 1, 10, [exclusion]);
+
+    expect(states.length).toBeLessThan(400);
+    for (const grass of states) {
+      expect(Math.hypot(grass.position.x - exclusion.x, grass.position.z - exclusion.z)).toBeGreaterThan(
+        exclusion.radius,
+      );
+    }
+  });
+
   it("bounces coins on the floor before they disappear", () => {
     const coin = new Coin({ x: 0, z: 0 });
     const floorY = coin.group.position.y;

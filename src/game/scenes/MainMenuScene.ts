@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
+import { cloneModel } from "../assets/models";
 import { MAP_SIZE_OPTIONS } from "../config/balance";
 import type { ToolId } from "../config/skillTree";
-import { cloneModel } from "../assets/models";
+import { toolLabel, type Language } from "../i18n";
 import { Player } from "../entities/Player";
 import { loadSave, resetSave, saveGame } from "../systems/SaveSystem";
 import { canSelectTool, isMapUnlocked, selectTool } from "../systems/SkillSystem";
@@ -84,21 +85,25 @@ export class MainMenuScene implements GameSceneController {
 
     const subtitle = document.createElement("p");
     subtitle.className = "menu-subtitle";
-    subtitle.textContent = "Ten seconds. One scythe. Cut grass, bank gold, grow stronger.";
+    subtitle.textContent = this.app.language === "ko"
+      ? "짧은 라운드 안에 풀을 베고, 골드를 모아, 더 강해지세요."
+      : "Ten seconds. One scythe. Cut grass, bank gold, grow stronger.";
     panel.appendChild(subtitle);
 
+    panel.appendChild(this.buildLanguageSelector());
     panel.appendChild(this.buildMapSizeSelector());
     panel.appendChild(this.buildToolSelector());
 
     const stack = document.createElement("div");
     stack.className = "button-stack";
     stack.append(
-      createButton("Start", () => this.app.show("game")),
-      createButton("Skill Tree", () => this.app.show("skills"), "secondary-button"),
+      createButton(this.app.language === "ko" ? "시작" : "Start", () => this.app.show("game")),
+      createButton(this.app.language === "ko" ? "스킬 트리" : "Skill Tree", () => this.app.show("skills"), "secondary-button"),
       createButton(
-        "Reset Save",
+        this.app.language === "ko" ? "저장 초기화" : "Reset Save",
         () => {
-          if (window.confirm("Reset all Mowbound save data?")) {
+          const message = this.app.language === "ko" ? "모든 Mowbound 저장 데이터를 초기화할까요?" : "Reset all Mowbound save data?";
+          if (window.confirm(message)) {
             this.save = resetSave();
             this.app.mapSizeMeters = 10;
             this.buildMenu();
@@ -112,13 +117,47 @@ export class MainMenuScene implements GameSceneController {
     this.app.uiRoot.appendChild(this.layer);
   }
 
+  private buildLanguageSelector(): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "menu-options";
+
+    const label = document.createElement("span");
+    label.className = "menu-options-label";
+    label.textContent = this.app.language === "ko" ? "언어" : "Language";
+    wrap.appendChild(label);
+
+    const choices = document.createElement("div");
+    choices.className = "menu-options-choices";
+    const languages: Array<{ id: Language; label: string }> = [
+      { id: "ko", label: "한국어" },
+      { id: "en", label: "English" },
+    ];
+
+    for (const language of languages) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "option-button";
+      button.textContent = language.label;
+      button.setAttribute("aria-pressed", String(this.app.language === language.id));
+      button.addEventListener("click", () => {
+        if (this.app.language !== language.id) {
+          this.app.setLanguage(language.id);
+        }
+      });
+      choices.appendChild(button);
+    }
+
+    wrap.appendChild(choices);
+    return wrap;
+  }
+
   private buildMapSizeSelector(): HTMLElement {
     const wrap = document.createElement("div");
     wrap.className = "menu-options";
 
     const label = document.createElement("span");
     label.className = "menu-options-label";
-    label.textContent = "Map";
+    label.textContent = this.app.language === "ko" ? "맵" : "Map";
     wrap.appendChild(label);
 
     const choices = document.createElement("div");
@@ -129,9 +168,17 @@ export class MainMenuScene implements GameSceneController {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "option-button";
-      button.textContent = unlocked ? `${size}x${size}` : `${size}x${size} Locked`;
+      button.textContent = unlocked
+        ? `${size}x${size}`
+        : this.app.language === "ko"
+          ? `${size}x${size} 잠김`
+          : `${size}x${size} Locked`;
       button.disabled = !unlocked;
-      button.title = unlocked ? `${size}x${size}` : "Need: Open Acre";
+      button.title = unlocked
+        ? `${size}x${size}`
+        : this.app.language === "ko"
+          ? "필요: 넓은 밭 계약"
+          : "Need: Open Acre";
       button.setAttribute("aria-pressed", String(unlocked && size === this.app.mapSizeMeters));
       button.addEventListener("click", () => {
         if (!isMapUnlocked(this.save, size)) {
@@ -156,28 +203,27 @@ export class MainMenuScene implements GameSceneController {
 
     const label = document.createElement("span");
     label.className = "menu-options-label";
-    label.textContent = "Tool";
+    label.textContent = this.app.language === "ko" ? "도구" : "Tool";
     wrap.appendChild(label);
 
     const choices = document.createElement("div");
     choices.className = "menu-options-choices";
 
-    const tools: Array<{ id: ToolId; label: string }> = [
-      { id: "default", label: "Default" },
-      { id: "wide_sickle", label: "Wide" },
-      { id: "fast_sickle", label: "Fast" },
-      { id: "bomb_sickle", label: "Bomb" },
-      { id: "tractor", label: "Tractor" },
-    ];
+    const tools: ToolId[] = ["default", "wide_sickle", "fast_sickle", "bomb_sickle", "tractor"];
 
-    const buttons = tools.map(({ id, label: text }) => {
+    const buttons = tools.map((id) => {
+      const text = toolLabel(id, this.app.language);
       const unlocked = canSelectTool(this.save, id);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "option-button";
       button.textContent = text;
       button.disabled = !unlocked;
-      button.title = unlocked ? text : "Unlock this tool in the skill tree";
+      button.title = unlocked
+        ? text
+        : this.app.language === "ko"
+          ? "스킬 트리에서 이 도구를 해금하세요"
+          : "Unlock this tool in the skill tree";
       button.setAttribute("aria-pressed", String(unlocked && this.save.selectedTool === id));
       button.addEventListener("click", () => {
         if (!canSelectTool(this.save, id)) {
