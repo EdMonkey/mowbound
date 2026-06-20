@@ -195,8 +195,8 @@ describe("grass and coins", () => {
       const cutGreen = colors.getY(2);
       expect(geometry.getAttribute("position").count).toBe(3);
       expect(colors.count).toBe(3);
-      expect(Math.max(aliveAGreen, aliveBGreen)).toBeLessThan(0.6);
-      expect(cutGreen).toBeGreaterThan(Math.max(aliveAGreen, aliveBGreen) + 0.08);
+      expect(Math.max(aliveAGreen, aliveBGreen)).toBeLessThanOrEqual(0.27);
+      expect(cutGreen).toBeGreaterThan(Math.max(aliveAGreen, aliveBGreen) + 0.3);
       expect((snapshotLayer as THREE.Points).frustumCulled).toBe(false);
       expect(((snapshotLayer as THREE.Points).material as THREE.PointsMaterial).sizeAttenuation).toBe(false);
       expect(chunkMeshes.every((mesh) => !mesh.visible)).toBe(true);

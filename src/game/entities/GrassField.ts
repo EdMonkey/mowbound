@@ -7,8 +7,8 @@ const CHUNK_SIZE = 5; // world metres per chunk
 const CHUNK_CAPACITY = 1024; // max grass per chunk
 const SNAPSHOT_GRASS_POINT_SIZE = 4;
 const SNAPSHOT_GRASS_Y = 0.18;
-const SNAPSHOT_UNCUT_COLOR = { r: 0.24, g: 0.46, b: 0.23 };
-const SNAPSHOT_UNCUT_VARIATION = { r: 0.05, g: 0.08, b: 0.04 };
+const SNAPSHOT_UNCUT_COLOR = { r: 0.12, g: 0.23, b: 0.115 };
+const SNAPSHOT_UNCUT_VARIATION = { r: 0.025, g: 0.04, b: 0.02 };
 const SNAPSHOT_CUT_COLOR = { r: 0.38, g: 0.62, b: 0.32 };
 const SNAPSHOT_CUT_VARIATION = { r: 0.05, g: 0.07, b: 0.04 };
 
