@@ -1000,7 +1000,7 @@ export class GameScene implements GameSceneController {
       });
       this.scene.fog = null;
       this.scene.updateMatrixWorld(true);
-      return this.grassField.withFrustumCullingDisabled(() =>
+      return this.grassField.withSnapshotGrassVisible(() =>
         this.app.captureSceneSnapshot(this.scene, camera, RESULT_SNAPSHOT_WIDTH, RESULT_SNAPSHOT_HEIGHT),
       );
     } finally {

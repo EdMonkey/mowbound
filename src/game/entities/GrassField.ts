@@ -5,6 +5,7 @@ import type { GrassState } from "../types";
 const SHAKE_TIME = 0.24;
 const CHUNK_SIZE = 5; // world metres per chunk
 const CHUNK_CAPACITY = 1024; // max grass per chunk
+const SNAPSHOT_GRASS_SCALE = 2;
 
 interface Chunk {
   mesh: THREE.InstancedMesh;
@@ -170,6 +171,58 @@ export class GrassField {
         state.mesh.frustumCulled = state.frustumCulled;
       }
     }
+  }
+
+  withSnapshotGrassVisible<T>(callback: () => T): T {
+    const chunkVisibility = Array.from(this.chunks.values()).map((chunk) => ({
+      mesh: chunk.mesh,
+      visible: chunk.mesh.visible,
+    }));
+    const snapshotMesh = this.createSnapshotMesh();
+
+    try {
+      for (const state of chunkVisibility) {
+        state.mesh.visible = false;
+      }
+      if (snapshotMesh) {
+        this.group.add(snapshotMesh);
+      }
+      return callback();
+    } finally {
+      if (snapshotMesh) {
+        this.group.remove(snapshotMesh);
+        snapshotMesh.dispose();
+      }
+      for (const state of chunkVisibility) {
+        state.mesh.visible = state.visible;
+      }
+    }
+  }
+
+  private createSnapshotMesh(): THREE.InstancedMesh | undefined {
+    if (this.instances.size === 0) {
+      return undefined;
+    }
+
+    const mesh = new THREE.InstancedMesh(this.geometry, this.material, this.instances.size);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    mesh.count = this.instances.size;
+
+    let index = 0;
+    for (const instance of this.instances.values()) {
+      this.tmpEuler.set(0, instance.baseRotationY, 0);
+      this.tmpQuat.setFromEuler(this.tmpEuler);
+      this.tmpPos.set(instance.x, 0, instance.z);
+      const scale = instance.scale * SNAPSHOT_GRASS_SCALE;
+      this.tmpScale.set(scale, scale, scale);
+      this.tmpMatrix.compose(this.tmpPos, this.tmpQuat, this.tmpScale);
+      mesh.setMatrixAt(index, this.tmpMatrix);
+      index += 1;
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
   }
 
   private chunkFor(x: number, z: number): Chunk {

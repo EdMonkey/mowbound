@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as THREE from "three";
 import { Coin } from "../src/game/entities/Coin";
 import { GrassField } from "../src/game/entities/GrassField";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
@@ -168,6 +169,33 @@ describe("grass and coins", () => {
     });
 
     expect(meshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+    field.dispose();
+  });
+
+  it("uses a dedicated alive-grass snapshot mesh while result snapshots render", () => {
+    const field = new GrassField();
+    field.add({ id: "alive-a", position: { x: 0, z: 0 }, hp: 5 });
+    field.add({ id: "cut", position: { x: 3, z: 3 }, hp: 5 });
+    field.add({ id: "alive-b", position: { x: 8, z: 8 }, hp: 5 });
+    field.destroy("cut");
+
+    const chunkMeshes = [...field.group.children] as Array<{ visible: boolean }>;
+    expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
+
+    field.withSnapshotGrassVisible(() => {
+      const snapshotMesh = field.group.children.find((child) =>
+        !chunkMeshes.includes(child as { visible: boolean }) &&
+        (child as { isInstancedMesh?: boolean }).isInstancedMesh
+      );
+      expect(snapshotMesh).toBeDefined();
+      expect(snapshotMesh).toBeInstanceOf(THREE.InstancedMesh);
+      expect((snapshotMesh as THREE.InstancedMesh).count).toBe(2);
+      expect((snapshotMesh as THREE.InstancedMesh).frustumCulled).toBe(false);
+      expect(chunkMeshes.every((mesh) => !mesh.visible)).toBe(true);
+    });
+
+    expect(field.group.children).toEqual(chunkMeshes);
+    expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
     field.dispose();
   });
 
