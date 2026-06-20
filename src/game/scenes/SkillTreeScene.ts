@@ -180,19 +180,25 @@ export class SkillTreeScene implements GameSceneController {
     header.className = "skill-header";
     const owned = Object.keys(this.save.levels).length;
     header.innerHTML = `
-      <div>
+      <div class="skill-header-main">
         <h2 class="panel-title">${this.app.language === "ko" ? "스킬 트리" : "Skill Tree"}</h2>
         <p class="panel-copy">${
           this.app.language === "ko"
-            ? `스킬을 해금해 새 가지를 여세요 - ${owned}/${SKILL_NODES.length}개. 보유 골드: <strong>${this.save.gold}</strong>`
-            : `Unlock to grow new branches - ${owned}/${SKILL_NODES.length} skills. Total gold: <strong>${this.save.gold}</strong>`
+            ? `스킬을 해금해 새 가지를 여세요 - ${owned}/${SKILL_NODES.length}개`
+            : `Unlock to grow new branches - ${owned}/${SKILL_NODES.length} skills`
         }</p>
       </div>
-      <p class="skill-meta">${
-        this.app.language === "ko"
-          ? "드래그 이동 / 스크롤·핀치 확대 / 길게 누르기 상세"
-          : "Drag to pan / scroll or pinch to zoom / hover or long-press for details"
-      }</p>
+      <div class="skill-header-side">
+        <div class="skill-gold-badge" aria-label="${this.app.language === "ko" ? "보유 골드" : "Total gold"}">
+          <span class="skill-gold-label">${this.app.language === "ko" ? "보유 골드" : "Gold"}</span>
+          <strong class="skill-gold-value">${this.save.gold}</strong>
+        </div>
+        <p class="skill-meta">${
+          this.app.language === "ko"
+            ? "드래그 이동 / 스크롤·핀치 확대 / 길게 누르기 상세"
+            : "Drag to pan / scroll or pinch to zoom / hover or long-press for details"
+        }</p>
+      </div>
     `;
     panel.appendChild(header);
 

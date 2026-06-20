@@ -336,6 +336,42 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.skill-header-main {
+  min-width: 0;
+}
+
+.skill-header-side {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.skill-gold-badge {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 224, 138, 0.38);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(72, 54, 14, 0.96), rgba(40, 32, 12, 0.94));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), inset 0 0 18px rgba(255, 210, 63, 0.08);
+}
+
+.skill-gold-label {
+  color: #fff7d5;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.skill-gold-value {
+  color: #ffd23f;
+  font-size: clamp(28px, 3.2vw, 46px);
+  font-weight: 950;
+  line-height: 0.95;
+  text-shadow: 0 2px 0 rgba(46, 30, 0, 0.72), 0 8px 24px rgba(255, 210, 63, 0.22);
+}
+
 .skill-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -754,7 +790,22 @@ button:disabled {
   }
 
   .skill-header {
-    display: block;
+    display: grid;
+    gap: 8px;
+  }
+
+  .skill-header-side {
+    justify-items: stretch;
+    min-width: 0;
+  }
+
+  .skill-gold-badge {
+    justify-items: end;
+    padding: 8px 12px;
+  }
+
+  .skill-gold-value {
+    font-size: 28px;
   }
 
   .skill-actions {
