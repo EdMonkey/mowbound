@@ -98,18 +98,48 @@ export class Hud {
     }
   }
 
-  showResult(roundGold: number, callbacks: ResultCallbacks, summary?: RunSummary, goals: SkillNode[] = []): void {
+  showResult(
+    roundGold: number,
+    callbacks: ResultCallbacks,
+    summary?: RunSummary,
+    goals: SkillNode[] = [],
+    snapshotUrl?: string,
+  ): void {
     this.resultOverlay?.remove();
 
     const overlay = document.createElement("div");
     overlay.className = "result-overlay";
 
     const panel = document.createElement("div");
-    panel.className = "result-panel";
+    panel.className = `result-panel${snapshotUrl ? " has-snapshot" : ""}`;
     panel.innerHTML = `
       <h2 class="panel-title">${this.language === "ko" ? "라운드 완료" : "Run Complete"}</h2>
       <p class="panel-copy">${this.language === "ko" ? "획득 골드" : "Earned"} <strong>${roundGold}</strong>${this.language === "ko" ? "" : " gold"}.</p>
     `;
+
+    const detailsRoot = document.createElement("div");
+    detailsRoot.className = "result-details";
+    const appendRoot: HTMLElement = snapshotUrl ? detailsRoot : panel;
+
+    if (snapshotUrl) {
+      const content = document.createElement("div");
+      content.className = "result-content";
+
+      const figure = document.createElement("figure");
+      figure.className = "result-snapshot";
+
+      const image = document.createElement("img");
+      image.src = snapshotUrl;
+      image.alt = this.language === "ko" ? "라운드 종료 화면" : "End-of-run field snapshot";
+      figure.appendChild(image);
+
+      const caption = document.createElement("figcaption");
+      caption.textContent = this.language === "ko" ? "라운드 종료 순간" : "End of run";
+      figure.appendChild(caption);
+
+      content.append(figure, detailsRoot);
+      panel.appendChild(content);
+    }
 
     if (summary) {
       const breakdown = document.createElement("div");
@@ -129,7 +159,7 @@ export class Hud {
         row.innerHTML = `<span>${label}</span><strong>${Math.floor(value)}</strong>`;
         breakdown.appendChild(row);
       }
-      panel.appendChild(breakdown);
+      appendRoot.appendChild(breakdown);
     }
 
     if (goals.length > 0) {
@@ -142,7 +172,7 @@ export class Hud {
         row.innerHTML = `<span>${skillName(goal, this.language)}</span><strong>${goal.cost}g</strong>`;
         next.appendChild(row);
       }
-      panel.appendChild(next);
+      appendRoot.appendChild(next);
     }
 
     if (summary) {
@@ -160,7 +190,7 @@ export class Hud {
         row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
         milestones.appendChild(row);
       }
-      panel.appendChild(milestones);
+      appendRoot.appendChild(milestones);
     }
 
     const stack = document.createElement("div");
@@ -186,7 +216,7 @@ export class Hud {
     menu.addEventListener("click", callbacks.onMenu);
     stack.appendChild(menu);
 
-    panel.appendChild(stack);
+    appendRoot.appendChild(stack);
     overlay.appendChild(panel);
     this.element.appendChild(overlay);
     this.resultOverlay = overlay;

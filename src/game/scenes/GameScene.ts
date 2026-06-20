@@ -924,11 +924,12 @@ export class GameScene implements GameSceneController {
     this.save = applyRunResultToSave(this.save, summary);
     saveGame(this.save);
     this.joystick.setVisible(false);
+    const snapshotUrl = this.app.captureSceneSnapshot(this.scene);
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
       onMenu: () => this.app.show("menu"),
-    }, summary, nextAffordableGoals(this.save, 3));
+    }, summary, nextAffordableGoals(this.save, 3), snapshotUrl);
   }
 
   private readonly updateInputMode = (): void => {

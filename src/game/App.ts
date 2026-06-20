@@ -16,7 +16,7 @@ export interface GameSceneController {
 
 export class App {
   readonly shell = document.createElement("div");
-  readonly renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  readonly renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
   readonly camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 100);
   readonly uiRoot = document.createElement("div");
   /** Player-selected map size (meters/side); set on the menu, read by GameScene. */
@@ -74,6 +74,15 @@ export class App {
   setOrthoSize(size: number): void {
     this.orthoSize = size;
     this.onResize();
+  }
+
+  captureSceneSnapshot(scene: THREE.Scene): string | undefined {
+    try {
+      this.renderer.render(scene, this.camera);
+      return this.renderer.domElement.toDataURL("image/jpeg", 0.86);
+    } catch {
+      return undefined;
+    }
   }
 
   dispose(): void {
