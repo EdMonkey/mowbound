@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { applyRunResultToSave, defaultSave, normalizeSave } from "../src/game/systems/SaveSystem";
+import { SKILL_NODES } from "../src/game/config/skillTree";
+import {
+  applyRunResultToSave,
+  defaultSave,
+  normalizeSave,
+  unlockAllSkillsForTest,
+} from "../src/game/systems/SaveSystem";
 
 describe("save v2", () => {
   it("creates v2 save with lifetime stats", () => {
@@ -47,5 +53,24 @@ describe("save v2", () => {
     expect(save.lifetimeStats.bombsTriggered).toBe(3);
     expect(save.lifetimeStats.bestBombChain).toBe(3);
     expect(save.lifetimeStats.bestClearPercentByMap["10"]).toBe(18);
+  });
+
+  it("unlocks every skill for test saves without changing gold or stats", () => {
+    const save = applyRunResultToSave({ ...defaultSave(), gold: 37 }, {
+      gold: 12,
+      grassCut: 100,
+      rocksBroken: 2,
+      treesCut: 1,
+      bombsTriggered: 3,
+      bestBombChain: 3,
+      mapSize: 10,
+      clearPercent: 18,
+    });
+    const unlocked = unlockAllSkillsForTest(save);
+
+    expect(Object.keys(unlocked.levels).sort()).toEqual(SKILL_NODES.map((node) => node.id).sort());
+    expect(SKILL_NODES.every((node) => unlocked.levels[node.id] === 1)).toBe(true);
+    expect(unlocked.gold).toBe(save.gold);
+    expect(unlocked.lifetimeStats).toEqual(save.lifetimeStats);
   });
 });

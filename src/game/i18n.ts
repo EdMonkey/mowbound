@@ -34,12 +34,12 @@ const SKILL_KO: Record<string, { name: string; description: string }> = {
   light_boots_2: { name: "가벼운 장화 II", description: "이동 속도 +0.14." },
   field_rhythm_1: { name: "밭의 리듬 I", description: "라운드 시간 +8%." },
   field_rhythm_2: { name: "밭의 리듬 II", description: "라운드 시간 +8%." },
-  sprint_harvest: { name: "수확 질주", description: "깔끔한 줄 보너스 후 2초 동안 이동 속도 +20%." },
+  sprint_harvest: { name: "수확 질주", description: "깔끔한 잔디 보너스 후 2초 동안 이동 속도 +20%." },
   long_day: { name: "긴 하루", description: "라운드 시간 +12%." },
   market_cart_1: { name: "시장 수레 I", description: "골드 변환 계수 4.0 -> 3.7." },
   market_cart_2: { name: "시장 수레 II", description: "골드 변환 계수 3.7 -> 3.4." },
-  clean_rows_1: { name: "깔끔한 줄 I", description: "깔끔한 줄 보너스 +8 점수." },
-  clean_rows_2: { name: "깔끔한 줄 II", description: "깔끔한 줄 보너스 +14 점수." },
+  clean_rows_1: { name: "깔끔한 잔디 I", description: "운전 실력 깔끔한 잔디 보너스 +8 점수." },
+  clean_rows_2: { name: "깔끔한 잔디 II", description: "운전 실력 깔끔한 잔디 보너스 +14 점수." },
   bulk_buyer_1: { name: "대량 납품 I", description: "클리어율 보너스 +10%." },
   bulk_buyer_2: { name: "대량 납품 II", description: "클리어율 보너스 +15%." },
   golden_field: { name: "황금 밭", description: "라운드 첫 10초 동안 수확 점수 +25%." },
@@ -122,7 +122,7 @@ export function effectText(effect: SkillEffect, language: Language): string {
       case "goldDivisor":
         return `Gold divisor ${effect.amount}`;
       case "cleanPatchScore":
-        return `Clean patch +${effect.amount}`;
+        return `Clean mow +${effect.amount}`;
       case "clearBonusPercent":
         return `Clear bonus +${effect.amount}%`;
       case "rockScore":
@@ -176,7 +176,7 @@ export function effectText(effect: SkillEffect, language: Language): string {
     case "goldDivisor":
       return `골드 변환 ${effect.amount}`;
     case "cleanPatchScore":
-      return `깔끔한 줄 +${effect.amount}`;
+      return `깔끔한 잔디 +${effect.amount}`;
     case "clearBonusPercent":
       return `클리어 보너스 +${effect.amount}%`;
     case "rockScore":

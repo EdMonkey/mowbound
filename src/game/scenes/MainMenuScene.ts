@@ -5,7 +5,7 @@ import { MAP_SIZE_OPTIONS } from "../config/balance";
 import type { ToolId } from "../config/skillTree";
 import { toolLabel, type Language } from "../i18n";
 import { Player } from "../entities/Player";
-import { loadSave, resetSave, saveGame } from "../systems/SaveSystem";
+import { loadSave, resetSave, saveGame, unlockAllSkillsForTest } from "../systems/SaveSystem";
 import { canSelectTool, isMapUnlocked, selectTool } from "../systems/SkillSystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { clearElement, createButton } from "../ui/Menu";
@@ -99,6 +99,20 @@ export class MainMenuScene implements GameSceneController {
     stack.append(
       createButton(this.app.language === "ko" ? "시작" : "Start", () => this.app.show("game")),
       createButton(this.app.language === "ko" ? "스킬 트리" : "Skill Tree", () => this.app.show("skills"), "secondary-button"),
+      ...(this.isTestMode()
+        ? [
+            createButton(
+              this.app.language === "ko" ? "테스트: 모든 스킬 해금" : "Test: Unlock All Skills",
+              () => {
+                this.save = unlockAllSkillsForTest(this.save);
+                saveGame(this.save);
+                this.sound.play("purchase");
+                this.buildMenu();
+              },
+              "secondary-button",
+            ),
+          ]
+        : []),
       createButton(
         this.app.language === "ko" ? "저장 초기화" : "Reset Save",
         () => {
@@ -115,6 +129,10 @@ export class MainMenuScene implements GameSceneController {
     panel.appendChild(stack);
     this.layer.appendChild(panel);
     this.app.uiRoot.appendChild(this.layer);
+  }
+
+  private isTestMode(): boolean {
+    return new URLSearchParams(window.location.search).get("test") === "1";
   }
 
   private buildLanguageSelector(): HTMLElement {

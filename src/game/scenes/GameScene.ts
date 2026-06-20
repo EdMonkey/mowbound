@@ -43,6 +43,11 @@ import {
 import { cloneModel } from "../assets/models";
 import type { RunScoreEvent } from "../systems/EconomySystem";
 import {
+  createCleanMowState,
+  recordCleanMowCut,
+  type CleanMowState,
+} from "../systems/CleanMowSystem";
+import {
   createGrassBatch,
   createGrassState,
   randomGrassPosition,
@@ -61,6 +66,7 @@ import {
 } from "../systems/SkillSystem";
 import { summarizeRun } from "../systems/RunSummarySystem";
 import { SoundSystem } from "../systems/SoundSystem";
+import { prepareResultSnapshotShadows } from "../render/ResultSnapshotShadows";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
 import type { GrassState, VectorXZ } from "../types";
@@ -75,6 +81,9 @@ const MOWER_LASER_WIDTH = 0.3;
 const TRACTOR_TICK_MS = 200;
 const TRACTOR_STRIP_LENGTH = 1.2;
 const TRACTOR_STRIP_WIDTH = 1.2;
+const RESULT_SNAPSHOT_WIDTH = 1280;
+const RESULT_SNAPSHOT_HEIGHT = 720;
+const RESULT_SNAPSHOT_ASPECT = RESULT_SNAPSHOT_WIDTH / RESULT_SNAPSHOT_HEIGHT;
 
 interface PendingCropMark {
   effect: CropMark;
@@ -147,6 +156,7 @@ export class GameScene implements GameSceneController {
   private alienCropMarkCooldownMs = 0;
   private laserAttackCount = 0;
   private tractorTimerMs = 0;
+  private cleanMowState: CleanMowState = createCleanMowState();
 
   constructor(private readonly app: App) {
     // Assigned in the body (not a field initializer): `app` is a constructor
@@ -550,6 +560,7 @@ export class GameScene implements GameSceneController {
     this.cutGrassIds(grassInRadius(this.grassField.getStates(), center, radius), center, {
       coinLimit: BALANCE.bombMaxCoinsPerBlast,
       clipLimit: BALANCE.bombMaxClippingsPerBlast,
+      cleanMowEligible: false,
     });
   }
 
@@ -595,7 +606,7 @@ export class GameScene implements GameSceneController {
   private cutGrassIds(
     ids: readonly string[],
     origin: VectorXZ,
-    options: { coinLimit?: number; clipLimit?: number } = {},
+    options: { coinLimit?: number; clipLimit?: number; cleanMowEligible?: boolean } = {},
   ): number {
     if (ids.length === 0) {
       return 0;
@@ -630,6 +641,9 @@ export class GameScene implements GameSceneController {
 
     if (cutCount > 0) {
       this.recordScoreEvent({ kind: "grassCut", count: cutCount });
+      if (options.cleanMowEligible ?? true) {
+        this.recordCleanMow(cutCount);
+      }
       this.sound.play("grass");
       if ((options.coinLimit ?? uniqueIds.length) > 0) {
         this.sound.play("coin");
@@ -637,6 +651,31 @@ export class GameScene implements GameSceneController {
     }
 
     return cutCount;
+  }
+
+  private recordCleanMow(cutCount: number): void {
+    if (getEconomyStats(this.save).cleanPatchScore <= 0) {
+      return;
+    }
+
+    const result = recordCleanMowCut(this.cleanMowState, {
+      position: { x: this.player.position.x, z: this.player.position.z },
+      timeMs: this.elapsedMs,
+      cutCount,
+    });
+    this.cleanMowState = result.state;
+
+    if (result.bonuses <= 0) {
+      return;
+    }
+
+    this.recordScoreEvent({ kind: "cleanPatch", count: result.bonuses });
+    const screen = this.worldToScreen(new THREE.Vector3(this.player.position.x, 1.35, this.player.position.z));
+    this.hud.spawnBonusText(
+      screen.x,
+      screen.y,
+      this.app.language === "ko" ? `깔끔한 잔디 +${result.bonuses}` : `Clean Mow +${result.bonuses}`,
+    );
   }
 
   private grassPoints() {
@@ -704,7 +743,7 @@ export class GameScene implements GameSceneController {
       grass: this.grassPoints(),
       bombs: this.bombPoints(),
     });
-    this.cutGrassIds(result.grassIds, origin, { coinLimit: 40, clipLimit: 40 });
+    this.cutGrassIds(result.grassIds, origin, { coinLimit: 40, clipLimit: 40, cleanMowEligible: false });
     for (const bombId of result.bombIds) {
       this.triggerChain(bombId);
     }
@@ -735,7 +774,7 @@ export class GameScene implements GameSceneController {
       width: TRACTOR_STRIP_WIDTH,
       grass: this.grassPoints(),
     });
-    this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24 });
+    this.cutGrassIds(grassIds, origin, { coinLimit: 12, clipLimit: 24, cleanMowEligible: false });
 
     const trail = new TractorTrail(origin, this.player.direction, TRACTOR_STRIP_LENGTH, TRACTOR_STRIP_WIDTH);
     this.sound.play("tractor");
@@ -751,7 +790,7 @@ export class GameScene implements GameSceneController {
         this.cutGrassIds(
           computeCropMarkHits(this.grassPoints(), mark.center, mark.radius),
           mark.center,
-          { coinLimit: 48, clipLimit: 48 },
+          { coinLimit: 48, clipLimit: 48, cleanMowEligible: false },
         );
         mark.fired = true;
       }
@@ -916,6 +955,67 @@ export class GameScene implements GameSceneController {
     return Math.floor((cut / this.initialGrassTotal) * 100);
   }
 
+  private createResultSnapshotCamera(): THREE.OrthographicCamera {
+    const distance = Math.max(18, this.mapSize * 1.35);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, distance * 4);
+    camera.position.set(distance, distance * 1.05, distance);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+
+    const half = this.mapSize / 2;
+    const points: THREE.Vector3[] = [];
+    for (const y of [0, 3.5]) {
+      points.push(
+        new THREE.Vector3(-half, y, -half),
+        new THREE.Vector3(half, y, -half),
+        new THREE.Vector3(half, y, half),
+        new THREE.Vector3(-half, y, half),
+      );
+    }
+    const viewPoints = points.map((point) => point.applyMatrix4(camera.matrixWorldInverse));
+    const minX = Math.min(...viewPoints.map((point) => point.x));
+    const maxX = Math.max(...viewPoints.map((point) => point.x));
+    const minY = Math.min(...viewPoints.map((point) => point.y));
+    const maxY = Math.max(...viewPoints.map((point) => point.y));
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const viewH = Math.max(contentH, contentW / RESULT_SNAPSHOT_ASPECT) * 1.16;
+    const viewW = viewH * RESULT_SNAPSHOT_ASPECT;
+
+    camera.left = -viewW / 2;
+    camera.right = viewW / 2;
+    camera.top = viewH / 2;
+    camera.bottom = -viewH / 2;
+    camera.updateProjectionMatrix();
+    return camera;
+  }
+
+  private captureResultSnapshot(): string | undefined {
+    const hiddenGroups = [this.player.group, this.attackChargeGroup, this.debugGroup];
+    const previousVisibility = hiddenGroups.map((group) => group.visible);
+    const previousFog = this.scene.fog;
+    const camera = this.createResultSnapshotCamera();
+    const restoreSnapshotShadows = prepareResultSnapshotShadows(this.sun, this.mapSize, {
+      maxTextureSize: this.app.renderer.capabilities.maxTextureSize,
+    });
+    try {
+      hiddenGroups.forEach((group) => {
+        group.visible = false;
+      });
+      this.scene.fog = null;
+      this.scene.updateMatrixWorld(true);
+      return this.grassField.withSnapshotGrassVisible(() =>
+        this.app.captureSceneSnapshot(this.scene, camera, RESULT_SNAPSHOT_WIDTH, RESULT_SNAPSHOT_HEIGHT),
+      );
+    } finally {
+      restoreSnapshotShadows();
+      this.scene.fog = previousFog;
+      hiddenGroups.forEach((group, index) => {
+        group.visible = previousVisibility[index];
+      });
+    }
+  }
+
   private endRound(): void {
     this.ended = true;
     this.scoreEvents.push({ kind: "clearPercent", percent: this.clearPercent(), mapSize: this.mapSize });
@@ -924,11 +1024,12 @@ export class GameScene implements GameSceneController {
     this.save = applyRunResultToSave(this.save, summary);
     saveGame(this.save);
     this.joystick.setVisible(false);
+    const snapshotUrl = this.captureResultSnapshot();
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
       onMenu: () => this.app.show("menu"),
-    }, summary, nextAffordableGoals(this.save, 3));
+    }, summary, nextAffordableGoals(this.save, 3), snapshotUrl);
   }
 
   private readonly updateInputMode = (): void => {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import * as THREE from "three";
 import { Coin } from "../src/game/entities/Coin";
+import { GrassField } from "../src/game/entities/GrassField";
 import { advanceChargeAttack, getSurvivingHitIds, resolveAttack } from "../src/game/systems/AttackSystem";
 import {
   bombsTriggeredBy,
@@ -153,6 +155,46 @@ describe("runtime stats from skill nodes", () => {
 });
 
 describe("grass and coins", () => {
+  it("temporarily disables grass chunk culling for result snapshots", () => {
+    const field = new GrassField();
+    field.add({ id: "a", position: { x: 0, z: 0 }, hp: 5 });
+    field.add({ id: "b", position: { x: 8, z: 8 }, hp: 5 });
+
+    const meshes = field.group.children as Array<{ frustumCulled: boolean }>;
+    expect(meshes.length).toBeGreaterThan(1);
+    expect(meshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+
+    field.withFrustumCullingDisabled(() => {
+      expect(meshes.every((mesh) => !mesh.frustumCulled)).toBe(true);
+    });
+
+    expect(meshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+    field.dispose();
+  });
+
+  it("renders existing grass chunks without frustum culling while result snapshots render", () => {
+    const field = new GrassField();
+    field.add({ id: "alive-a", position: { x: 0, z: 0 }, hp: 5 });
+    field.add({ id: "cut", position: { x: 3, z: 3 }, hp: 5 });
+    field.add({ id: "alive-b", position: { x: 8, z: 8 }, hp: 5 });
+    field.destroy("cut");
+
+    const chunkMeshes = [...field.group.children] as Array<{ visible: boolean; frustumCulled: boolean }>;
+    expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
+    expect(chunkMeshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+
+    field.withSnapshotGrassVisible(() => {
+      expect(field.group.children).toEqual(chunkMeshes);
+      expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
+      expect(chunkMeshes.every((mesh) => !mesh.frustumCulled)).toBe(true);
+    });
+
+    expect(field.group.children).toEqual(chunkMeshes);
+    expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
+    expect(chunkMeshes.every((mesh) => mesh.frustumCulled)).toBe(true);
+    field.dispose();
+  });
+
   it("places grass on a 40x40 jittered grid inside a 10cm edge margin", () => {
     const states = createGrassBatch(1600, 1, 10);
 
