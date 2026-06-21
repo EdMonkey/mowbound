@@ -42,6 +42,7 @@ import {
 } from "../systems/ObstacleSystem";
 import { cloneModel } from "../assets/models";
 import type { RunScoreEvent } from "../systems/EconomySystem";
+import { igniteGrassAround, tickFire, tryIgniteGrass } from "../systems/FireSystem";
 import {
   createGrassBatch,
   createGrassState,
@@ -59,6 +60,7 @@ import {
   nextAffordableGoals,
   type RuntimeStats,
 } from "../systems/SkillSystem";
+import { FireParticles } from "../entities/FireParticles";
 import { summarizeRun } from "../systems/RunSummarySystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { Hud } from "../ui/Hud";
@@ -92,6 +94,7 @@ export class GameScene implements GameSceneController {
   private readonly player = new Player();
   private readonly sound = new SoundSystem();
   private grassField!: GrassField;
+  private readonly fireParticles = new FireParticles();
   private sun!: THREE.DirectionalLight;
   private readonly clippings = new GrassClippings();
   private readonly explosions = new Explosions();
@@ -171,7 +174,10 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.player.group);
     this.scene.add(this.attackChargeGroup);
     this.grassField = new GrassField();
+    this.grassField.regrowDelaySeconds = Math.max(1, BALANCE.grassRegrowDelaySeconds + this.stats.grassRegrowDelay);
+    this.grassField.regrowDurationSeconds = Math.max(0.5, BALANCE.grassRegrowDurationSeconds - this.stats.grassRegrowSpeed);
     this.scene.add(this.grassField.group);
+    this.scene.add(this.fireParticles.mesh);
     this.scene.add(this.clippings.mesh);
     this.scene.add(this.explosions.group);
     this.scene.add(this.rockChips.mesh);
@@ -213,7 +219,16 @@ export class GameScene implements GameSceneController {
       }
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
-      this.player.move(movement, this.stats.moveSpeed, deltaSeconds, this.mapSize, this.collisionBlockers());
+      const grassStatesForSlowCheck = this.grassField.getStates();
+      const onBlue = grassStatesForSlowCheck.some(
+        (s) => s.kind === "blue" && s.growthRatio > 0.5 &&
+          Math.hypot(s.position.x - this.player.position.x, s.position.z - this.player.position.z) < 0.35,
+      );
+      const slowFactor = Math.max(0, BALANCE.blueGrassSlowFactor + this.stats.blueGrassSlow);
+      const effectiveSpeed = onBlue
+        ? this.stats.moveSpeed * (1 - slowFactor)
+        : this.stats.moveSpeed;
+      this.player.move(movement, effectiveSpeed, deltaSeconds, this.mapSize, this.collisionBlockers());
       this.updateTractorSkill(deltaSeconds, movement);
 
       // A stunned player can't swing; the charge timer holds until they recover.
@@ -250,6 +265,7 @@ export class GameScene implements GameSceneController {
     this.hud.dispose();
     this.sound.dispose();
     this.grassField.dispose();
+    this.fireParticles.dispose();
     this.clippings.dispose();
     this.explosions.dispose();
     this.rockChips.dispose();
@@ -343,6 +359,12 @@ export class GameScene implements GameSceneController {
     this.nextGrassId += batch.length;
     for (const state of batch) {
       this.addGrassState(state);
+    }
+
+    const timerCount = BALANCE.timerGrassCount;
+    for (let index = 0; index < timerCount; index += 1) {
+      const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
+      this.addGrassState(createGrassState(`grass-timer-${index + 1}`, position, "timer"));
     }
   }
 
@@ -583,6 +605,20 @@ export class GameScene implements GameSceneController {
       }
     }
 
+    if (this.stats.fireIgniteChance > 0) {
+      const survivingHitIds = getSurvivingHitIds(result);
+      const destroyedPositions = result.destroyedIds
+        .map((id) => positionById.get(id))
+        .filter((pos): pos is { x: number; z: number } => Boolean(pos));
+      const ignitedIds = new Set([
+        ...tryIgniteGrass(result.grass, survivingHitIds, this.stats.fireIgniteChance),
+        ...igniteGrassAround(result.grass, destroyedPositions, this.stats.fireSpreadRadiusMeters, this.stats.fireIgniteChance),
+      ]);
+      for (const id of ignitedIds) {
+        this.grassField.ignite(id);
+      }
+    }
+
     if (result.hitIds.length > 0) {
       this.player.strike();
     }
@@ -602,15 +638,26 @@ export class GameScene implements GameSceneController {
     }
 
     const uniqueIds = Array.from(new Set(ids));
-    const positionById = new Map(this.grassField.getStates().map((grass) => [grass.id, grass.position]));
+    const grassStates = this.grassField.getStates();
+    const stateById = new Map(grassStates.map((grass) => [grass.id, grass]));
     let coinBudget = options.coinLimit ?? uniqueIds.length;
     let clipBudget = options.clipLimit ?? uniqueIds.length;
     let cutCount = 0;
+    let tallGoldBonus = 0;
 
     for (const id of uniqueIds) {
-      const position = positionById.get(id);
-      if (!position) {
+      const grassState = stateById.get(id);
+      if (!grassState) {
         continue;
+      }
+      const position = grassState.position;
+
+      if (grassState.kind === "timer" && grassState.growthRatio >= 0.3) {
+        const bonus = (BALANCE.timerGrassRestoreSeconds + this.stats.timerGrassBonus) * grassState.growthRatio;
+        this.elapsedMs = Math.max(0, this.elapsedMs - bonus * 1000);
+      }
+      if (grassState.kind === "tall") {
+        tallGoldBonus += this.stats.tallGrassGold;
       }
 
       this.grassField.destroy(id);
@@ -629,7 +676,7 @@ export class GameScene implements GameSceneController {
     }
 
     if (cutCount > 0) {
-      this.recordScoreEvent({ kind: "grassCut", count: cutCount });
+      this.recordScoreEvent({ kind: "grassCut", count: cutCount + tallGoldBonus });
       this.sound.play("grass");
       if ((options.coinLimit ?? uniqueIds.length) > 0) {
         this.sound.play("coin");
@@ -868,7 +915,45 @@ export class GameScene implements GameSceneController {
   }
 
   private updateGrass(deltaSeconds: number): void {
+    if (!this.ended) {
+      this.updateBurningGrass(deltaSeconds);
+    }
     this.grassField.update(deltaSeconds);
+
+    const burningPositions = this.grassField.getStates()
+      .filter((s) => (s.burningSeconds ?? 0) > 0)
+      .map((s) => s.position);
+    this.fireParticles.setBurning(burningPositions);
+    this.fireParticles.update(deltaSeconds);
+  }
+
+  private updateBurningGrass(deltaSeconds: number): void {
+    const grassStates = this.grassField.getStates();
+    const result = tickFire(grassStates, deltaSeconds, {
+      damagePerSecond: this.stats.fireDamagePerSecond,
+      spreadRadiusMeters: this.stats.fireSpreadRadiusMeters,
+      spreadChancePerSecond: this.stats.fireSpreadChancePerSecond,
+      spreadDurationMultiplier: BALANCE.fireSpreadDurationMultiplier,
+      spreadMinDurationSeconds: BALANCE.fireSpreadMinDurationSeconds,
+    });
+    if (result.damagedIds.length === 0 && result.ignitedIds.length === 0) {
+      return;
+    }
+
+    const resultById = new Map(result.grass.map((state) => [state.id, state]));
+    for (const id of result.ignitedIds) {
+      this.grassField.ignite(id);
+    }
+    for (const id of result.damagedIds) {
+      if (result.destroyedIds.includes(id)) {
+        continue;
+      }
+      const state = resultById.get(id);
+      if (state) {
+        this.grassField.setHp(id, state.hp, { shake: false, burningSeconds: state.burningSeconds ?? 0 });
+      }
+    }
+    this.cutGrassIds(result.destroyedIds, this.player.position, { clipLimit: 24 });
   }
 
   private updateIndicator(deltaSeconds: number): void {

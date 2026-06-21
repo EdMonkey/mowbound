@@ -74,9 +74,19 @@ export function resolveAttack(request: AttackRequest): AttackResult {
   const nextGrass: GrassState[] = [];
 
   for (const patch of request.grass) {
+    if ((patch.growthRatio ?? 1) < 0.15) {
+      nextGrass.push({ ...patch });
+      continue;
+    }
     if (isInAttackFan(request.origin, request.direction, patch.position, request.range, request.arcDegrees)) {
       hitIds.push(patch.id);
-      const hp = patch.hp - request.damage;
+
+      // 중앙(플레이어)에 가까울수록 강한 데미지, 범위 끝에서는 30%
+      const dx = patch.position.x - request.origin.x;
+      const dz = patch.position.z - request.origin.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const damageFactor = Math.max(0.3, 1 - (dist / request.range) * 0.7);
+      const hp = patch.hp - request.damage * damageFactor;
 
       if (hp <= 0) {
         destroyedIds.push(patch.id);

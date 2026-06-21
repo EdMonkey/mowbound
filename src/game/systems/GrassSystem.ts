@@ -1,5 +1,5 @@
 import { BALANCE } from "../config/balance";
-import type { GrassState, VectorXZ } from "../types";
+import type { GrassKind, GrassState, VectorXZ } from "../types";
 
 export interface GrassExclusionCircle {
   x: number;
@@ -56,11 +56,26 @@ export function randomGrassPosition(
   return position;
 }
 
-export function createGrassState(id: string, position: VectorXZ, hp = BALANCE.baseGrassHp): GrassState {
+function hpForKind(kind: GrassKind): number {
+  const base = BALANCE.baseGrassHp;
+  if (kind === "tall") return base * BALANCE.tallGrassHpMultiplier;
+  return base;
+}
+
+export function createGrassState(
+  id: string,
+  position: VectorXZ,
+  kind: GrassKind = "normal",
+  growthRatio = 1,
+  regrowDelay = 0,
+): GrassState {
   return {
     id,
     position,
-    hp,
+    hp: hpForKind(kind) * growthRatio,
+    kind,
+    growthRatio,
+    regrowDelay,
   };
 }
 
@@ -94,7 +109,14 @@ export function createGrassBatch(
       if (!isOutsideExclusions(position, exclusions)) {
         continue;
       }
-      states.push(createGrassState(`grass-${id}`, position));
+      const roll = Math.random();
+      let kind: GrassKind = "normal";
+      if (roll >= 0.97) {
+        kind = "blue";
+      } else if (roll >= 0.91) {
+        kind = "tall";
+      }
+      states.push(createGrassState(`grass-${id}`, position, kind));
       id += 1;
     }
   }

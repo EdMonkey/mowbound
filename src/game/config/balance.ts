@@ -34,6 +34,20 @@ export const BALANCE = {
   obstacleHp: 5,
   obstacleStunSeconds: 2,
   obstacleKnockbackSpeed: 4.2,
+  fireIgniteChance: 0.05,
+  fireDamagePerSecond: 1,
+  fireDurationSeconds: 5,
+  fireSpreadRadiusMeters: 0.48,
+  fireSpreadChancePerSecond: 0.22,
+  fireSpreadDurationMultiplier: 0.65,
+  fireSpreadMinDurationSeconds: 0.6,
+  tallGrassHpMultiplier: 2,
+  tallGrassYScale: 1.5,
+  blueGrassSlowFactor: 0.33,
+  timerGrassRestoreSeconds: 4,
+  timerGrassCount: 7,
+  grassRegrowDelaySeconds: 12,
+  grassRegrowDurationSeconds: 8,
 } as const;
 
 /** Test bombs scattered at run start, per selected map size (meters/side). */

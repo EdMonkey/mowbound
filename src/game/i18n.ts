@@ -159,6 +159,24 @@ export function effectText(effect: SkillEffect, language: Language): string {
         return `Tool: ${toolLabel(effect.tool, language)}`;
       case "special":
         return effect.id.replace(/_/g, " ");
+      case "fireIgniteChance":
+        return `Ignite ${(effect.amount * 100).toFixed(0)}%`;
+      case "fireDamagePerSecond":
+        return `Burn +${effect.amount}/s`;
+      case "fireSpreadRadiusMeters":
+        return `Spread +${effect.amount}m`;
+      case "fireSpreadChancePerSecond":
+        return `Spread speed +${effect.amount}/s`;
+      case "blueGrassSlow":
+        return `Blue slow ${effect.amount > 0 ? "+" : ""}${effect.amount}`;
+      case "timerGrassBonus":
+        return `Timer +${effect.amount}s`;
+      case "tallGrassGold":
+        return `Tall grass +${effect.amount} gold`;
+      case "grassRegrowDelay":
+        return `Regrow delay ${effect.amount > 0 ? "+" : ""}${effect.amount}s`;
+      case "grassGrowSpeed":
+        return `Grow speed +${effect.amount}s faster`;
     }
   }
 
@@ -213,6 +231,24 @@ export function effectText(effect: SkillEffect, language: Language): string {
       return `도구: ${toolLabel(effect.tool, language)}`;
     case "special":
       return SPECIAL_KO[effect.id] ?? effect.id;
+    case "fireIgniteChance":
+      return `점화 ${(effect.amount * 100).toFixed(0)}%`;
+    case "fireDamagePerSecond":
+      return `화염 피해 +${effect.amount}/s`;
+    case "fireSpreadRadiusMeters":
+      return `번짐 반경 +${effect.amount}m`;
+    case "fireSpreadChancePerSecond":
+      return `번짐 속도 +${effect.amount}/s`;
+    case "blueGrassSlow":
+      return `파란 풀 감속 ${effect.amount > 0 ? "+" : ""}${effect.amount}`;
+    case "timerGrassBonus":
+      return `타이머 +${effect.amount}초`;
+    case "tallGrassGold":
+      return `키 큰 풀 +${effect.amount} 골드`;
+    case "grassRegrowDelay":
+      return `재성장 지연 ${effect.amount > 0 ? "+" : ""}${effect.amount}초`;
+    case "grassGrowSpeed":
+      return `성장 속도 ${effect.amount}초 단축`;
   }
 }
 

@@ -720,6 +720,167 @@ button:disabled {
   border-color: #33e0ff;
 }
 
+/* ── Cheat Panel ───────────────────────────────────── */
+.cheat-toggle {
+  position: absolute;
+  bottom: 14px;
+  right: 12px;
+  z-index: 7;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 200, 100, 0.75);
+  background: rgba(10, 18, 22, 0.5);
+  border: 1px solid rgba(255, 200, 100, 0.3);
+  border-radius: 6px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.cheat-toggle:hover {
+  color: #ffd060;
+  border-color: rgba(255, 200, 100, 0.6);
+  background: rgba(10, 18, 22, 0.75);
+}
+
+.cheat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
+}
+
+.cheat-card {
+  width: min(340px, 92vw);
+  padding: 22px 20px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 200, 100, 0.25);
+  background: rgba(22, 18, 10, 0.97);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cheat-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd060;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.cheat-action-btn {
+  width: 100%;
+  padding: 11px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f5e8c0;
+  background: rgba(255, 200, 80, 0.1);
+  border: 1px solid rgba(255, 200, 80, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cheat-action-btn:hover:not(:disabled) {
+  background: rgba(255, 200, 80, 0.2);
+  border-color: rgba(255, 200, 80, 0.55);
+}
+
+.cheat-map-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cheat-map-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #c8b880;
+  white-space: nowrap;
+}
+
+.cheat-map-input {
+  width: 70px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #f5e8c0;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 200, 80, 0.3);
+  border-radius: 6px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.cheat-map-input::-webkit-inner-spin-button,
+.cheat-map-input::-webkit-outer-spin-button {
+  opacity: 0.5;
+}
+
+.cheat-map-row .cheat-action-btn {
+  flex: 1;
+  font-size: 13px;
+  padding: 9px 12px;
+}
+
+.cheat-status {
+  min-height: 20px;
+  font-size: 12px;
+  color: #90e080;
+  text-align: center;
+}
+
+.cheat-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cheat-restart-btn {
+  flex: 1;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(220, 60, 60, 0.75);
+  border: 1px solid rgba(220, 60, 60, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cheat-restart-btn:hover:not(:disabled) {
+  background: rgba(220, 60, 60, 0.95);
+}
+
+.cheat-close-btn {
+  flex: 1;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8b880;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cheat-close-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+/* ─────────────────────────────────────────────────── */
+
 .joystick-zone {
   position: absolute;
   inset: 0;

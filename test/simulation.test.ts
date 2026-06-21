@@ -81,11 +81,11 @@ describe("attack resolution", () => {
       arcDegrees: 180,
       damage: 3,
       grass: [
-        { id: "front", position: { x: 0.5, z: 0 }, hp: 5 },
-        { id: "side", position: { x: 0.01, z: 0.49 }, hp: 5 },
-        { id: "weak", position: { x: 0.3, z: 0.15 }, hp: 3 },
-        { id: "far", position: { x: 0.51, z: 0 }, hp: 5 },
-        { id: "behind", position: { x: -0.2, z: 0 }, hp: 5 },
+        { id: "front", position: { x: 0.5, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+        { id: "side", position: { x: 0.01, z: 0.49 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+        { id: "weak", position: { x: 0.3, z: 0.15 }, hp: 3, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+        { id: "far", position: { x: 0.51, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+        { id: "behind", position: { x: -0.2, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
       ],
     });
 
@@ -115,9 +115,9 @@ describe("attack resolution", () => {
       arcDegrees: 180,
       damage: 3,
       grass: [
-        { id: "front", position: { x: 0.4, z: 0 }, hp: 5 },
-        { id: "weak", position: { x: 0.3, z: 0 }, hp: 3 },
-        { id: "outside", position: { x: -0.4, z: 0 }, hp: 5 },
+        { id: "front", position: { x: 0.4, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+        { id: "weak", position: { x: 0.3, z: 0 }, hp: 3, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+        { id: "outside", position: { x: -0.4, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
       ],
     });
 
@@ -235,9 +235,9 @@ describe("bomb chain detonation", () => {
 
   it("selects grass within the blast radius", () => {
     const grass = [
-      { id: "near", position: { x: 1, z: 0 }, hp: 5 },
-      { id: "edge", position: { x: 5, z: 0 }, hp: 5 },
-      { id: "outside", position: { x: 6, z: 0 }, hp: 5 },
+      { id: "near", position: { x: 1, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+      { id: "edge", position: { x: 5, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
+      { id: "outside", position: { x: 6, z: 0 }, hp: 5, kind: "normal" as const, growthRatio: 1, regrowDelay: 0 },
     ];
     expect(grassInRadius(grass, { x: 0, z: 0 }, 5)).toEqual(["near", "edge"]);
   });

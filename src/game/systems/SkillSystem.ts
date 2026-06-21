@@ -11,6 +11,10 @@ import type { EconomyStats } from "./EconomySystem";
 import { normalizeSave, type SaveData } from "./SaveSystem";
 
 export interface RuntimeStats extends BaseRuntimeStats {
+  fireIgniteChance: number;
+  fireDamagePerSecond: number;
+  fireSpreadRadiusMeters: number;
+  fireSpreadChancePerSecond: number;
   obstacleDamageBonus: number;
   obstacleStunMultiplier: number;
   stumpNoCollision: boolean;
@@ -26,6 +30,11 @@ export interface RuntimeStats extends BaseRuntimeStats {
   hasAlienCropMark: boolean;
   hasMowerLaser: boolean;
   hasTractor: boolean;
+  blueGrassSlow: number;
+  timerGrassBonus: number;
+  tallGrassGold: number;
+  grassRegrowDelay: number;
+  grassRegrowSpeed: number;
 }
 
 export interface CuttablePoint {
@@ -79,6 +88,15 @@ interface RuntimeTotals {
   hasClearcut: boolean;
   hasAlienCropMark: boolean;
   hasMowerLaser: boolean;
+  fireIgniteChance: number;
+  fireDamagePerSecond: number;
+  fireSpreadRadiusMeters: number;
+  fireSpreadChancePerSecond: number;
+  blueGrassSlow: number;
+  timerGrassBonus: number;
+  tallGrassGold: number;
+  grassRegrowDelay: number;
+  grassRegrowSpeed: number;
 }
 
 const DEFAULT_ECONOMY_STATS: EconomyStats = {
@@ -185,6 +203,15 @@ function newRuntimeTotals(): RuntimeTotals {
     hasClearcut: false,
     hasAlienCropMark: false,
     hasMowerLaser: false,
+    fireIgniteChance: 0,
+    fireDamagePerSecond: 0,
+    fireSpreadRadiusMeters: 0,
+    fireSpreadChancePerSecond: 0,
+    blueGrassSlow: 0,
+    timerGrassBonus: 0,
+    tallGrassGold: 0,
+    grassRegrowDelay: 0,
+    grassRegrowSpeed: 0,
   };
 }
 
@@ -233,6 +260,33 @@ function applyRuntimeEffect(total: RuntimeTotals, effect: SkillEffect): void {
       total.hasClearcut ||= effect.id === "clearcut";
       total.hasAlienCropMark ||= effect.id === "alien_crop_mark";
       total.hasMowerLaser ||= effect.id === "mower_laser";
+      break;
+    case "fireIgniteChance":
+      total.fireIgniteChance += effect.amount;
+      break;
+    case "fireDamagePerSecond":
+      total.fireDamagePerSecond += effect.amount;
+      break;
+    case "fireSpreadRadiusMeters":
+      total.fireSpreadRadiusMeters += effect.amount;
+      break;
+    case "fireSpreadChancePerSecond":
+      total.fireSpreadChancePerSecond += effect.amount;
+      break;
+    case "blueGrassSlow":
+      total.blueGrassSlow += effect.amount;
+      break;
+    case "timerGrassBonus":
+      total.timerGrassBonus += effect.amount;
+      break;
+    case "tallGrassGold":
+      total.tallGrassGold += effect.amount;
+      break;
+    case "grassRegrowDelay":
+      total.grassRegrowDelay += effect.amount;
+      break;
+    case "grassGrowSpeed":
+      total.grassRegrowSpeed += effect.amount;
       break;
     case "toolUnlock":
     case "unlockMap":
@@ -327,6 +381,15 @@ export function getRuntimeStats(save: SaveData): RuntimeStats {
     hasAlienCropMark: total.hasAlienCropMark,
     hasMowerLaser: total.hasMowerLaser,
     hasTractor: selectedTool === "tractor",
+    fireIgniteChance: total.fireIgniteChance,
+    fireDamagePerSecond: BALANCE.fireDamagePerSecond + total.fireDamagePerSecond,
+    fireSpreadRadiusMeters: BALANCE.fireSpreadRadiusMeters + total.fireSpreadRadiusMeters,
+    fireSpreadChancePerSecond: BALANCE.fireSpreadChancePerSecond + total.fireSpreadChancePerSecond,
+    blueGrassSlow: total.blueGrassSlow,
+    timerGrassBonus: total.timerGrassBonus,
+    tallGrassGold: total.tallGrassGold,
+    grassRegrowDelay: total.grassRegrowDelay,
+    grassRegrowSpeed: total.grassRegrowSpeed,
   };
 }
 
