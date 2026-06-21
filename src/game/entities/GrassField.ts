@@ -262,6 +262,32 @@ export class GrassField {
     this.fireMaterial.dispose();
   }
 
+  withFrustumCullingDisabled<T>(callback: () => T): T {
+    const previous = Array.from(this.chunks.values()).map((chunk) => ({
+      mesh: chunk.mesh,
+      frustumCulled: chunk.mesh.frustumCulled,
+    }));
+
+    try {
+      for (const chunk of this.chunks.values()) {
+        if (chunk.dirty) {
+          chunk.mesh.instanceMatrix.needsUpdate = true;
+          chunk.dirty = false;
+        }
+        chunk.mesh.frustumCulled = false;
+      }
+      return callback();
+    } finally {
+      for (const state of previous) {
+        state.mesh.frustumCulled = state.frustumCulled;
+      }
+    }
+  }
+
+  withSnapshotGrassVisible<T>(callback: () => T): T {
+    return this.withFrustumCullingDisabled(callback);
+  }
+
   private chunkFor(x: number, z: number): Chunk {
     const cx = Math.floor(x / CHUNK_SIZE);
     const cz = Math.floor(z / CHUNK_SIZE);
