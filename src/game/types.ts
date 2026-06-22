@@ -9,4 +9,4 @@ export interface GrassState {
   hp: number;
 }
 
-export type SceneName = "menu" | "game" | "skills";
+export type SceneName = "menu" | "game" | "skills" | "upgradePrototype";

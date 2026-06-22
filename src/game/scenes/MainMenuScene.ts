@@ -98,6 +98,7 @@ export class MainMenuScene implements GameSceneController {
     stack.className = "button-stack";
     stack.append(
       createButton(this.app.language === "ko" ? "시작" : "Start", () => this.app.show("game")),
+      createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgradePrototype"), "secondary-button"),
       createButton(this.app.language === "ko" ? "스킬 트리" : "Skill Tree", () => this.app.show("skills"), "secondary-button"),
       ...(this.isTestMode()
         ? [
