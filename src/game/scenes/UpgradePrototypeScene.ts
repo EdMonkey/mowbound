@@ -12,6 +12,7 @@ import {
 import { createButton } from "../ui/Menu";
 import {
   getUpgradePrototypePinchZoom,
+  getUpgradePrototypeTooltipPosition,
   shouldPanUpgradePrototype,
   shouldShowUpgradeHoverDetail,
   shouldShowUpgradeLongPressDetail,
@@ -245,7 +246,7 @@ export class UpgradePrototypeScene implements GameSceneController {
         return;
       }
       this.selectedId = node.id;
-      this.showDetail(node.id, button);
+      this.showDetail(node.id, button, { x: event.clientX, y: event.clientY });
     });
     button.addEventListener("pointerleave", (event) => {
       if (shouldShowUpgradeHoverDetail(event.pointerType)) {
@@ -273,7 +274,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     return button;
   }
 
-  private showDetail(nodeId: string, anchor: HTMLElement): void {
+  private showDetail(nodeId: string, anchor: HTMLElement, point?: Point): void {
     if (!this.detail) {
       return;
     }
@@ -302,35 +303,27 @@ export class UpgradePrototypeScene implements GameSceneController {
     `;
     this.detail.style.display = "block";
     this.detail.style.left = "";
-    this.detail.style.right = "";
+    this.detail.style.right = "auto";
     this.detail.style.top = "";
-    this.detail.style.bottom = "";
-
-    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    if (coarsePointer) {
-      this.detail.style.left = "10px";
-      this.detail.style.right = "10px";
-      this.detail.style.bottom = "10px";
-      return;
-    }
+    this.detail.style.bottom = "auto";
 
     const viewportRect = this.viewport.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
     const detailWidth = this.detail.offsetWidth;
     const detailHeight = this.detail.offsetHeight;
-    let left = anchorRect.right - viewportRect.left + 12;
-    if (left + detailWidth > viewportRect.width - 10) {
-      left = anchorRect.left - viewportRect.left - detailWidth - 12;
-    }
-    const top = Math.max(
-      10,
-      Math.min(
-        anchorRect.top - viewportRect.top + anchorRect.height / 2 - detailHeight / 2,
-        viewportRect.height - detailHeight - 10,
-      ),
-    );
-    this.detail.style.left = `${Math.max(10, left)}px`;
-    this.detail.style.top = `${top}px`;
+    const pointX = point ? point.x - viewportRect.left : anchorRect.left - viewportRect.left + anchorRect.width / 2;
+    const pointY = point ? point.y - viewportRect.top : anchorRect.top - viewportRect.top;
+    const position = getUpgradePrototypeTooltipPosition({
+      pointX,
+      pointY,
+      detailWidth,
+      detailHeight,
+      viewportWidth: viewportRect.width,
+      viewportHeight: viewportRect.height,
+      offset: 12,
+    });
+    this.detail.style.left = `${position.left}px`;
+    this.detail.style.top = `${position.top}px`;
   }
 
   private hideDetail(): void {
@@ -413,7 +406,7 @@ export class UpgradePrototypeScene implements GameSceneController {
           }
           this.press.longFired = true;
           this.selectedId = this.press.nodeId;
-          this.showDetail(this.press.nodeId, this.press.anchor);
+          this.showDetail(this.press.nodeId, this.press.anchor, { x: this.press.x, y: this.press.y });
         }, UPGRADE_LONG_PRESS_MS),
       };
     });

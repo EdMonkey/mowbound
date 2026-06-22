@@ -31,3 +31,23 @@ export function getUpgradePrototypePinchZoom(previousDistance: number, nextDista
   }
   return nextDistance / previousDistance;
 }
+
+interface UpgradePrototypeTooltipPositionInput {
+  pointX: number;
+  pointY: number;
+  detailWidth: number;
+  detailHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  offset: number;
+}
+
+export function getUpgradePrototypeTooltipPosition(input: UpgradePrototypeTooltipPositionInput): { left: number; top: number } {
+  const left = Math.max(8, Math.min(input.pointX - input.detailWidth / 2, input.viewportWidth - input.detailWidth - 8));
+  const preferredTop = input.pointY - input.detailHeight - input.offset;
+  const top = preferredTop >= 8 ? preferredTop : Math.min(input.pointY + input.offset, input.viewportHeight - input.detailHeight - 8);
+  return {
+    left,
+    top: Math.max(8, top),
+  };
+}

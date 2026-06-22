@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getUpgradePrototypeTooltipPosition,
   getUpgradePrototypePinchZoom,
   shouldPanUpgradePrototype,
   shouldShowUpgradeHoverDetail,
@@ -31,5 +32,20 @@ describe("upgrade prototype interaction policy", () => {
     expect(getUpgradePrototypePinchZoom(100, 50)).toBe(0.5);
     expect(getUpgradePrototypePinchZoom(100, 150)).toBe(1.5);
     expect(getUpgradePrototypePinchZoom(0, 150)).toBe(1);
+  });
+
+  it("places upgrade detail tooltip above the pointer when there is room", () => {
+    const position = getUpgradePrototypeTooltipPosition({
+      pointX: 180,
+      pointY: 300,
+      detailWidth: 160,
+      detailHeight: 90,
+      viewportWidth: 390,
+      viewportHeight: 640,
+      offset: 12,
+    });
+
+    expect(position.top + 90).toBeLessThanOrEqual(288);
+    expect(position.left).toBe(100);
   });
 });

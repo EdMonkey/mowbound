@@ -18,60 +18,74 @@ export interface UpgradePrototypeNode {
 
 interface UpgradePrototypeSeed extends Omit<UpgradePrototypeNode, "x" | "y"> {}
 
+type BranchSidePrereq = "core" | "previousLane" | "previousCore" | "previousCoreAndLane";
+
+interface BranchSide {
+  lane: number;
+  title: string;
+  prereq?: BranchSidePrereq;
+}
+
 interface BranchTier {
   core: string;
-  sides: [string, string, string, string];
+  sides: BranchSide[];
 }
 
 export const UPGRADE_PROTOTYPE_ROOT_ID = "rusty_scythe";
 
 export const BRANCH_LAYOUT: Record<UpgradePrototypeBranch, { x: number; yStart: number; tierGap: number; laneGap: number }> = {
   root: { x: 0, yStart: 0, tierGap: 0, laneGap: 0 },
-  equipment: { x: -620, yStart: 240, tierGap: 165, laneGap: 98 },
+  equipment: { x: -760, yStart: 240, tierGap: 165, laneGap: 98 },
   harvest: { x: 0, yStart: 240, tierGap: 165, laneGap: 98 },
-  environment: { x: 620, yStart: 240, tierGap: 165, laneGap: 98 },
+  environment: { x: 760, yStart: 240, tierGap: 165, laneGap: 98 },
 };
 
 const BRANCH_TIERS: Record<MainUpgradeBranch, BranchTier[]> = {
   equipment: [
-    { core: "낫 손질", sides: ["날 세우기", "넓은 날", "빠른 회전", "균형 잡기"] },
-    { core: "큰낫 준비", sides: ["묵직한 날", "긴 손잡이", "깊은 베기", "되돌림 연습"] },
-    { core: "큰낫 해금", sides: ["넓은 휘두르기", "무게 줄이기", "날 보호대", "연속 베기"] },
-    { core: "예초기 준비", sides: ["회전날", "연료통", "시동 안정", "소음 억제"] },
-    { core: "예초기 해금", sides: ["지속 회전", "좁은 코너", "과열 방지", "잔디 흡입"] },
-    { core: "강화 예초기", sides: ["이중 회전날", "고출력 모터", "안정 손잡이", "급가속"] },
-    { core: "트랙터 준비", sides: ["차체 정비", "앞날 장착", "조향 연습", "바퀴 접지"] },
-    { core: "트랙터 면허", sides: ["넓은 전방날", "회전 보정", "잔디 압착", "연료 효율"] },
-    { core: "자동 장비", sides: ["보조 날개", "자율 보정", "과충전", "장비 동기화"] },
-    { core: "초월 장비", sides: ["레이저 장착", "외계 날", "거대 수확기", "무한 동력"] },
+    { core: "낫 손질", sides: sides(["날 세우기", "넓은 날", "빠른 회전"], [-1, 1, 2]) },
+    { core: "큰낫 준비", sides: sides(["묵직한 날", "긴 손잡이", "깊은 베기", "되돌림 연습"], [-2, -1, 1, 2], [-1, 1]) },
+    { core: "큰낫 해금", sides: sides(["넓은 휘두르기", "무게 줄이기", "연속 베기"], [-1, 1, 2], [1]) },
+    { core: "예초기 준비", sides: sides(["회전날", "연료통", "시동 안정", "소음 억제", "날 보호대"], [-3, -2, -1, 1, 2], [-1, 2]) },
+    { core: "예초기 해금", sides: sides(["지속 회전", "좁은 코너", "과열 방지", "잔디 흡입"], [-2, -1, 1, 2], [-2]) },
+    { core: "강화 예초기", sides: sides(["이중 회전날", "고출력 모터", "안정 손잡이", "급가속"], [-2, -1, 1, 3], [1]) },
+    { core: "트랙터 준비", sides: sides(["차체 정비", "앞날 장착", "조향 연습", "바퀴 접지", "넓은 축"], [-3, -2, -1, 1, 2], [-2, 1]) },
+    { core: "트랙터 면허", sides: sides(["넓은 전방날", "회전 보정", "연료 효율"], [-1, 1, 2], [-1]) },
+    { core: "자동 장비", sides: sides(["보조 날개", "자율 보정", "과충전", "장비 동기화"], [-2, -1, 1, 2], [2]) },
+    { core: "초월 장비", sides: sides(["레이저 장착", "외계 날", "거대 수확기", "무한 동력", "차원 절단"], [-3, -2, -1, 1, 2], [-2, 1]) },
   ],
   harvest: [
-    { core: "수확 장부", sides: ["시장 수레", "깔끔한 잔디", "동전 줍기", "첫 거래"] },
-    { core: "수확 계산", sides: ["골드 환산", "연속 보너스", "짧은 휴식", "수확 집중"] },
-    { core: "납품 계약", sides: ["대량 납품", "클리어 보너스", "빠른 정산", "동전 자석"] },
-    { core: "풍작 준비", sides: ["황금 씨앗", "풍작 시간", "숙련 보너스", "수확 질주"] },
-    { core: "황금 들판", sides: ["초반 보너스", "잔디 가치", "깔끔한 줄", "보너스 배율"] },
-    { core: "마을 거래", sides: ["고정 단가", "상인 할인", "계약 연장", "빠른 배달"] },
-    { core: "수확 축제", sides: ["축제 보너스", "콤보 보상", "행운 동전", "긴 하루"] },
-    { core: "대형 시장", sides: ["묶음 판매", "프리미엄 납품", "운송 개선", "시장 확장"] },
-    { core: "황금 회계", sides: ["최종 정산", "연쇄 수익", "수확 투자", "골드 창고"] },
-    { core: "왕실 납품", sides: ["왕실 계약", "무역 길드", "황금 폭발", "끝없는 수확"] },
+    { core: "수확 장부", sides: sides(["시장 수레", "깔끔한 잔디", "동전 줍기", "첫 거래"], [-2, -1, 1, 2]) },
+    { core: "수확 계산", sides: sides(["골드 환산", "연속 보너스", "수확 집중"], [-1, 1, 2], [-1]) },
+    { core: "납품 계약", sides: sides(["대량 납품", "클리어 보너스", "빠른 정산", "동전 자석", "짧은 휴식"], [-3, -2, -1, 1, 2], [-1, 1]) },
+    { core: "풍작 준비", sides: sides(["황금 씨앗", "풍작 시간", "수확 질주"], [-2, -1, 1], [-2]) },
+    { core: "황금 들판", sides: sides(["초반 보너스", "잔디 가치", "깔끔한 줄", "보너스 배율"], [-2, -1, 1, 2], [1]) },
+    { core: "마을 거래", sides: sides(["고정 단가", "상인 할인", "계약 연장", "빠른 배달", "숙련 보너스"], [-3, -2, -1, 1, 2], [-1, 2]) },
+    { core: "수확 축제", sides: sides(["축제 보너스", "콤보 보상", "긴 하루"], [-2, 1, 2], [2]) },
+    { core: "대형 시장", sides: sides(["묶음 판매", "프리미엄 납품", "운송 개선", "시장 확장"], [-2, -1, 1, 3], [-2]) },
+    { core: "황금 회계", sides: sides(["최종 정산", "연쇄 수익", "수확 투자", "골드 창고", "행운 동전"], [-3, -2, -1, 1, 2], [-1, 1]) },
+    { core: "왕실 납품", sides: sides(["왕실 계약", "무역 길드", "끝없는 수확"], [-1, 1, 2], [1]) },
   ],
   environment: [
-    { core: "밭 살피기", sides: ["질긴 풀", "돌 확인", "나무 확인", "작은 폭탄"] },
-    { core: "장애물 조사", sides: ["돌 깨기", "나무 베기", "뿌리 제거", "파편 보상"] },
-    { core: "밭 개척", sides: ["새 풀 군집", "큰 돌", "굵은 나무", "안전 지대"] },
-    { core: "폭탄 배치", sides: ["폭발 반경", "연쇄 거리", "폭탄 보상", "경고 표시"] },
-    { core: "넓은 밭 계약", sides: ["30m 진입", "경계 정리", "큰 장애물", "새 길목"] },
-    { core: "위험 지대", sides: ["단단한 돌", "오래된 나무", "폭탄 무리", "두꺼운 풀"] },
-    { core: "개척 장비", sides: ["돌 보상", "목재 보상", "폭발 수확", "길 열기"] },
-    { core: "먼 들판", sides: ["희귀 풀", "바위 군락", "숲 가장자리", "폭탄 연쇄"] },
-    { core: "외계 흔적", sides: ["원형 문양", "하늘 낙인", "이상한 풀", "빛나는 돌"] },
-    { core: "거대 농지", sides: ["대형 맵", "끝없는 풀", "환경 보상", "완전 개척"] },
+    { core: "밭 살피기", sides: sides(["질긴 풀", "돌 확인", "나무 확인"], [-1, 1, 2]) },
+    { core: "장애물 조사", sides: sides(["돌 깨기", "나무 베기", "뿌리 제거", "파편 보상", "작은 폭탄"], [-3, -2, -1, 1, 2], [1, 2]) },
+    { core: "밭 개척", sides: sides(["새 풀 군집", "큰 돌", "굵은 나무", "안전 지대"], [-2, -1, 1, 2], [-1]) },
+    { core: "폭탄 배치", sides: sides(["폭발 반경", "연쇄 거리", "폭탄 보상"], [-1, 1, 2], [2]) },
+    { core: "넓은 밭 계약", sides: sides(["30m 진입", "경계 정리", "큰 장애물", "새 길목", "경고 표시"], [-3, -2, -1, 1, 2], [-2, 1]) },
+    { core: "위험 지대", sides: sides(["단단한 돌", "오래된 나무", "폭탄 무리"], [-2, -1, 2], [-1]) },
+    { core: "개척 장비", sides: sides(["돌 보상", "목재 보상", "폭발 수확", "길 열기"], [-2, -1, 1, 2], [2]) },
+    { core: "먼 들판", sides: sides(["희귀 풀", "바위 군락", "숲 가장자리", "폭탄 연쇄", "두꺼운 풀"], [-3, -2, -1, 1, 2], [-2, 1]) },
+    { core: "외계 흔적", sides: sides(["원형 문양", "하늘 낙인", "이상한 풀"], [-1, 1, 2], [1]) },
+    { core: "거대 농지", sides: sides(["대형 맵", "끝없는 풀", "환경 보상", "완전 개척", "빛나는 돌"], [-3, -2, -1, 1, 2], [-1, 2]) },
   ],
 };
 
-const SIDE_LANES = [-2, -1, 1, 2] as const;
+function sides(titles: string[], lanes: number[], linkedLanes: number[] = []): BranchSide[] {
+  return titles.map((title, index) => ({
+    title,
+    lane: lanes[index],
+    prereq: linkedLanes.includes(lanes[index]) ? "previousLane" : "core",
+  }));
+}
 
 function laneKey(lane: number): string {
   if (lane === 0) {
@@ -113,12 +127,26 @@ function centerPrereq(branch: MainUpgradeBranch, tier: number): string[] {
   return [nodeId(branch, tier - 1, 0)];
 }
 
-function sidePrereq(branch: MainUpgradeBranch, tier: number, lane: number): string[] {
-  const prereq = [nodeId(branch, tier, 0)];
-  if (tier >= 4 && Math.abs(lane) === 2) {
-    prereq.push(nodeId(branch, tier - 1, lane > 0 ? 2 : -2));
+function tierHasLane(branch: MainUpgradeBranch, tier: number, lane: number): boolean {
+  return Boolean(BRANCH_TIERS[branch][tier - 1]?.sides.some((side) => side.lane === lane));
+}
+
+function sidePrereq(branch: MainUpgradeBranch, tier: number, side: BranchSide): string[] {
+  const prereqKind = side.prereq ?? "core";
+  if (prereqKind === "previousLane" && tier > 1 && tierHasLane(branch, tier - 1, side.lane)) {
+    return [nodeId(branch, tier - 1, side.lane)];
   }
-  return prereq;
+  if (prereqKind === "previousCore" && tier > 1) {
+    return [nodeId(branch, tier - 1, 0)];
+  }
+  if (prereqKind === "previousCoreAndLane" && tier > 1) {
+    const prereq = [nodeId(branch, tier - 1, 0)];
+    if (tierHasLane(branch, tier - 1, side.lane)) {
+      prereq.push(nodeId(branch, tier - 1, side.lane));
+    }
+    return prereq;
+  }
+  return [nodeId(branch, tier, 0)];
 }
 
 function createSeeds(): UpgradePrototypeSeed[] {
@@ -153,19 +181,18 @@ function createSeeds(): UpgradePrototypeSeed[] {
         major: true,
       });
 
-      SIDE_LANES.forEach((lane, sideIndex) => {
-        const title = tierData.sides[sideIndex];
+      tierData.sides.forEach((side) => {
         seeds.push({
-          id: nodeId(branch, tier, lane),
+          id: nodeId(branch, tier, side.lane),
           branch,
           tier,
-          lane,
-          title,
-          shortTitle: shortTitle(title),
-          description: branchDescription(branch, title, tier, lane),
-          cost: costFor(branchIndex, tier, lane),
-          prereq: sidePrereq(branch, tier, lane),
-          major: tier >= 8 && Math.abs(lane) === 2,
+          lane: side.lane,
+          title: side.title,
+          shortTitle: shortTitle(side.title),
+          description: branchDescription(branch, side.title, tier, side.lane),
+          cost: costFor(branchIndex, tier, side.lane),
+          prereq: sidePrereq(branch, tier, side),
+          major: tier >= 8 && Math.abs(side.lane) >= 2,
         });
       });
     });
@@ -179,7 +206,7 @@ export function layoutPrototypeNode(node: Pick<UpgradePrototypeNode, "branch" | 
     return { x: 0, y: 0 };
   }
   const layout = BRANCH_LAYOUT[node.branch];
-  const sideYOffset = node.lane === 0 ? 0 : Math.abs(node.lane) === 1 ? 46 : -46;
+  const sideYOffset = node.lane === 0 ? 0 : Math.abs(node.lane) === 1 ? 46 : Math.abs(node.lane) === 2 ? -46 : 88;
   return {
     x: layout.x + node.lane * layout.laneGap,
     y: layout.yStart + (node.tier - 1) * layout.tierGap + sideYOffset,
