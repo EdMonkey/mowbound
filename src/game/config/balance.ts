@@ -50,6 +50,65 @@ export const BALANCE = {
   grassRegrowDurationSeconds: 8,
 } as const;
 
+/**
+ * Base values for each summoned auto-ability. Skill nodes add deltas on top of
+ * these (see SkillSystem.getRuntimeStats). `damageFactor` is multiplied by the
+ * player's attack damage; `intervalSec` is the spawn cooldown.
+ */
+export interface SummonBase {
+  damageFactor: number;
+  intervalSec: number;
+  minIntervalSec: number;
+  radius: number;
+  spins: number;
+  durationSec: number;
+  width: number;
+  size: number;
+  range: number;
+}
+
+export const SUMMON_BASE: Record<string, SummonBase> = {
+  // radius for the clone is taken from the player's live attack range.
+  shadowClone:   { damageFactor: 0.5, intervalSec: 5, minIntervalSec: 1.5, radius: 0,    spins: 0, durationSec: 0, width: 0,   size: 0,   range: 0 },
+  flyingScythe:  { damageFactor: 0.6, intervalSec: 6, minIntervalSec: 2,   radius: 0.7,  spins: 3, durationSec: 0, width: 0,   size: 0,   range: 1.6 },
+  tractorSummon: { damageFactor: 0.6, intervalSec: 7, minIntervalSec: 3,   radius: 0,    spins: 0, durationSec: 0, width: 1.2, size: 0,   range: 0 },
+  boomerang:     { damageFactor: 0.6, intervalSec: 6, minIntervalSec: 2,   radius: 0.55, spins: 0, durationSec: 0, width: 0,   size: 0,   range: 2.2 },
+  lightning:     { damageFactor: 0.8, intervalSec: 6, minIntervalSec: 2,   radius: 0.8,  spins: 0, durationSec: 0, width: 0,   size: 0,   range: 0 },
+  drone:         { damageFactor: 0.5, intervalSec: 8, minIntervalSec: 3,   radius: 0.7,  spins: 0, durationSec: 5, width: 0,   size: 0,   range: 0 },
+  tornado:       { damageFactor: 0.6, intervalSec: 9, minIntervalSec: 3,   radius: 0,    spins: 0, durationSec: 4, width: 0,   size: 0.9, range: 0 },
+};
+
+/**
+ * Obstacles (rocks/trees) are skill-gated and spawn over time. Sizes vary; HP
+ * and reward scale with size. Rocks suppress grass growth in an aura around
+ * them; trees speed it up.
+ */
+export const OBSTACLE_TUNING = {
+  spawnBaseIntervalSec: 10,
+  spawnMinIntervalSec: 3,
+  scaleMin: 0.6,
+  scaleMax: 1.8,
+  // Aura radii are the obstacle's footprint radius times these factors.
+  rockNoGrowFactor: 2.4,
+  treeBoostFactor: 3.0,
+  treeGrowthMultiplier: 2.2,
+  // Max simultaneous obstacles per 10x10 of map area.
+  maxPer100SqM: 4,
+} as const;
+
+/**
+ * Map auto-growth: the field widens as the player unlocks more skills. Every
+ * `stepSkills` unlocked adds `stepMeters`, clamped to a cap that "Survey"-line
+ * skills raise (see SkillSystem.getRuntimeStats -> autoMapSizeMeters).
+ */
+export const MAP_GROWTH = {
+  baseMeters: 10,
+  stepSkills: 4,
+  stepMeters: 2,
+  baseCapMeters: 14,
+  hardMaxMeters: 60,
+} as const;
+
 /** Test bombs scattered at run start, per selected map size (meters/side). */
 export const TEST_BOMB_COUNTS: Record<number, number> = { 10: 0, 30: 30 };
 

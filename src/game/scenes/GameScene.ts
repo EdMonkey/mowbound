@@ -3,7 +3,6 @@ import type { App, GameSceneController } from "../App";
 import {
   BALANCE,
   OBSTACLE_COUNTS_BY_MAP,
-  ROUND_DURATION_BY_MAP,
   TEST_BOMB_COUNTS,
 } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
@@ -61,12 +60,13 @@ import {
   type RuntimeStats,
 } from "../systems/SkillSystem";
 import { FireParticles } from "../entities/FireParticles";
+import { SummonSystem, type SummonCut } from "../entities/SummonedAbilities";
 import { summarizeRun } from "../systems/RunSummarySystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { prepareResultSnapshotShadows } from "../render/ResultSnapshotShadows";
 import { Hud } from "../ui/Hud";
 import { VirtualJoystick } from "../ui/VirtualJoystick";
-import type { GrassState, VectorXZ } from "../types";
+import type { GrassKind, GrassState, VectorXZ } from "../types";
 
 const ATTACK_FLASH_DURATION = 0.45;
 const ALIEN_CROP_MARK_COOLDOWN_MS = 12_000;
@@ -99,6 +99,7 @@ export class GameScene implements GameSceneController {
   private readonly sound = new SoundSystem();
   private grassField!: GrassField;
   private readonly fireParticles = new FireParticles();
+  private readonly summons = new SummonSystem();
   private sun!: THREE.DirectionalLight;
   private readonly clippings = new GrassClippings();
   private readonly explosions = new Explosions();
@@ -158,12 +159,15 @@ export class GameScene implements GameSceneController {
   constructor(private readonly app: App) {
     // Assigned in the body (not a field initializer): `app` is a constructor
     // parameter property, which isn't available when field initializers run.
-    this.mapSize = this.app.mapSizeMeters;
     this.stats = getRuntimeStats(this.save);
+    // Hybrid map size: the chosen/cheated size acts as a floor, and the map
+    // also auto-grows with the number of unlocked skills (capped by Wide-Lands
+    // skills). A cheat custom size (e.g. 100) wins via the max.
+    this.mapSize = Math.max(this.app.mapSizeMeters, this.stats.autoMapSizeMeters);
     this.player.setToolStyle(this.stats.selectedTool);
-    // Round length depends on the chosen map; skill bonuses add on top.
-    const skillRoundBonus = this.stats.roundDurationMs - BALANCE.roundDurationMs;
-    this.roundDurationMs = (ROUND_DURATION_BY_MAP[this.mapSize] ?? BALANCE.roundDurationMs) + skillRoundBonus;
+    // Round length is fixed (base + skill bonuses) and does NOT scale with map
+    // size — a bigger field shouldn't hand out more time.
+    this.roundDurationMs = this.stats.roundDurationMs;
     this.hud = new Hud(this.app.uiRoot, this.app.language);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
     this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
@@ -182,11 +186,13 @@ export class GameScene implements GameSceneController {
     this.grassField.regrowDurationSeconds = Math.max(0.5, BALANCE.grassRegrowDurationSeconds - this.stats.grassRegrowSpeed);
     this.scene.add(this.grassField.group);
     this.scene.add(this.fireParticles.mesh);
+    this.scene.add(this.summons.group);
     this.scene.add(this.clippings.mesh);
     this.scene.add(this.explosions.group);
     this.scene.add(this.rockChips.mesh);
     this.scene.add(this.woodChips.mesh);
-    this.spawnObstacles();
+    // Obstacles are skill-gated and spawn over time (see updateObstacleSpawns),
+    // so none are pre-placed.
     this.spawnInitialGrass();
     this.spawnTestBombs();
     this.buildCollisionDebug();
@@ -207,6 +213,7 @@ export class GameScene implements GameSceneController {
     this.updateFallingLogs(deltaSeconds);
     this.updateBombs(deltaSeconds);
     this.updateSpectacleEffects(deltaSeconds);
+    this.updateSummons(deltaSeconds);
     this.updateCollisionDebug();
     this.hud.update(deltaSeconds);
 
@@ -270,6 +277,7 @@ export class GameScene implements GameSceneController {
     this.sound.dispose();
     this.grassField.dispose();
     this.fireParticles.dispose();
+    this.summons.dispose();
     this.clippings.dispose();
     this.explosions.dispose();
     this.rockChips.dispose();
@@ -642,12 +650,16 @@ export class GameScene implements GameSceneController {
     }
 
     const uniqueIds = Array.from(new Set(ids));
+    const uniqueIdSet = new Set(uniqueIds);
     const grassStates = this.grassField.getStates();
     const stateById = new Map(grassStates.map((grass) => [grass.id, grass]));
     let coinBudget = options.coinLimit ?? uniqueIds.length;
     let clipBudget = options.clipLimit ?? uniqueIds.length;
     let cutCount = 0;
     let tallGoldBonus = 0;
+    // Special grass shouldn't keep regrowing where it was cut (the player could
+    // just camp one spot). Collect the kinds cut here and relocate them below.
+    const relocateKinds: GrassKind[] = [];
 
     for (const id of uniqueIds) {
       const grassState = stateById.get(id);
@@ -663,8 +675,13 @@ export class GameScene implements GameSceneController {
       if (grassState.kind === "tall") {
         tallGoldBonus += this.stats.tallGrassGold;
       }
+      if (grassState.kind !== "normal") {
+        relocateKinds.push(grassState.kind);
+      }
 
       this.grassField.destroy(id);
+      // The cut patch regrows as plain grass; its special kind moves elsewhere.
+      this.grassField.setKind(id, "normal");
       cutCount += 1;
 
       if (clipBudget > 0) {
@@ -679,6 +696,10 @@ export class GameScene implements GameSceneController {
       }
     }
 
+    if (relocateKinds.length > 0) {
+      this.relocateSpecialGrass(relocateKinds, uniqueIdSet);
+    }
+
     if (cutCount > 0) {
       this.recordScoreEvent({ kind: "grassCut", count: cutCount + tallGoldBonus });
       this.sound.play("grass");
@@ -688,6 +709,93 @@ export class GameScene implements GameSceneController {
     }
 
     return cutCount;
+  }
+
+  /**
+   * Move freshly-cut special grass to new, mostly-distant spots so the player
+   * has to roam instead of farming one patch. Each requested kind converts one
+   * eligible plain, fully-grown patch (preferring far ones) into that kind.
+   */
+  private relocateSpecialGrass(kinds: readonly GrassKind[], exclude: Set<string>): void {
+    const player = this.player.position;
+    const distSq = (g: GrassState): number =>
+      (g.position.x - player.x) ** 2 + (g.position.z - player.z) ** 2;
+    const candidates = this.grassField
+      .getStates()
+      .filter((g) => g.kind === "normal" && g.growthRatio >= 1 && !exclude.has(g.id))
+      .sort((a, b) => distSq(b) - distSq(a)); // farthest first
+
+    for (const kind of kinds) {
+      if (candidates.length === 0) break;
+      // Pick randomly from the farther half so they spread out (and don't all
+      // land on the single most-distant patch).
+      const pickRange = Math.max(1, Math.floor(candidates.length / 2));
+      const index = Math.floor(Math.random() * pickRange);
+      const [chosen] = candidates.splice(index, 1);
+      this.grassField.setKind(chosen.id, kind);
+    }
+  }
+
+  private updateSummons(deltaSeconds: number): void {
+    const cuts = this.summons.update(
+      deltaSeconds,
+      {
+        playerPos: this.player.position,
+        playerDir: this.player.direction,
+        playerDamage: this.stats.attackDamage,
+        playerRange: this.stats.attackRangeMeters,
+        mapSize: this.mapSize,
+      },
+      this.stats,
+      this.ended,
+    );
+    this.applyAbilityCuts(cuts);
+  }
+
+  /** Apply a batch of area cuts from summoned abilities to the grass field. */
+  private applyAbilityCuts(cuts: readonly SummonCut[]): void {
+    if (cuts.length === 0) {
+      return;
+    }
+    const grassStates = this.grassField.getStates();
+    const destroyed = new Set<string>();
+    const igniteIds = new Set<string>();
+
+    for (const grass of grassStates) {
+      if ((grass.growthRatio ?? 1) < 0.15 || destroyed.has(grass.id)) {
+        continue;
+      }
+      let remaining = grass.hp;
+      let hit = false;
+      let igniteHere = false;
+      for (const cut of cuts) {
+        const dx = grass.position.x - cut.x;
+        const dz = grass.position.z - cut.z;
+        if (dx * dx + dz * dz <= cut.radius * cut.radius) {
+          remaining -= cut.damage;
+          hit = true;
+          if (cut.ignite) igniteHere = true;
+        }
+      }
+      if (!hit) {
+        continue;
+      }
+      if (remaining <= 0) {
+        destroyed.add(grass.id);
+      } else {
+        this.grassField.setHp(grass.id, remaining, { shake: false });
+        if (igniteHere && (grass.growthRatio ?? 1) >= 0.5) {
+          igniteIds.add(grass.id);
+        }
+      }
+    }
+
+    for (const id of igniteIds) {
+      this.grassField.ignite(id);
+    }
+    if (destroyed.size > 0) {
+      this.cutGrassIds([...destroyed], this.player.position);
+    }
   }
 
   private grassPoints() {

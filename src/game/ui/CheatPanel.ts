@@ -1,6 +1,74 @@
-import { SKILL_NODES } from "../config/skillTree";
+import { SKILL_NODES, SKILL_NODE_BY_ID } from "../config/skillTree";
 import { addGold, loadSave, saveGame } from "../systems/SaveSystem";
 import type { App } from "../App";
+
+interface CheatCategory {
+  label: string;
+  nodeIds: string[];
+}
+
+const SUMMON_LABELS: Record<string, string> = {
+  shadowClone: "🌑 그림자 분신",
+  flyingScythe: "🔪 낫 날리기",
+  tractorSummon: "🚜 트랙터",
+  boomerang: "🪃 부메랑",
+  lightning: "⚡ 번개",
+  drone: "🛸 드론",
+  tornado: "🌪️ 회오리",
+};
+
+const FIRE_KINDS = new Set([
+  "fireIgniteChance",
+  "fireDamagePerSecond",
+  "fireSpreadRadiusMeters",
+  "fireSpreadChancePerSecond",
+]);
+
+const GRASS_KINDS = new Set([
+  "blueGrassSlow",
+  "timerGrassBonus",
+  "tallGrassGold",
+  "grassRegrowDelay",
+  "grassGrowSpeed",
+]);
+
+const BRANCH_LABELS: Record<string, string> = {
+  blade: "🗡️ 칼날",
+  movement: "👟 이동",
+  harvest: "💰 수확",
+  obstacles: "🪨 장애물",
+  bombs: "💣 폭탄",
+  land: "🌱 땅/맵",
+  spectacle: "✨ 스펙터클",
+};
+
+/** Build the selectable cheat unlock groups from the skill data. */
+function buildCheatCategories(): CheatCategory[] {
+  const cats: CheatCategory[] = [];
+
+  // One group per summoned ability.
+  for (const [ability, label] of Object.entries(SUMMON_LABELS)) {
+    const nodeIds = SKILL_NODES
+      .filter((n) => n.effects.some((e) => e.kind === "summon" && e.ability === ability))
+      .map((n) => n.id);
+    if (nodeIds.length > 0) cats.push({ label, nodeIds });
+  }
+
+  // Feature groups that cut across branches.
+  const fireIds = SKILL_NODES.filter((n) => n.effects.some((e) => FIRE_KINDS.has(e.kind))).map((n) => n.id);
+  if (fireIds.length > 0) cats.push({ label: "🔥 불 (화염)", nodeIds: fireIds });
+
+  const grassIds = SKILL_NODES.filter((n) => n.effects.some((e) => GRASS_KINDS.has(e.kind))).map((n) => n.id);
+  if (grassIds.length > 0) cats.push({ label: "🌿 특수 풀", nodeIds: grassIds });
+
+  // Whole-branch groups for everything else.
+  for (const [branch, label] of Object.entries(BRANCH_LABELS)) {
+    const nodeIds = SKILL_NODES.filter((n) => n.branch === branch).map((n) => n.id);
+    if (nodeIds.length > 0) cats.push({ label, nodeIds });
+  }
+
+  return cats;
+}
 
 export class CheatPanel {
   private readonly toggleBtn: HTMLButtonElement;
@@ -56,6 +124,25 @@ export class CheatPanel {
       btn.addEventListener("click", fn);
       card.appendChild(btn);
     }
+
+    // Category unlock section
+    const catLabel = document.createElement("div");
+    catLabel.className = "cheat-section-label";
+    catLabel.textContent = "카테고리별 해금";
+    card.appendChild(catLabel);
+
+    const catGrid = document.createElement("div");
+    catGrid.className = "cheat-cat-grid";
+    for (const category of buildCheatCategories()) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cheat-cat-btn";
+      btn.textContent = category.label;
+      btn.addEventListener("pointerdown", (e) => e.stopPropagation());
+      btn.addEventListener("click", () => this.unlockCategory(category));
+      catGrid.appendChild(btn);
+    }
+    card.appendChild(catGrid);
 
     // Map size row
     const mapRow = document.createElement("div");
@@ -130,6 +217,23 @@ export class CheatPanel {
     for (const node of SKILL_NODES) levels[node.id] = 1;
     saveGame({ ...save, levels });
     this.setStatus(`✓ ${SKILL_NODES.length}개 스킬 해금 — 재시작 후 적용`);
+  }
+
+  private unlockCategory(category: CheatCategory): void {
+    const save = loadSave();
+    const levels = { ...save.levels };
+    // Unlock the category's nodes plus every prerequisite they depend on, so
+    // the skills are actually valid/usable in the tree.
+    const toUnlock = new Set<string>();
+    const visit = (id: string): void => {
+      if (toUnlock.has(id)) return;
+      toUnlock.add(id);
+      SKILL_NODE_BY_ID[id]?.prereq.forEach(visit);
+    };
+    category.nodeIds.forEach(visit);
+    for (const id of toUnlock) levels[id] = 1;
+    saveGame({ ...save, levels });
+    this.setStatus(`✓ ${category.label} 해금 (${toUnlock.size}개) — 재시작 후 적용`);
   }
 
   private resetSkills(): void {

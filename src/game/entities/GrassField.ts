@@ -15,6 +15,12 @@ interface Chunk {
   fireDirty: boolean;
 }
 
+interface GrowthZone {
+  x: number;
+  z: number;
+  radius: number;
+}
+
 interface Instance {
   chunk: Chunk;
   index: number;
@@ -37,6 +43,11 @@ export class GrassField {
   regrowDelaySeconds: number = BALANCE.grassRegrowDelaySeconds;
   regrowDurationSeconds: number = BALANCE.grassRegrowDurationSeconds;
 
+  // Obstacle auras: rocks suppress regrowth in range, trees accelerate it.
+  private growthSuppressZones: ReadonlyArray<GrowthZone> = [];
+  private growthBoostZones: ReadonlyArray<GrowthZone> = [];
+  private growthBoostMultiplier = 1;
+
   private readonly geometry: THREE.BufferGeometry;
   private readonly fireGeometry: THREE.ConeGeometry;
   private readonly material: THREE.Material;
@@ -55,8 +66,6 @@ export class GrassField {
 
   // 풀 색상 상수
   private readonly grassGreenColor = new THREE.Color("#5ab030");
-  private readonly dryColor      = new THREE.Color("#ffe030");
-  private readonly ashColor      = new THREE.Color("#c8c8bc");
   private readonly emberColor    = new THREE.Color("#ff6b1a");
   private readonly tallKindColor  = new THREE.Color("#c8d44a");
   private readonly blueKindColor  = new THREE.Color("#4ab8d4");
@@ -149,13 +158,15 @@ export class GrassField {
     const instance = this.instances.get(id);
     if (!instance) return;
     instance.hp = hp;
+    // Colour no longer depends on HP, so a plain damage tick writes nothing to
+    // the colour/fire buffers — only a burning-state change does.
     if (options.burningSeconds !== undefined) {
       instance.burningSeconds = options.burningSeconds;
+      this.writeMeshColor(instance);
+      this.writeFire(instance);
+      instance.chunk.dirty = true;
+      instance.chunk.fireDirty = true;
     }
-    this.writeMeshColor(instance);
-    this.writeFire(instance);
-    instance.chunk.dirty = true;
-    instance.chunk.fireDirty = true;
     if (options.shake ?? true) {
       instance.shakeTimer = SHAKE_TIME;
       this.shaking.add(id);
@@ -187,14 +198,53 @@ export class GrassField {
     instance.chunk.fireDirty = true;
   }
 
+  /** Change an existing patch's kind in place (used to relocate special grass). */
+  setKind(id: string, kind: GrassKind): void {
+    const instance = this.instances.get(id);
+    if (!instance || instance.kind === kind) return;
+    instance.kind = kind;
+    instance.baseHp = kind === "tall"
+      ? BALANCE.baseGrassHp * BALANCE.tallGrassHpMultiplier
+      : BALANCE.baseGrassHp;
+    instance.hp = instance.baseHp * instance.growthRatio;
+    this.writeMatrix(instance, 0, 0); // tall changes the Y scale
+    this.writeMeshColor(instance);
+    instance.chunk.dirty = true;
+  }
+
+  /** Obstacle auras affecting regrowth: rocks suppress, trees boost. */
+  setGrowthZones(
+    suppress: ReadonlyArray<GrowthZone>,
+    boost: ReadonlyArray<GrowthZone>,
+    boostMultiplier: number,
+  ): void {
+    this.growthSuppressZones = suppress;
+    this.growthBoostZones = boost;
+    this.growthBoostMultiplier = boostMultiplier;
+  }
+
+  private inAnyZone(instance: Instance, zones: ReadonlyArray<GrowthZone>): boolean {
+    for (const zone of zones) {
+      const dx = instance.x - zone.x;
+      const dz = instance.z - zone.z;
+      if (dx * dx + dz * dz <= zone.radius * zone.radius) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   update(deltaSeconds: number): void {
     for (const instance of this.instances.values()) {
       if (instance.burningSeconds > 0) {
         instance.burningSeconds = Math.max(0, instance.burningSeconds - deltaSeconds);
         this.writeFire(instance);
-        this.writeMeshColor(instance);
-        instance.chunk.dirty = true;
         instance.chunk.fireDirty = true;
+        // Colour only needs rewriting when the fire goes out (ember tint -> kind).
+        if (instance.burningSeconds === 0) {
+          this.writeMeshColor(instance);
+          instance.chunk.dirty = true;
+        }
       }
     }
 
@@ -207,7 +257,6 @@ export class GrassField {
       instance.shakeTimer = Math.max(0, instance.shakeTimer - deltaSeconds);
       if (instance.shakeTimer === 0) {
         this.writeMatrix(instance, 0, 0);
-        this.writeMeshColor(instance);
         this.writeFire(instance);
         this.shaking.delete(id);
       } else {
@@ -225,20 +274,23 @@ export class GrassField {
         continue;
       }
       if (instance.growthRatio < 1) {
-        instance.growthRatio = Math.min(1, instance.growthRatio + deltaSeconds / this.regrowDurationSeconds);
+        // Rocks pause regrowth in their aura; trees speed it up.
+        if (this.inAnyZone(instance, this.growthSuppressZones)) {
+          continue;
+        }
+        const mult = this.inAnyZone(instance, this.growthBoostZones) ? this.growthBoostMultiplier : 1;
+        instance.growthRatio = Math.min(1, instance.growthRatio + (deltaSeconds * mult) / this.regrowDurationSeconds);
         instance.hp = instance.baseHp * instance.growthRatio;
         this.writeMatrix(instance, 0, 0);
-        this.writeMeshColor(instance);
         instance.chunk.dirty = true;
       }
     }
 
     for (const chunk of this.chunks.values()) {
       if (chunk.dirty) {
+        // Only the transform buffer; colour is flagged directly by
+        // writeMeshColor on the rare occasions it actually changes.
         chunk.mesh.instanceMatrix.needsUpdate = true;
-        if (chunk.mesh.instanceColor) {
-          chunk.mesh.instanceColor.needsUpdate = true;
-        }
         chunk.dirty = false;
       }
       if (chunk.fireDirty) {
@@ -265,7 +317,9 @@ export class GrassField {
   withFrustumCullingDisabled<T>(callback: () => T): T {
     const previous = Array.from(this.chunks.values()).map((chunk) => ({
       mesh: chunk.mesh,
+      fireMesh: chunk.fireMesh,
       frustumCulled: chunk.mesh.frustumCulled,
+      fireFrustumCulled: chunk.fireMesh.frustumCulled,
     }));
 
     try {
@@ -275,11 +329,13 @@ export class GrassField {
           chunk.dirty = false;
         }
         chunk.mesh.frustumCulled = false;
+        chunk.fireMesh.frustumCulled = false;
       }
       return callback();
     } finally {
       for (const state of previous) {
         state.mesh.frustumCulled = state.frustumCulled;
+        state.fireMesh.frustumCulled = state.fireFrustumCulled;
       }
     }
   }
@@ -335,40 +391,25 @@ export class GrassField {
     instance.chunk.mesh.setMatrixAt(instance.index, this.tmpMatrix);
   }
 
+  /**
+   * Colour depends only on the patch's kind (plus a burning tint) — NOT on HP.
+   * This means it only needs writing when the kind or burning state changes, so
+   * routine damage/regrowth no longer re-uploads the per-instance colour buffer
+   * (which got expensive on large maps).
+   */
   private writeMeshColor(instance: Instance): void {
-    const hpRatio = instance.baseHp > 0
-      ? THREE.MathUtils.clamp(instance.hp / instance.baseHp, 0, 1)
-      : 1;
-
-    // growthRatio >= 1인 상태에서만 실제 데미지로 판정
-    const isDamaged = instance.growthRatio >= 1 && instance.hp < instance.baseHp;
-
     switch (instance.kind) {
       case "blue":
         this.tmpColor.copy(this.blueKindColor);
-        if (isDamaged) this.tmpColor.lerp(this.ashColor, (1 - hpRatio) * 0.5);
         break;
       case "timer":
         this.tmpColor.copy(this.timerKindColor);
-        if (isDamaged) this.tmpColor.lerp(this.ashColor, (1 - hpRatio) * 0.5);
         break;
       case "tall":
-        if (isDamaged) {
-          this.tmpColor.copy(this.tallKindColor).lerp(this.dryColor, (1 - hpRatio) * 0.8);
-        } else {
-          this.tmpColor.copy(this.tallKindColor);
-        }
+        this.tmpColor.copy(this.tallKindColor);
         break;
       default: // normal
-        if (isDamaged) {
-          if (hpRatio > 0.5) {
-            this.tmpColor.copy(this.dryColor);
-          } else {
-            this.tmpColor.copy(this.dryColor).lerp(this.ashColor, 1 - hpRatio * 2);
-          }
-        } else {
-          this.tmpColor.copy(this.grassGreenColor);
-        }
+        this.tmpColor.copy(this.grassGreenColor);
     }
 
     if (instance.burningSeconds > 0) {

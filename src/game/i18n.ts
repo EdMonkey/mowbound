@@ -106,7 +106,53 @@ export function skillDescription(node: SkillNode, language: Language): string {
   return language === "ko" ? SKILL_KO[node.id]?.description ?? node.description : node.description;
 }
 
+const SUMMON_NAME: Record<string, { ko: string; en: string }> = {
+  shadowClone: { ko: "그림자 분신", en: "Shadow Clone" },
+  flyingScythe: { ko: "날아가는 낫", en: "Flying Scythe" },
+  tractorSummon: { ko: "트랙터", en: "Tractor" },
+  boomerang: { ko: "부메랑", en: "Boomerang" },
+  lightning: { ko: "번개", en: "Lightning" },
+  drone: { ko: "드론", en: "Drone" },
+  tornado: { ko: "회오리", en: "Tornado" },
+};
+
+function summonEffectText(
+  effect: Extract<SkillEffect, { kind: "summon" }>,
+  language: Language,
+): string {
+  const name = SUMMON_NAME[effect.ability]?.[language] ?? effect.ability;
+  const n = effect.amount;
+  const sign = n > 0 ? "+" : "";
+  if (language === "en") {
+    switch (effect.stat) {
+      case "count": return `${name} count ${sign}${n}`;
+      case "damage": return `${name} damage ${sign}${Math.round(n * 100)}%`;
+      case "interval": return `${name} cooldown ${n}s`;
+      case "radius": return `${name} radius ${sign}${n}m`;
+      case "spins": return `${name} spins ${sign}${n}`;
+      case "duration": return `${name} duration ${sign}${n}s`;
+      case "width": return `${name} width ${sign}${n}m`;
+      case "size": return `${name} size ${sign}${n}m`;
+      case "range": return `${name} range ${sign}${n}m`;
+    }
+  }
+  switch (effect.stat) {
+    case "count": return `${name} 개수 ${sign}${n}`;
+    case "damage": return `${name} 피해 ${sign}${Math.round(n * 100)}%`;
+    case "interval": return `${name} 쿨다운 ${n}초`;
+    case "radius": return `${name} 범위 ${sign}${n}m`;
+    case "spins": return `${name} 회전 ${sign}${n}`;
+    case "duration": return `${name} 지속 ${sign}${n}초`;
+    case "width": return `${name} 폭 ${sign}${n}m`;
+    case "size": return `${name} 크기 ${sign}${n}m`;
+    case "range": return `${name} 사거리 ${sign}${n}m`;
+  }
+}
+
 export function effectText(effect: SkillEffect, language: Language): string {
+  if (effect.kind === "summon") {
+    return summonEffectText(effect, language);
+  }
   if (language === "en") {
     switch (effect.kind) {
       case "attackDamage":
@@ -177,6 +223,14 @@ export function effectText(effect: SkillEffect, language: Language): string {
         return `Regrow delay ${effect.amount > 0 ? "+" : ""}${effect.amount}s`;
       case "grassGrowSpeed":
         return `Grow speed +${effect.amount}s faster`;
+      case "mapExpandCap":
+        return `Map can grow +${effect.amount}m`;
+      case "obstacleSurvey":
+        return effect.obstacle === "rock" ? "Rocks start spawning" : "Trees start spawning";
+      case "obstacleSpawnRate":
+        return `Obstacles ${effect.amount}s sooner`;
+      case "obstacleSize":
+        return `Obstacle size +${effect.amount}`;
     }
   }
 
@@ -249,6 +303,14 @@ export function effectText(effect: SkillEffect, language: Language): string {
       return `재성장 지연 ${effect.amount > 0 ? "+" : ""}${effect.amount}초`;
     case "grassGrowSpeed":
       return `성장 속도 ${effect.amount}초 단축`;
+    case "mapExpandCap":
+      return `맵 확장 한계 +${effect.amount}m`;
+    case "obstacleSurvey":
+      return effect.obstacle === "rock" ? "돌 등장 시작" : "나무 등장 시작";
+    case "obstacleSpawnRate":
+      return `장애물 ${effect.amount}초 빨리`;
+    case "obstacleSize":
+      return `장애물 크기 +${effect.amount}`;
   }
 }
 

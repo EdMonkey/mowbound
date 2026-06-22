@@ -1,12 +1,45 @@
-import { BALANCE, type RuntimeStats as BaseRuntimeStats } from "../config/balance";
+import {
+  BALANCE,
+  MAP_GROWTH,
+  OBSTACLE_TUNING,
+  SUMMON_BASE,
+  type RuntimeStats as BaseRuntimeStats,
+} from "../config/balance";
 import {
   SKILL_NODE_BY_ID,
   SKILL_NODES,
   type SkillEffect,
   type SkillNode,
+  type SummonAbilityId,
+  type SummonStatKind,
   type ToolId,
   type UnlockGate,
 } from "../config/skillTree";
+
+export type { SummonAbilityId, SummonStatKind } from "../config/skillTree";
+
+/** Resolved per-ability stats after folding base values + skill deltas. */
+export interface SummonRuntime {
+  count: number;
+  damageFactor: number;
+  intervalSec: number;
+  radius: number;
+  spins: number;
+  durationSec: number;
+  width: number;
+  size: number;
+  range: number;
+}
+
+const SUMMON_ABILITY_IDS: SummonAbilityId[] = [
+  "shadowClone",
+  "flyingScythe",
+  "tractorSummon",
+  "boomerang",
+  "lightning",
+  "drone",
+  "tornado",
+];
 import type { EconomyStats } from "./EconomySystem";
 import { normalizeSave, type SaveData } from "./SaveSystem";
 
@@ -35,6 +68,13 @@ export interface RuntimeStats extends BaseRuntimeStats {
   tallGrassGold: number;
   grassRegrowDelay: number;
   grassRegrowSpeed: number;
+  summons: Record<SummonAbilityId, SummonRuntime>;
+  mapExpandCapBonus: number;
+  autoMapSizeMeters: number;
+  rockEnabled: boolean;
+  treeEnabled: boolean;
+  obstacleSpawnIntervalSec: number;
+  obstacleSizeBonus: number;
 }
 
 export interface CuttablePoint {
@@ -97,6 +137,20 @@ interface RuntimeTotals {
   tallGrassGold: number;
   grassRegrowDelay: number;
   grassRegrowSpeed: number;
+  summonDeltas: Record<SummonAbilityId, Record<SummonStatKind, number>>;
+  mapExpandCap: number;
+  rockSurvey: boolean;
+  treeSurvey: boolean;
+  obstacleSpawnRate: number;
+  obstacleSize: number;
+}
+
+function emptySummonDeltas(): Record<SummonAbilityId, Record<SummonStatKind, number>> {
+  const out = {} as Record<SummonAbilityId, Record<SummonStatKind, number>>;
+  for (const ability of SUMMON_ABILITY_IDS) {
+    out[ability] = { count: 0, damage: 0, interval: 0, radius: 0, spins: 0, duration: 0, width: 0, size: 0, range: 0 };
+  }
+  return out;
 }
 
 const DEFAULT_ECONOMY_STATS: EconomyStats = {
@@ -212,6 +266,12 @@ function newRuntimeTotals(): RuntimeTotals {
     tallGrassGold: 0,
     grassRegrowDelay: 0,
     grassRegrowSpeed: 0,
+    summonDeltas: emptySummonDeltas(),
+    mapExpandCap: 0,
+    rockSurvey: false,
+    treeSurvey: false,
+    obstacleSpawnRate: 0,
+    obstacleSize: 0,
   };
 }
 
@@ -287,6 +347,22 @@ function applyRuntimeEffect(total: RuntimeTotals, effect: SkillEffect): void {
       break;
     case "grassGrowSpeed":
       total.grassRegrowSpeed += effect.amount;
+      break;
+    case "summon":
+      total.summonDeltas[effect.ability][effect.stat] += effect.amount;
+      break;
+    case "mapExpandCap":
+      total.mapExpandCap += effect.amount;
+      break;
+    case "obstacleSurvey":
+      total.rockSurvey ||= effect.obstacle === "rock";
+      total.treeSurvey ||= effect.obstacle === "tree";
+      break;
+    case "obstacleSpawnRate":
+      total.obstacleSpawnRate += effect.amount;
+      break;
+    case "obstacleSize":
+      total.obstacleSize += effect.amount;
       break;
     case "toolUnlock":
     case "unlockMap":
@@ -390,7 +466,48 @@ export function getRuntimeStats(save: SaveData): RuntimeStats {
     tallGrassGold: total.tallGrassGold,
     grassRegrowDelay: total.grassRegrowDelay,
     grassRegrowSpeed: total.grassRegrowSpeed,
+    summons: foldSummons(total.summonDeltas),
+    mapExpandCapBonus: total.mapExpandCap,
+    autoMapSizeMeters: computeAutoMapSize(normalized, total.mapExpandCap),
+    rockEnabled: total.rockSurvey,
+    treeEnabled: total.treeSurvey,
+    obstacleSpawnIntervalSec: Math.max(
+      OBSTACLE_TUNING.spawnMinIntervalSec,
+      OBSTACLE_TUNING.spawnBaseIntervalSec + total.obstacleSpawnRate,
+    ),
+    obstacleSizeBonus: total.obstacleSize,
   };
+}
+
+/** Map widens with the number of unlocked skills, capped by Wide-Lands skills. */
+function computeAutoMapSize(save: SaveData, capBonus: number): number {
+  const unlocked = Object.values(normalizeSave(save).levels).filter((level) => level > 0).length;
+  const grown = MAP_GROWTH.baseMeters + Math.floor(unlocked / MAP_GROWTH.stepSkills) * MAP_GROWTH.stepMeters;
+  const cap = Math.min(MAP_GROWTH.hardMaxMeters, MAP_GROWTH.baseCapMeters + capBonus);
+  return Math.max(MAP_GROWTH.baseMeters, Math.min(grown, cap));
+}
+
+function foldSummons(
+  deltas: Record<SummonAbilityId, Record<SummonStatKind, number>>,
+): Record<SummonAbilityId, SummonRuntime> {
+  const out = {} as Record<SummonAbilityId, SummonRuntime>;
+  for (const ability of SUMMON_ABILITY_IDS) {
+    const base = SUMMON_BASE[ability];
+    const d = deltas[ability];
+    const count = Math.max(0, Math.round(d.count));
+    out[ability] = {
+      count,
+      damageFactor: count > 0 ? base.damageFactor + d.damage : 0,
+      intervalSec: Math.max(base.minIntervalSec, base.intervalSec + d.interval),
+      radius: base.radius + d.radius,
+      spins: base.spins + d.spins,
+      durationSec: base.durationSec + d.duration,
+      width: base.width + d.width,
+      size: base.size + d.size,
+      range: base.range + d.range,
+    };
+  }
+  return out;
 }
 
 function applyEconomyEffect(stats: EconomyStats, effect: SkillEffect): void {
