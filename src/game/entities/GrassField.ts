@@ -317,7 +317,9 @@ export class GrassField {
   withFrustumCullingDisabled<T>(callback: () => T): T {
     const previous = Array.from(this.chunks.values()).map((chunk) => ({
       mesh: chunk.mesh,
+      fireMesh: chunk.fireMesh,
       frustumCulled: chunk.mesh.frustumCulled,
+      fireFrustumCulled: chunk.fireMesh.frustumCulled,
     }));
 
     try {
@@ -327,11 +329,13 @@ export class GrassField {
           chunk.dirty = false;
         }
         chunk.mesh.frustumCulled = false;
+        chunk.fireMesh.frustumCulled = false;
       }
       return callback();
     } finally {
       for (const state of previous) {
         state.mesh.frustumCulled = state.frustumCulled;
+        state.fireMesh.frustumCulled = state.fireFrustumCulled;
       }
     }
   }

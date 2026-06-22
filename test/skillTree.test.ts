@@ -13,8 +13,8 @@ import { defaultSave } from "../src/game/systems/SaveSystem";
 
 describe("v2 skill tree data", () => {
   it("contains the expected node count and total cost", () => {
-    expect(SKILL_NODES).toHaveLength(128);
-    expect(SKILL_NODES.reduce((sum, node) => sum + node.cost, 0)).toBe(42705);
+    expect(SKILL_NODES).toHaveLength(138);
+    expect(SKILL_NODES.reduce((sum, node) => sum + node.cost, 0)).toBe(45855);
     expect(SKILL_ROOT).toBe("root_sharpen");
   });
 
