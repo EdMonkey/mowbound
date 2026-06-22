@@ -76,6 +76,22 @@ describe("upgrade prototype tree data", () => {
     expect(new Set(stemDeltas.map(Math.sign)).size).toBeGreaterThan(1);
   });
 
+  it("forms a life-tree silhouette with harvest as the compact golden trunk and side branches opening outward", () => {
+    const branchWidthAtTier = (branch: string, tier: number) => {
+      const xs = UPGRADE_PROTOTYPE_NODES.filter((node) => node.branch === branch && node.tier === tier).map((node) => node.x);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    const coreX = (id: string) => getPrototypeNode(id)!.x;
+    const harvestCoreXs = UPGRADE_PROTOTYPE_NODES.filter((node) => node.branch === "harvest" && node.lane === 0).map((node) => node.x);
+    const harvestCoreWidth = Math.max(...harvestCoreXs) - Math.min(...harvestCoreXs);
+
+    expect(coreX("equipment_t10_core")).toBeLessThan(coreX("equipment_t01_core") - 260);
+    expect(coreX("environment_t10_core")).toBeGreaterThan(coreX("environment_t01_core") + 260);
+    expect(harvestCoreWidth).toBeLessThanOrEqual(56);
+    expect(branchWidthAtTier("equipment", 10)).toBeGreaterThan(branchWidthAtTier("harvest", 10) + 120);
+    expect(branchWidthAtTier("environment", 10)).toBeGreaterThan(branchWidthAtTier("harvest", 10) + 120);
+  });
+
   it("lets the next tier center unlock from the directly connected previous center only", () => {
     const tier2Center = getPrototypeNode("harvest_t02_core");
     expect(tier2Center?.prereq).toEqual(["harvest_t01_core"]);

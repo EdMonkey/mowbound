@@ -940,11 +940,12 @@ button:disabled {
 }
 
 .upgrade-graph-edge.branch-harvest {
-  stroke: #f0c85a;
+  stroke: #f4c542;
+  stroke-width: 5;
 }
 
 .upgrade-graph-edge.branch-environment {
-  stroke: #78cec4;
+  stroke: #70d98d;
 }
 
 .upgrade-graph-node {
@@ -1000,11 +1001,14 @@ button:disabled {
 }
 
 .upgrade-graph-node.branch-harvest {
-  border-color: rgba(240, 200, 90, 0.9);
+  border-color: rgba(244, 197, 66, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(244, 197, 66, 0.2),
+    0 10px 28px rgba(0, 0, 0, 0.38);
 }
 
 .upgrade-graph-node.branch-environment {
-  border-color: rgba(120, 206, 196, 0.88);
+  border-color: rgba(112, 217, 141, 0.88);
 }
 
 .upgrade-node-label {

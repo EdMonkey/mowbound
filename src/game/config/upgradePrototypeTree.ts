@@ -35,21 +35,21 @@ export const UPGRADE_PROTOTYPE_ROOT_ID = "rusty_scythe";
 
 export const BRANCH_LAYOUT: Record<UpgradePrototypeBranch, { x: number; yStart: number; tierGap: number; laneGap: number }> = {
   root: { x: 0, yStart: 0, tierGap: 0, laneGap: 0 },
-  equipment: { x: -760, yStart: -240, tierGap: 170, laneGap: 96 },
-  harvest: { x: 0, yStart: -240, tierGap: 170, laneGap: 96 },
-  environment: { x: 760, yStart: -240, tierGap: 170, laneGap: 96 },
+  equipment: { x: -760, yStart: -240, tierGap: 170, laneGap: 126 },
+  harvest: { x: 0, yStart: -240, tierGap: 170, laneGap: 78 },
+  environment: { x: 760, yStart: -240, tierGap: 170, laneGap: 126 },
 };
 
 const BRANCH_STEM_SWAY: Record<MainUpgradeBranch, number[]> = {
   equipment: [0, -34, 18, -42, 26, -20, 44, -28, 30, -10],
-  harvest: [0, 28, -18, 34, -30, 14, -38, 24, -22, 8],
+  harvest: [0, 14, -10, 18, -16, 8, -20, 12, -12, 6],
   environment: [0, 36, -22, 46, -26, 20, -44, 30, -18, 12],
 };
 
 const BRANCH_STEM_LEAN: Record<MainUpgradeBranch, number> = {
-  equipment: -12,
+  equipment: -34,
   harvest: 0,
-  environment: 12,
+  environment: 34,
 };
 
 const BRANCH_TIERS: Record<MainUpgradeBranch, BranchTier[]> = {
