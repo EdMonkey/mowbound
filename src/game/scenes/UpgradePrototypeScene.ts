@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import {
   canUnlockPrototypeNode,
+  getAllPrototypeNodeIds,
   getPrototypeNode,
   getRevealedPrototypeNodes,
   UPGRADE_PROTOTYPE_NODES,
@@ -147,6 +148,7 @@ export class UpgradePrototypeScene implements GameSceneController {
       createButton("-", () => this.zoomBy(0.86), "secondary-button upgrade-zoom-button"),
       createButton("+", () => this.zoomBy(1.16), "secondary-button upgrade-zoom-button"),
       createButton("맞춤", () => this.fitView(false), "secondary-button"),
+      createButton("모두 해금", () => this.unlockAllNodes(), "secondary-button"),
       createButton("메인 메뉴", () => this.app.show("menu"), "secondary-button"),
     );
     panel.appendChild(header);
@@ -226,6 +228,16 @@ export class UpgradePrototypeScene implements GameSceneController {
     }
 
     return svg;
+  }
+
+  private unlockAllNodes(): void {
+    for (const id of getAllPrototypeNodeIds()) {
+      this.unlocked.add(id);
+    }
+    this.hideDetail();
+    this.resetGestures();
+    this.render();
+    this.fitView(true);
   }
 
   private buildNode(node: UpgradePrototypeNode): HTMLDivElement {

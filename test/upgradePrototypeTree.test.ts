@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BRANCH_LAYOUT,
   canUnlockPrototypeNode,
+  getAllPrototypeNodeIds,
   getPrototypeNode,
   getRevealedPrototypeNodes,
   layoutPrototypeNode,
@@ -20,6 +21,15 @@ describe("upgrade prototype tree data", () => {
     expect(revealed).toContain("equipment");
     expect(revealed).toContain("harvest");
     expect(revealed).toContain("environment");
+  });
+
+  it("provides every prototype node id for the debug unlock-all action", () => {
+    const ids = getAllPrototypeNodeIds();
+    const revealed = getRevealedPrototypeNodes(ids);
+
+    expect(ids).toHaveLength(UPGRADE_PROTOTYPE_NODES.length);
+    expect(new Set(ids).size).toBe(UPGRADE_PROTOTYPE_NODES.length);
+    expect(revealed).toHaveLength(UPGRADE_PROTOTYPE_NODES.length);
   });
 
   it("keeps every non-root node connected to an existing prerequisite", () => {

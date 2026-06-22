@@ -257,6 +257,10 @@ export function getPrototypeNode(id: string): UpgradePrototypeNode | undefined {
   return UPGRADE_PROTOTYPE_NODE_BY_ID[id];
 }
 
+export function getAllPrototypeNodeIds(): string[] {
+  return UPGRADE_PROTOTYPE_NODES.map((node) => node.id);
+}
+
 export function getRevealedPrototypeNodes(unlockedIds: Iterable<string>): UpgradePrototypeNode[] {
   const unlocked = new Set(unlockedIds);
   return UPGRADE_PROTOTYPE_NODES.filter(
