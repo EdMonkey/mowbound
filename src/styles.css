@@ -885,7 +885,7 @@ button:disabled {
   position: relative;
   min-height: 0;
   overflow: hidden;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
   border-radius: 10px;
   border: 1px solid rgba(248, 247, 239, 0.08);
@@ -894,7 +894,7 @@ button:disabled {
     radial-gradient(circle at center, rgba(60, 100, 72, 0.22), rgba(7, 15, 11, 0.62));
 }
 
-.upgrade-graph-viewport:active {
+.upgrade-graph-viewport.is-panning {
   cursor: grabbing;
 }
 
@@ -1014,6 +1014,7 @@ button:disabled {
 }
 
 .upgrade-detail-panel {
+  display: none;
   position: absolute;
   right: 16px;
   top: 16px;

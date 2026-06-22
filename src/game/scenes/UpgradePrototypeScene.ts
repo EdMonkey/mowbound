@@ -10,6 +10,12 @@ import {
   type UpgradePrototypeNode,
 } from "../config/upgradePrototypeTree";
 import { createButton } from "../ui/Menu";
+import {
+  shouldPanUpgradePrototype,
+  shouldShowUpgradeHoverDetail,
+  shouldShowUpgradeLongPressDetail,
+  UPGRADE_LONG_PRESS_MS,
+} from "../ui/upgradePrototypeInteraction";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const WORLD_MARGIN = 260;
@@ -20,6 +26,17 @@ const TAP_MOVE = 8;
 interface Point {
   x: number;
   y: number;
+}
+
+interface UpgradePrototypePress {
+  pointerId: number;
+  nodeId: string;
+  anchor: HTMLElement;
+  x: number;
+  y: number;
+  moved: boolean;
+  longFired: boolean;
+  timer: number;
 }
 
 const BRANCH_LABEL: Record<UpgradePrototypeBranch, string> = {
@@ -47,10 +64,12 @@ export class UpgradePrototypeScene implements GameSceneController {
   private panX = 0;
   private panY = 0;
   private fitted = false;
-  private dragging = false;
-  private dragStart: Point = { x: 0, y: 0 };
-  private panStart: Point = { x: 0, y: 0 };
-  private dragMoved = false;
+  private readonly pointers = new Map<number, Point>();
+  private panning = false;
+  private lastPan: Point = { x: 0, y: 0 };
+  private touchPanMid: Point | null = null;
+  private press: UpgradePrototypePress | null = null;
+  private suppressNextClick = false;
 
   constructor(private readonly app: App) {
     this.scene.background = new THREE.Color("#102018");
@@ -143,7 +162,7 @@ export class UpgradePrototypeScene implements GameSceneController {
 
     this.detail = document.createElement("aside");
     this.detail.className = "upgrade-detail-panel";
-    this.updateDetail();
+    this.hideDetail();
 
     this.viewport.append(this.world, this.detail);
     this.attachViewportEvents();
@@ -210,6 +229,7 @@ export class UpgradePrototypeScene implements GameSceneController {
       canUnlock ? "can-unlock" : "",
       selected ? "is-selected" : "",
     ].join(" ");
+    button.dataset.node = node.id;
     button.style.left = `${pos.x}px`;
     button.style.top = `${pos.y}px`;
     button.innerHTML = `
@@ -217,31 +237,42 @@ export class UpgradePrototypeScene implements GameSceneController {
       <span class="upgrade-node-cost">${unlocked ? "완료" : `${node.cost}g`}</span>
     `;
 
-    button.addEventListener("pointerdown", (event) => {
-      event.stopPropagation();
-    });
-    button.addEventListener("mouseenter", () => {
+    button.addEventListener("pointerenter", (event) => {
+      if (!shouldShowUpgradeHoverDetail(event.pointerType)) {
+        return;
+      }
       this.selectedId = node.id;
-      this.updateDetail();
+      this.showDetail(node.id, button);
     });
-    button.addEventListener("click", () => {
+    button.addEventListener("pointerleave", (event) => {
+      if (shouldShowUpgradeHoverDetail(event.pointerType)) {
+        this.hideDetail();
+      }
+    });
+    button.addEventListener("click", (event) => {
+      if (this.suppressNextClick) {
+        this.suppressNextClick = false;
+        event.preventDefault();
+        return;
+      }
       this.selectedId = node.id;
       if (canUnlockPrototypeNode(node, this.unlocked)) {
         this.unlocked.add(node.id);
+        this.hideDetail();
         this.render();
       } else {
-        this.updateDetail();
+        this.render();
       }
     });
 
     return button;
   }
 
-  private updateDetail(): void {
+  private showDetail(nodeId: string, anchor: HTMLElement): void {
     if (!this.detail) {
       return;
     }
-    const node = getPrototypeNode(this.selectedId) ?? getPrototypeNode(UPGRADE_PROTOTYPE_ROOT_ID);
+    const node = getPrototypeNode(nodeId) ?? getPrototypeNode(UPGRADE_PROTOTYPE_ROOT_ID);
     if (!node) {
       this.detail.replaceChildren();
       return;
@@ -264,45 +295,172 @@ export class UpgradePrototypeScene implements GameSceneController {
         <div><dt>선행</dt><dd>${prereqNames || "없음"}</dd></div>
       </dl>
     `;
+    this.detail.style.display = "block";
+    this.detail.style.left = "";
+    this.detail.style.right = "";
+    this.detail.style.top = "";
+    this.detail.style.bottom = "";
+
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    if (coarsePointer) {
+      this.detail.style.left = "10px";
+      this.detail.style.right = "10px";
+      this.detail.style.bottom = "10px";
+      return;
+    }
+
+    const viewportRect = this.viewport.getBoundingClientRect();
+    const anchorRect = anchor.getBoundingClientRect();
+    const detailWidth = this.detail.offsetWidth;
+    const detailHeight = this.detail.offsetHeight;
+    let left = anchorRect.right - viewportRect.left + 12;
+    if (left + detailWidth > viewportRect.width - 10) {
+      left = anchorRect.left - viewportRect.left - detailWidth - 12;
+    }
+    const top = Math.max(
+      10,
+      Math.min(
+        anchorRect.top - viewportRect.top + anchorRect.height / 2 - detailHeight / 2,
+        viewportRect.height - detailHeight - 10,
+      ),
+    );
+    this.detail.style.left = `${Math.max(10, left)}px`;
+    this.detail.style.top = `${top}px`;
+  }
+
+  private hideDetail(): void {
+    if (this.detail) {
+      this.detail.style.display = "none";
+    }
+  }
+
+  private clearPressTimer(): void {
+    if (this.press?.timer) {
+      window.clearTimeout(this.press.timer);
+      this.press.timer = 0;
+    }
   }
 
   private attachViewportEvents(): void {
     this.viewport.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) {
+      this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      const nodeEl = (event.target as HTMLElement).closest(".upgrade-graph-node") as HTMLElement | null;
+      const nodeId = nodeEl?.dataset.node;
+
+      if (this.pointers.size >= 2) {
+        this.clearPressTimer();
+        this.press = null;
+        this.hideDetail();
+        this.setPanning(shouldPanUpgradePrototype({
+          pointerType: event.pointerType,
+          button: event.button,
+          pointerCount: this.pointers.size,
+        }));
+        if (this.panning) {
+          this.capturePointer(event.pointerId);
+        }
+        this.touchPanMid = this.getPointerMidpoint();
         return;
       }
-      this.dragging = true;
-      this.dragMoved = false;
-      this.dragStart = { x: event.clientX, y: event.clientY };
-      this.panStart = { x: this.panX, y: this.panY };
-      this.viewport.setPointerCapture(event.pointerId);
+
+      if (shouldPanUpgradePrototype({ pointerType: event.pointerType, button: event.button, pointerCount: this.pointers.size })) {
+        this.clearPressTimer();
+        this.press = null;
+        this.hideDetail();
+        this.setPanning(true);
+        this.capturePointer(event.pointerId);
+        this.lastPan = { x: event.clientX, y: event.clientY };
+        return;
+      }
+
+      if (!nodeId || !nodeEl || !shouldShowUpgradeLongPressDetail(event.pointerType)) {
+        return;
+      }
+
+      this.press = {
+        pointerId: event.pointerId,
+        nodeId,
+        anchor: nodeEl,
+        x: event.clientX,
+        y: event.clientY,
+        moved: false,
+        longFired: false,
+        timer: window.setTimeout(() => {
+          if (!this.press || this.press.moved) {
+            return;
+          }
+          this.press.longFired = true;
+          this.selectedId = this.press.nodeId;
+          this.showDetail(this.press.nodeId, this.press.anchor);
+        }, UPGRADE_LONG_PRESS_MS),
+      };
     });
 
     this.viewport.addEventListener("pointermove", (event) => {
-      if (!this.dragging) {
+      if (!this.pointers.has(event.pointerId)) {
         return;
       }
-      const dx = event.clientX - this.dragStart.x;
-      const dy = event.clientY - this.dragStart.y;
-      if (Math.hypot(dx, dy) > TAP_MOVE) {
-        this.dragMoved = true;
+      this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (this.pointers.size >= 2 && this.panning) {
+        const mid = this.getPointerMidpoint();
+        if (mid && this.touchPanMid) {
+          this.panX += mid.x - this.touchPanMid.x;
+          this.panY += mid.y - this.touchPanMid.y;
+          this.applyTransform();
+        }
+        this.touchPanMid = mid;
+        return;
       }
-      this.panX = this.panStart.x + dx;
-      this.panY = this.panStart.y + dy;
-      this.applyTransform();
+
+      if (this.panning) {
+        this.panX += event.clientX - this.lastPan.x;
+        this.panY += event.clientY - this.lastPan.y;
+        this.lastPan = { x: event.clientX, y: event.clientY };
+        this.applyTransform();
+        return;
+      }
+
+      if (this.press && event.pointerId === this.press.pointerId && !this.press.moved) {
+        if (Math.hypot(event.clientX - this.press.x, event.clientY - this.press.y) > TAP_MOVE) {
+          this.press.moved = true;
+          this.clearPressTimer();
+          this.hideDetail();
+        }
+      }
     });
 
-    const endDrag = (event: PointerEvent) => {
-      if (!this.dragging) {
-        return;
-      }
-      this.dragging = false;
-      if (this.viewport.hasPointerCapture(event.pointerId)) {
+    const endPointer = (event: PointerEvent) => {
+      try {
         this.viewport.releasePointerCapture(event.pointerId);
+      } catch {
+        /* pointer already released */
+      }
+      this.pointers.delete(event.pointerId);
+      if (this.pointers.size < 2) {
+        this.touchPanMid = null;
+      }
+      if (this.pointers.size === 0) {
+        this.setPanning(false);
+      }
+
+      if (this.press && event.pointerId === this.press.pointerId) {
+        const longFired = this.press.longFired;
+        this.clearPressTimer();
+        if (longFired) {
+          this.hideDetail();
+          this.suppressNextClick = true;
+          window.setTimeout(() => {
+            this.suppressNextClick = false;
+          }, 350);
+        }
+        this.press = null;
       }
     };
-    this.viewport.addEventListener("pointerup", endDrag);
-    this.viewport.addEventListener("pointercancel", endDrag);
+    this.viewport.addEventListener("pointerup", endPointer);
+    this.viewport.addEventListener("pointercancel", endPointer);
+    this.viewport.addEventListener("contextmenu", (event) => event.preventDefault());
 
     this.viewport.addEventListener("wheel", (event) => {
       event.preventDefault();
@@ -310,6 +468,30 @@ export class UpgradePrototypeScene implements GameSceneController {
       const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
       this.zoomAt(event.deltaY < 0 ? 1.12 : 0.88, point);
     }, { passive: false });
+  }
+
+  private getPointerMidpoint(): Point | null {
+    const points = [...this.pointers.values()];
+    if (points.length < 2) {
+      return null;
+    }
+    return {
+      x: (points[0].x + points[1].x) / 2,
+      y: (points[0].y + points[1].y) / 2,
+    };
+  }
+
+  private setPanning(active: boolean): void {
+    this.panning = active;
+    this.viewport?.classList.toggle("is-panning", active);
+  }
+
+  private capturePointer(pointerId: number): void {
+    try {
+      this.viewport.setPointerCapture(pointerId);
+    } catch {
+      /* synthetic or already captured */
+    }
   }
 
   private fitView(fitAll = false): void {
