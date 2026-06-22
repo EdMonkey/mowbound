@@ -21,7 +21,7 @@ import {
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const WORLD_MARGIN = 260;
-const MIN_ZOOM = 0.225;
+const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 2.4;
 const TAP_MOVE = 8;
 
