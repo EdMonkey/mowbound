@@ -60,6 +60,22 @@ describe("upgrade prototype tree data", () => {
     expect(getPrototypeNode("missing")).toBeUndefined();
   });
 
+  it("grows upward from the root with organic stem drift", () => {
+    const root = getPrototypeNode(UPGRADE_PROTOTYPE_ROOT_ID);
+    const firstHarvest = getPrototypeNode("harvest_t01_core");
+    const lateHarvest = getPrototypeNode("harvest_t06_core");
+    const equipmentStem = [1, 2, 3, 4, 5].map((tier) => getPrototypeNode(`equipment_t${String(tier).padStart(2, "0")}_core`));
+
+    expect(root).toBeDefined();
+    expect(firstHarvest).toBeDefined();
+    expect(lateHarvest).toBeDefined();
+    expect(firstHarvest!.y).toBeLessThan(root!.y);
+    expect(lateHarvest!.y).toBeLessThan(firstHarvest!.y);
+
+    const stemDeltas = equipmentStem.slice(1).map((node, index) => node!.x - equipmentStem[index]!.x);
+    expect(new Set(stemDeltas.map(Math.sign)).size).toBeGreaterThan(1);
+  });
+
   it("lets the next tier center unlock from the directly connected previous center only", () => {
     const tier2Center = getPrototypeNode("harvest_t02_core");
     expect(tier2Center?.prereq).toEqual(["harvest_t01_core"]);

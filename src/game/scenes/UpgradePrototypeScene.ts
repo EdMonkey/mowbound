@@ -201,17 +201,27 @@ export class UpgradePrototypeScene implements GameSceneController {
         if (!parent || !from || !to) {
           continue;
         }
-        const line = document.createElementNS(SVG_NS, "line");
-        line.setAttribute("x1", `${from.x}`);
-        line.setAttribute("y1", `${from.y}`);
-        line.setAttribute("x2", `${to.x}`);
-        line.setAttribute("y2", `${to.y}`);
-        line.setAttribute("class", [
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const branchBias = node.branch === "equipment" ? -1 : node.branch === "environment" ? 1 : node.tier % 2 === 0 ? 1 : -1;
+        const bendSign = dx === 0 ? branchBias : Math.sign(dx);
+        const bend = Math.max(22, Math.min(88, Math.abs(dx) * 0.16 + Math.abs(dy) * 0.08));
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute(
+          "d",
+          [
+            `M ${from.x} ${from.y}`,
+            `C ${from.x + dx * 0.32 + bendSign * bend} ${from.y + dy * 0.34}`,
+            `${from.x + dx * 0.68 - bendSign * bend} ${from.y + dy * 0.72}`,
+            `${to.x} ${to.y}`,
+          ].join(" "),
+        );
+        path.setAttribute("class", [
           "upgrade-graph-edge",
           `branch-${node.branch}`,
           this.unlocked.has(parent.id) && this.unlocked.has(node.id) ? "is-grown" : "is-visible",
         ].join(" "));
-        svg.appendChild(line);
+        svg.appendChild(path);
       }
     }
 

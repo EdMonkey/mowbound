@@ -35,9 +35,21 @@ export const UPGRADE_PROTOTYPE_ROOT_ID = "rusty_scythe";
 
 export const BRANCH_LAYOUT: Record<UpgradePrototypeBranch, { x: number; yStart: number; tierGap: number; laneGap: number }> = {
   root: { x: 0, yStart: 0, tierGap: 0, laneGap: 0 },
-  equipment: { x: -760, yStart: 240, tierGap: 165, laneGap: 98 },
-  harvest: { x: 0, yStart: 240, tierGap: 165, laneGap: 98 },
-  environment: { x: 760, yStart: 240, tierGap: 165, laneGap: 98 },
+  equipment: { x: -760, yStart: -240, tierGap: 170, laneGap: 96 },
+  harvest: { x: 0, yStart: -240, tierGap: 170, laneGap: 96 },
+  environment: { x: 760, yStart: -240, tierGap: 170, laneGap: 96 },
+};
+
+const BRANCH_STEM_SWAY: Record<MainUpgradeBranch, number[]> = {
+  equipment: [0, -34, 18, -42, 26, -20, 44, -28, 30, -10],
+  harvest: [0, 28, -18, 34, -30, 14, -38, 24, -22, 8],
+  environment: [0, 36, -22, 46, -26, 20, -44, 30, -18, 12],
+};
+
+const BRANCH_STEM_LEAN: Record<MainUpgradeBranch, number> = {
+  equipment: -12,
+  harvest: 0,
+  environment: 12,
 };
 
 const BRANCH_TIERS: Record<MainUpgradeBranch, BranchTier[]> = {
@@ -118,6 +130,24 @@ function costFor(branchIndex: number, tier: number, lane: number): number {
   }
   const laneCost = lane === 0 ? 0 : 8 + Math.abs(lane) * 7;
   return 10 + tier * tier * 12 + branchIndex * 5 + laneCost;
+}
+
+function stemSway(branch: MainUpgradeBranch, tier: number): number {
+  const sways = BRANCH_STEM_SWAY[branch];
+  return sways[(tier - 1) % sways.length] + BRANCH_STEM_LEAN[branch] * (tier - 1);
+}
+
+function branchSideYOffset(lane: number): number {
+  if (lane === 0) {
+    return 0;
+  }
+  if (Math.abs(lane) === 1) {
+    return 52;
+  }
+  if (Math.abs(lane) === 2) {
+    return -48;
+  }
+  return 92;
 }
 
 function centerPrereq(branch: MainUpgradeBranch, tier: number): string[] {
@@ -206,10 +236,11 @@ export function layoutPrototypeNode(node: Pick<UpgradePrototypeNode, "branch" | 
     return { x: 0, y: 0 };
   }
   const layout = BRANCH_LAYOUT[node.branch];
-  const sideYOffset = node.lane === 0 ? 0 : Math.abs(node.lane) === 1 ? 46 : Math.abs(node.lane) === 2 ? -46 : 88;
+  const sideYOffset = branchSideYOffset(node.lane);
+  const laneOutgrowth = Math.sign(node.lane) * Math.min(42, node.tier * 4);
   return {
-    x: layout.x + node.lane * layout.laneGap,
-    y: layout.yStart + (node.tier - 1) * layout.tierGap + sideYOffset,
+    x: layout.x + stemSway(node.branch, node.tier) + node.lane * layout.laneGap + laneOutgrowth,
+    y: layout.yStart - (node.tier - 1) * layout.tierGap + sideYOffset,
   };
 }
 

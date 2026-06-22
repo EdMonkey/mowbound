@@ -914,8 +914,10 @@ button:disabled {
 }
 
 .upgrade-graph-edge {
+  fill: none;
   stroke-width: 4;
   stroke-linecap: round;
+  stroke-linejoin: round;
   opacity: 0.72;
 }
 
