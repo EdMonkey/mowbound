@@ -13,6 +13,7 @@ import { createButton } from "../ui/Menu";
 import {
   getUpgradePrototypePinchZoom,
   getUpgradePrototypeTooltipPosition,
+  shouldKeepUpgradePrototypePanAfterPointerEnd,
   shouldPanUpgradePrototype,
   shouldShowUpgradeHoverDetail,
   shouldShowUpgradeLongPressDetail,
@@ -453,6 +454,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     });
 
     const endPointer = (event: PointerEvent) => {
+      const wasPinching = this.touchPinchDist > 0;
       try {
         this.viewport.releasePointerCapture(event.pointerId);
       } catch {
@@ -462,6 +464,11 @@ export class UpgradePrototypeScene implements GameSceneController {
       if (this.pointers.size < 2) {
         this.touchGestureMid = null;
         this.touchPinchDist = 0;
+        this.setPanning(shouldKeepUpgradePrototypePanAfterPointerEnd({
+          pointerType: event.pointerType,
+          remainingPointerCount: this.pointers.size,
+          wasPinching,
+        }));
       }
       if (this.pointers.size === 0) {
         this.setPanning(false);

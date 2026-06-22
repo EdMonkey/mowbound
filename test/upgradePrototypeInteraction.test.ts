@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getUpgradePrototypeTooltipPosition,
   getUpgradePrototypePinchZoom,
+  shouldKeepUpgradePrototypePanAfterPointerEnd,
   shouldPanUpgradePrototype,
   shouldShowUpgradeHoverDetail,
   shouldShowUpgradeLongPressDetail,
@@ -47,5 +48,15 @@ describe("upgrade prototype interaction policy", () => {
 
     expect(position.top + 90).toBeLessThanOrEqual(288);
     expect(position.left).toBe(100);
+  });
+
+  it("stops panning when a two-finger pinch drops to one remaining touch", () => {
+    expect(
+      shouldKeepUpgradePrototypePanAfterPointerEnd({
+        pointerType: "touch",
+        remainingPointerCount: 1,
+        wasPinching: true,
+      }),
+    ).toBe(false);
   });
 });

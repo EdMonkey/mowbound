@@ -25,6 +25,22 @@ export function shouldPanUpgradePrototype(input: UpgradePrototypePointerPolicyIn
   return false;
 }
 
+interface UpgradePrototypePanEndInput {
+  pointerType: string;
+  remainingPointerCount: number;
+  wasPinching: boolean;
+}
+
+export function shouldKeepUpgradePrototypePanAfterPointerEnd(input: UpgradePrototypePanEndInput): boolean {
+  if (input.remainingPointerCount <= 0) {
+    return false;
+  }
+  if (input.pointerType === "touch" && input.wasPinching && input.remainingPointerCount < 2) {
+    return false;
+  }
+  return true;
+}
+
 export function getUpgradePrototypePinchZoom(previousDistance: number, nextDistance: number): number {
   if (previousDistance <= 0 || nextDistance <= 0) {
     return 1;
