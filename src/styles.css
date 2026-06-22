@@ -86,7 +86,8 @@ button:disabled {
 
 .menu-layer,
 .hud-layer,
-.skill-layer {
+.skill-layer,
+.upgrade-prototype-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -830,6 +831,305 @@ button:disabled {
   opacity: 0.55;
 }
 
+.upgrade-prototype-layer {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(9, 20, 14, 0.14), rgba(9, 20, 14, 0.58));
+  pointer-events: auto;
+}
+
+.upgrade-prototype-panel {
+  width: calc(100vw - 24px);
+  height: calc(100vh - 24px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: clamp(14px, 2vw, 20px);
+  overflow: hidden;
+  border: 1px solid rgba(248, 247, 239, 0.14);
+  border-radius: 12px;
+  background: rgba(13, 28, 20, 0.94);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.44);
+}
+
+.upgrade-prototype-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.upgrade-prototype-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.upgrade-prototype-toolbar button {
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.upgrade-prototype-toolbar button.is-active {
+  border-color: rgba(255, 224, 138, 0.82);
+  background: rgba(103, 83, 26, 0.82);
+}
+
+.upgrade-zoom-button {
+  width: 38px;
+  min-width: 38px;
+  padding: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.upgrade-graph-viewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 247, 239, 0.08);
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 72px),
+    radial-gradient(circle at center, rgba(60, 100, 72, 0.22), rgba(7, 15, 11, 0.62));
+}
+
+.upgrade-graph-viewport.is-panning {
+  cursor: grabbing;
+}
+
+.upgrade-graph-viewport.is-editing .upgrade-graph-node {
+  cursor: grab;
+}
+
+.upgrade-graph-viewport.is-editing .upgrade-graph-node.is-edit-dragging {
+  cursor: grabbing;
+  z-index: 3;
+  box-shadow:
+    0 0 0 3px rgba(255, 247, 213, 0.72),
+    0 18px 42px rgba(0, 0, 0, 0.44);
+}
+
+.upgrade-graph-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.upgrade-graph-branches {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.upgrade-graph-edge {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.72;
+}
+
+.upgrade-graph-edge.is-visible {
+  stroke-dasharray: 6 10;
+  opacity: 0.42;
+}
+
+.upgrade-graph-edge.is-grown {
+  stroke-width: 6;
+  opacity: 0.9;
+}
+
+.upgrade-graph-edge.branch-root {
+  stroke: #ffe08a;
+}
+
+.upgrade-graph-edge.branch-equipment {
+  stroke: #75bfff;
+}
+
+.upgrade-graph-edge.branch-harvest {
+  stroke: #f4c542;
+  stroke-width: 5;
+}
+
+.upgrade-graph-edge.branch-environment {
+  stroke: #70d98d;
+}
+
+.upgrade-graph-node {
+  position: relative;
+  position: absolute;
+  width: 92px;
+  min-height: 62px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  padding: 8px 7px;
+  border-radius: 9px;
+  border: 2px solid rgba(248, 247, 239, 0.35);
+  color: #f8f7ef;
+  background: rgba(17, 28, 24, 0.96);
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.upgrade-graph-node.is-major {
+  width: 108px;
+  min-height: 74px;
+  border-radius: 14px;
+}
+
+.upgrade-graph-node.can-unlock {
+  box-shadow:
+    0 0 0 2px rgba(255, 224, 138, 0.38),
+    0 10px 28px rgba(0, 0, 0, 0.38);
+}
+
+.upgrade-graph-node.is-unlocked {
+  background: rgba(31, 62, 40, 0.98);
+}
+
+.upgrade-graph-node.is-selected {
+  outline: 3px solid rgba(255, 247, 213, 0.9);
+  outline-offset: 4px;
+}
+
+.upgrade-graph-node.branch-root {
+  border-color: rgba(255, 224, 138, 0.8);
+}
+
+.upgrade-graph-node.branch-equipment {
+  border-color: rgba(117, 191, 255, 0.86);
+}
+
+.upgrade-graph-node.branch-harvest {
+  border-color: rgba(244, 197, 66, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(244, 197, 66, 0.2),
+    0 10px 28px rgba(0, 0, 0, 0.38);
+}
+
+.upgrade-graph-node.branch-environment {
+  border-color: rgba(112, 217, 141, 0.88);
+}
+
+.upgrade-node-label {
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.08;
+  word-break: keep-all;
+}
+
+.upgrade-node-cost {
+  color: #ffe08a;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.upgrade-detail-panel {
+  display: none;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 5;
+  width: min(300px, calc(100% - 32px));
+  padding: 16px;
+  border: 1px solid rgba(248, 247, 239, 0.16);
+  border-radius: 10px;
+  color: #f8f7ef;
+  background: rgba(12, 23, 18, 0.94);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42);
+  pointer-events: auto;
+}
+
+.upgrade-detail-panel h3 {
+  margin: 8px 0 8px;
+  color: #fff7d5;
+  font-size: 20px;
+  line-height: 1.1;
+  word-break: keep-all;
+}
+
+.upgrade-detail-panel p {
+  margin: 0 0 12px;
+  color: #c8dccb;
+  font-size: 13px;
+  line-height: 1.38;
+  word-break: keep-all;
+}
+
+.upgrade-detail-panel dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.upgrade-detail-panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(248, 247, 239, 0.08);
+  padding-top: 7px;
+}
+
+.upgrade-detail-panel dt {
+  color: #9fb6a6;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.upgrade-detail-panel dd {
+  margin: 0;
+  color: #ffe08a;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.upgrade-detail-branch {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.upgrade-detail-branch.branch-root {
+  color: #fff7d5;
+  background: rgba(255, 224, 138, 0.18);
+}
+
+.upgrade-detail-branch.branch-equipment {
+  color: #d8efff;
+  background: rgba(117, 191, 255, 0.18);
+}
+
+.upgrade-detail-branch.branch-harvest {
+  color: #fff4c8;
+  background: rgba(240, 200, 90, 0.18);
+}
+
+.upgrade-detail-branch.branch-environment {
+  color: #d8fffa;
+  background: rgba(120, 206, 196, 0.18);
+}
+
 .debug-toggle {
   position: absolute;
   top: 14px;
@@ -1148,6 +1448,48 @@ button:disabled {
 
   .tree-node {
     width: 138px;
+  }
+
+  .upgrade-prototype-layer {
+    padding: 6px;
+  }
+
+  .upgrade-prototype-panel {
+    width: calc(100vw - 12px);
+    height: calc(100vh - 12px);
+    padding: 12px;
+  }
+
+  .upgrade-prototype-header {
+    display: grid;
+    gap: 8px;
+  }
+
+  .upgrade-prototype-toolbar {
+    justify-content: stretch;
+  }
+
+  .upgrade-prototype-toolbar button {
+    flex: 1;
+  }
+
+  .upgrade-detail-panel {
+    width: min(300px, calc(100% - 20px));
+    padding: 12px;
+  }
+
+  .upgrade-detail-panel h3 {
+    font-size: 17px;
+  }
+
+  .upgrade-graph-node {
+    width: 84px;
+    min-height: 58px;
+  }
+
+  .upgrade-graph-node.is-major {
+    width: 96px;
+    min-height: 68px;
   }
 }
 

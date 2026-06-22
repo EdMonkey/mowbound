@@ -3,6 +3,7 @@ import { BALANCE } from "./config/balance";
 import { GameScene } from "./scenes/GameScene";
 import { MainMenuScene } from "./scenes/MainMenuScene";
 import { SkillTreeScene } from "./scenes/SkillTreeScene";
+import { UpgradePrototypeScene } from "./scenes/UpgradePrototypeScene";
 import { loadLanguage, saveLanguage, type Language } from "./i18n";
 import { loadSave } from "./systems/SaveSystem";
 import { isMapUnlocked } from "./systems/SkillSystem";
@@ -61,6 +62,8 @@ export class App {
       }
       this.bypassMapLock = false;
       this.activeScene = new GameScene(this);
+    } else if (sceneName === "upgradePrototype") {
+      this.activeScene = new UpgradePrototypeScene(this);
     } else if (sceneName === "skills") {
       this.activeScene = new SkillTreeScene(this);
     } else {
