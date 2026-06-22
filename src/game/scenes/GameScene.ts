@@ -3,7 +3,6 @@ import type { App, GameSceneController } from "../App";
 import {
   BALANCE,
   OBSTACLE_COUNTS_BY_MAP,
-  ROUND_DURATION_BY_MAP,
   TEST_BOMB_COUNTS,
 } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
@@ -166,10 +165,9 @@ export class GameScene implements GameSceneController {
     // skills). A cheat custom size (e.g. 100) wins via the max.
     this.mapSize = Math.max(this.app.mapSizeMeters, this.stats.autoMapSizeMeters);
     this.player.setToolStyle(this.stats.selectedTool);
-    // Round length depends on the map size; skill bonuses add on top. Exact
-    // values for the menu maps, else scale linearly with side length.
-    const skillRoundBonus = this.stats.roundDurationMs - BALANCE.roundDurationMs;
-    this.roundDurationMs = (ROUND_DURATION_BY_MAP[this.mapSize] ?? Math.round(this.mapSize * 1000)) + skillRoundBonus;
+    // Round length is fixed (base + skill bonuses) and does NOT scale with map
+    // size — a bigger field shouldn't hand out more time.
+    this.roundDurationMs = this.stats.roundDurationMs;
     this.hud = new Hud(this.app.uiRoot, this.app.language);
     this.joystick = new VirtualJoystick(this.app.uiRoot, (vector) => this.input.setJoystickVector(vector));
     this.chargeState = { elapsedMs: 0, durationMs: this.stats.attackChargeDurationMs };
