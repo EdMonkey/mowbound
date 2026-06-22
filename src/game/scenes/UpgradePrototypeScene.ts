@@ -123,7 +123,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     toolbar?.append(
       createButton("-", () => this.zoomBy(0.86), "secondary-button upgrade-zoom-button"),
       createButton("+", () => this.zoomBy(1.16), "secondary-button upgrade-zoom-button"),
-      createButton("맞춤", () => this.fitView(), "secondary-button"),
+      createButton("맞춤", () => this.fitView(false), "secondary-button"),
       createButton("메인 메뉴", () => this.app.show("menu"), "secondary-button"),
     );
     panel.appendChild(header);
@@ -153,7 +153,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.app.uiRoot.appendChild(this.layer);
 
     if (!this.fitted) {
-      this.fitView();
+      this.fitView(false);
       this.fitted = true;
     } else {
       this.applyTransform();
@@ -312,18 +312,31 @@ export class UpgradePrototypeScene implements GameSceneController {
     }, { passive: false });
   }
 
-  private fitView(): void {
+  private fitView(fitAll = false): void {
     if (!this.viewport) {
       return;
     }
     const rect = this.viewport.getBoundingClientRect();
+    const nodes = fitAll ? UPGRADE_PROTOTYPE_NODES : getRevealedPrototypeNodes(this.unlocked);
+    const points = nodes.map((node) => this.positions[node.id]).filter(Boolean);
+    const xs = points.map((point) => point.x);
+    const ys = points.map((point) => point.y);
+    const minX = Math.min(...xs) - 160;
+    const maxX = Math.max(...xs) + 160;
+    const minY = Math.min(...ys) - 120;
+    const maxY = Math.max(...ys) + 120;
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const maxZoom = fitAll ? MAX_ZOOM : 1.25;
     const zoom = Math.min(
-      MAX_ZOOM,
-      Math.max(MIN_ZOOM, Math.min((rect.width - 80) / this.worldW, (rect.height - 80) / this.worldH)),
+      maxZoom,
+      Math.max(MIN_ZOOM, Math.min((rect.width - 80) / width, (rect.height - 80) / height)),
     );
     this.zoom = zoom;
-    this.panX = (rect.width - this.worldW * zoom) / 2;
-    this.panY = (rect.height - this.worldH * zoom) / 2;
+    this.panX = rect.width / 2 - centerX * zoom;
+    this.panY = rect.height / 2 - centerY * zoom;
     this.applyTransform();
   }
 
