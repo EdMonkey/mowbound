@@ -12,6 +12,7 @@ import {
 } from "../config/upgradePrototypeTree";
 import { createButton } from "../ui/Menu";
 import {
+  getUpgradePrototypeEditedNodePosition,
   getUpgradePrototypePinchZoom,
   getUpgradePrototypeTooltipPosition,
   shouldKeepUpgradePrototypePanAfterPointerEnd,
@@ -20,12 +21,20 @@ import {
   shouldShowUpgradeLongPressDetail,
   UPGRADE_LONG_PRESS_MS,
 } from "../ui/upgradePrototypeInteraction";
+import {
+  clearUpgradePrototypeLayoutOverrides,
+  readUpgradePrototypeLayoutOverrides,
+  serializeUpgradePrototypeLayoutOverrides,
+  writeUpgradePrototypeLayoutOverrides,
+  type UpgradePrototypePositionOverrides,
+} from "../ui/upgradePrototypeLayoutStorage";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const WORLD_MARGIN = 260;
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 2.4;
 const TAP_MOVE = 8;
+const NODE_DRAG_MARGIN = 80;
 
 interface Point {
   x: number;
@@ -41,6 +50,16 @@ interface UpgradePrototypePress {
   moved: boolean;
   longFired: boolean;
   timer: number;
+}
+
+interface UpgradePrototypeEditDrag {
+  pointerId: number;
+  nodeId: string;
+  startPointerX: number;
+  startPointerY: number;
+  startWorldX: number;
+  startWorldY: number;
+  moved: boolean;
 }
 
 const BRANCH_LABEL: Record<UpgradePrototypeBranch, string> = {
@@ -74,6 +93,9 @@ export class UpgradePrototypeScene implements GameSceneController {
   private touchGestureMid: Point | null = null;
   private touchPinchDist = 0;
   private press: UpgradePrototypePress | null = null;
+  private editMode = false;
+  private editDrag: UpgradePrototypeEditDrag | null = null;
+  private layoutOverrides: UpgradePrototypePositionOverrides = {};
   private suppressNextClick = false;
 
   constructor(private readonly app: App) {
@@ -81,6 +103,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.app.setOrthoSize(8);
     this.app.camera.position.set(4.5, 6, 4.5);
     this.app.camera.lookAt(0, 0, 0);
+    this.layoutOverrides = this.readSavedLayoutOverrides();
     this.addWorld();
     this.computeBounds();
     this.render();
@@ -120,10 +143,11 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.worldH = maxY - minY + WORLD_MARGIN * 2;
 
     for (const node of UPGRADE_PROTOTYPE_NODES) {
-      this.positions[node.id] = {
+      const basePosition = {
         x: node.x - minX + WORLD_MARGIN,
         y: node.y - minY + WORLD_MARGIN,
       };
+      this.positions[node.id] = this.layoutOverrides[node.id] ? this.clampWorldPosition(this.layoutOverrides[node.id]) : basePosition;
     }
   }
 
@@ -149,12 +173,24 @@ export class UpgradePrototypeScene implements GameSceneController {
       createButton("+", () => this.zoomBy(1.16), "secondary-button upgrade-zoom-button"),
       createButton("맞춤", () => this.fitView(false), "secondary-button"),
       createButton("모두 해금", () => this.unlockAllNodes(), "secondary-button"),
+      createButton(this.editMode ? "편집 끄기" : "편집", () => this.toggleEditMode(), `secondary-button ${this.editMode ? "is-active" : ""}`),
+      ...(this.editMode
+        ? [
+            createButton("저장", () => this.saveLayoutOverrides(), "secondary-button"),
+            createButton("불러오기", () => this.loadLayoutOverrides(), "secondary-button"),
+            createButton("초기화", () => this.resetLayoutOverrides(), "secondary-button"),
+            createButton("JSON 복사", () => {
+              void this.copyLayoutJson();
+            }, "secondary-button"),
+          ]
+        : []),
       createButton("메인 메뉴", () => this.app.show("menu"), "secondary-button"),
     );
     panel.appendChild(header);
 
     this.viewport = document.createElement("div");
     this.viewport.className = "upgrade-graph-viewport";
+    this.viewport.classList.toggle("is-editing", this.editMode);
 
     this.world = document.createElement("div");
     this.world.className = "upgrade-graph-world";
@@ -240,6 +276,102 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.fitView(true);
   }
 
+  private toggleEditMode(): void {
+    this.editMode = !this.editMode;
+    this.resetGestures();
+    this.hideDetail();
+    this.render();
+  }
+
+  private readSavedLayoutOverrides(): UpgradePrototypePositionOverrides {
+    try {
+      return readUpgradePrototypeLayoutOverrides(window.localStorage, getAllPrototypeNodeIds());
+    } catch {
+      return {};
+    }
+  }
+
+  private collectCurrentLayoutOverrides(): UpgradePrototypePositionOverrides {
+    const overrides: UpgradePrototypePositionOverrides = {};
+    for (const node of UPGRADE_PROTOTYPE_NODES) {
+      const position = this.positions[node.id];
+      if (!position) {
+        continue;
+      }
+      overrides[node.id] = {
+        x: Math.round(position.x * 100) / 100,
+        y: Math.round(position.y * 100) / 100,
+      };
+    }
+    return overrides;
+  }
+
+  private saveLayoutOverrides(): void {
+    this.layoutOverrides = this.collectCurrentLayoutOverrides();
+    try {
+      writeUpgradePrototypeLayoutOverrides(window.localStorage, this.layoutOverrides);
+    } catch {
+      return;
+    }
+  }
+
+  private loadLayoutOverrides(): void {
+    this.layoutOverrides = this.readSavedLayoutOverrides();
+    this.computeBounds();
+    this.render();
+    this.fitView(true);
+  }
+
+  private resetLayoutOverrides(): void {
+    this.layoutOverrides = {};
+    try {
+      clearUpgradePrototypeLayoutOverrides(window.localStorage);
+    } catch {
+      /* local storage can be unavailable */
+    }
+    this.computeBounds();
+    this.render();
+    this.fitView(true);
+  }
+
+  private async copyLayoutJson(): Promise<void> {
+    const json = serializeUpgradePrototypeLayoutOverrides(this.collectCurrentLayoutOverrides());
+    try {
+      await navigator.clipboard.writeText(json);
+    } catch {
+      this.downloadLayoutJson(json);
+    }
+  }
+
+  private downloadLayoutJson(json: string): void {
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mowbound-upgrade-layout.json";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  private clampWorldPosition(position: Point): Point {
+    return {
+      x: Math.max(NODE_DRAG_MARGIN, Math.min(this.worldW - NODE_DRAG_MARGIN, position.x)),
+      y: Math.max(NODE_DRAG_MARGIN, Math.min(this.worldH - NODE_DRAG_MARGIN, position.y)),
+    };
+  }
+
+  private updateEditedNodePosition(nodeId: string, position: Point): void {
+    const next = this.clampWorldPosition(position);
+    this.positions[nodeId] = next;
+    this.layoutOverrides[nodeId] = next;
+    const nodeEl = this.world.querySelector<HTMLElement>(`.upgrade-graph-node[data-node="${nodeId}"]`);
+    if (nodeEl) {
+      nodeEl.style.left = `${next.x}px`;
+      nodeEl.style.top = `${next.y}px`;
+    }
+    const branches = this.world.querySelector(".upgrade-graph-branches");
+    branches?.replaceWith(this.buildBranches());
+  }
+
   private buildNode(node: UpgradePrototypeNode): HTMLDivElement {
     const unlocked = this.unlocked.has(node.id);
     const canUnlock = canUnlockPrototypeNode(node, this.unlocked);
@@ -284,6 +416,10 @@ export class UpgradePrototypeScene implements GameSceneController {
         return;
       }
       this.selectedId = node.id;
+      if (this.editMode) {
+        this.hideDetail();
+        return;
+      }
       if (canUnlockPrototypeNode(node, this.unlocked)) {
         this.unlocked.add(node.id);
         this.hideDetail();
@@ -369,6 +505,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.touchGestureMid = null;
     this.touchPinchDist = 0;
     this.press = null;
+    this.editDrag = null;
   }
 
   private attachViewportEvents(): void {
@@ -379,6 +516,7 @@ export class UpgradePrototypeScene implements GameSceneController {
       const nodeId = nodeEl?.dataset.node;
 
       if (this.pointers.size >= 2) {
+        this.editDrag = null;
         this.clearPressTimer();
         this.press = null;
         this.hideDetail();
@@ -393,6 +531,29 @@ export class UpgradePrototypeScene implements GameSceneController {
         }
         this.touchGestureMid = this.getPointerMidpoint();
         this.touchPinchDist = this.getPointerDistance();
+        return;
+      }
+
+      if (this.editMode && nodeId && nodeEl && event.button === 0) {
+        event.preventDefault();
+        this.clearPressTimer();
+        this.press = null;
+        this.hideDetail();
+        const position = this.positions[nodeId];
+        if (!position) {
+          return;
+        }
+        this.capturePointer(event.pointerId);
+        nodeEl.classList.add("is-edit-dragging");
+        this.editDrag = {
+          pointerId: event.pointerId,
+          nodeId,
+          startPointerX: event.clientX,
+          startPointerY: event.clientY,
+          startWorldX: position.x,
+          startWorldY: position.y,
+          moved: false,
+        };
         return;
       }
 
@@ -439,6 +600,26 @@ export class UpgradePrototypeScene implements GameSceneController {
         return;
       }
       this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (this.editDrag && event.pointerId === this.editDrag.pointerId) {
+        if (Math.hypot(event.clientX - this.editDrag.startPointerX, event.clientY - this.editDrag.startPointerY) > TAP_MOVE) {
+          this.editDrag.moved = true;
+        }
+        this.updateEditedNodePosition(this.editDrag.nodeId, getUpgradePrototypeEditedNodePosition({
+          startWorldX: this.editDrag.startWorldX,
+          startWorldY: this.editDrag.startWorldY,
+          pointerStartX: this.editDrag.startPointerX,
+          pointerStartY: this.editDrag.startPointerY,
+          pointerX: event.clientX,
+          pointerY: event.clientY,
+          zoom: this.zoom,
+          minX: NODE_DRAG_MARGIN,
+          maxX: this.worldW - NODE_DRAG_MARGIN,
+          minY: NODE_DRAG_MARGIN,
+          maxY: this.worldH - NODE_DRAG_MARGIN,
+        }));
+        return;
+      }
 
       if (this.pointers.size >= 2 && this.panning) {
         const mid = this.getPointerMidpoint();
@@ -494,6 +675,18 @@ export class UpgradePrototypeScene implements GameSceneController {
       }
       if (this.pointers.size === 0) {
         this.setPanning(false);
+      }
+
+      if (this.editDrag && event.pointerId === this.editDrag.pointerId) {
+        const nodeEl = this.world.querySelector<HTMLElement>(`.upgrade-graph-node[data-node="${this.editDrag.nodeId}"]`);
+        nodeEl?.classList.remove("is-edit-dragging");
+        if (this.editDrag.moved) {
+          this.suppressNextClick = true;
+          window.setTimeout(() => {
+            this.suppressNextClick = false;
+          }, 350);
+        }
+        this.editDrag = null;
       }
 
       if (this.press && event.pointerId === this.press.pointerId) {

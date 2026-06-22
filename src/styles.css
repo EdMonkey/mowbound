@@ -873,6 +873,11 @@ button:disabled {
   padding: 8px 12px;
 }
 
+.upgrade-prototype-toolbar button.is-active {
+  border-color: rgba(255, 224, 138, 0.82);
+  background: rgba(103, 83, 26, 0.82);
+}
+
 .upgrade-zoom-button {
   width: 38px;
   min-width: 38px;
@@ -896,6 +901,18 @@ button:disabled {
 
 .upgrade-graph-viewport.is-panning {
   cursor: grabbing;
+}
+
+.upgrade-graph-viewport.is-editing .upgrade-graph-node {
+  cursor: grab;
+}
+
+.upgrade-graph-viewport.is-editing .upgrade-graph-node.is-edit-dragging {
+  cursor: grabbing;
+  z-index: 3;
+  box-shadow:
+    0 0 0 3px rgba(255, 247, 213, 0.72),
+    0 18px 42px rgba(0, 0, 0, 0.44);
 }
 
 .upgrade-graph-world {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getUpgradePrototypeEditedNodePosition,
   getUpgradePrototypeTooltipPosition,
   getUpgradePrototypePinchZoom,
   shouldKeepUpgradePrototypePanAfterPointerEnd,
@@ -58,5 +59,39 @@ describe("upgrade prototype interaction policy", () => {
         wasPinching: true,
       }),
     ).toBe(false);
+  });
+
+  it("converts edit-mode node dragging from screen pixels into clamped world coordinates", () => {
+    expect(
+      getUpgradePrototypeEditedNodePosition({
+        startWorldX: 200,
+        startWorldY: 300,
+        pointerStartX: 100,
+        pointerStartY: 100,
+        pointerX: 160,
+        pointerY: 70,
+        zoom: 2,
+        minX: 0,
+        maxX: 500,
+        minY: 0,
+        maxY: 500,
+      }),
+    ).toEqual({ x: 230, y: 285 });
+
+    expect(
+      getUpgradePrototypeEditedNodePosition({
+        startWorldX: 20,
+        startWorldY: 20,
+        pointerStartX: 100,
+        pointerStartY: 100,
+        pointerX: -200,
+        pointerY: -200,
+        zoom: 1,
+        minX: 0,
+        maxX: 500,
+        minY: 0,
+        maxY: 500,
+      }),
+    ).toEqual({ x: 0, y: 0 });
   });
 });

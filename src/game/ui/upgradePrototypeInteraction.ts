@@ -67,3 +67,29 @@ export function getUpgradePrototypeTooltipPosition(input: UpgradePrototypeToolti
     top: Math.max(8, top),
   };
 }
+
+interface UpgradePrototypeEditDragInput {
+  startWorldX: number;
+  startWorldY: number;
+  pointerStartX: number;
+  pointerStartY: number;
+  pointerX: number;
+  pointerY: number;
+  zoom: number;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function getUpgradePrototypeEditedNodePosition(input: UpgradePrototypeEditDragInput): { x: number; y: number } {
+  const zoom = Math.max(0.0001, input.zoom);
+  return {
+    x: clamp(input.startWorldX + (input.pointerX - input.pointerStartX) / zoom, input.minX, input.maxX),
+    y: clamp(input.startWorldY + (input.pointerY - input.pointerStartY) / zoom, input.minY, input.maxY),
+  };
+}
