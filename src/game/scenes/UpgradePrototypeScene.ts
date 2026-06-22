@@ -1,46 +1,56 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
+import {
+  canUnlockPrototypeNode,
+  getPrototypeNode,
+  getRevealedPrototypeNodes,
+  UPGRADE_PROTOTYPE_NODES,
+  UPGRADE_PROTOTYPE_ROOT_ID,
+  type UpgradePrototypeBranch,
+  type UpgradePrototypeNode,
+} from "../config/upgradePrototypeTree";
 import { createButton } from "../ui/Menu";
 
-interface PrototypeCard {
-  id: string;
-  label: string;
-  title: string;
-  description: string;
+const SVG_NS = "http://www.w3.org/2000/svg";
+const WORLD_MARGIN = 260;
+const MIN_ZOOM = 0.45;
+const MAX_ZOOM = 2.4;
+const TAP_MOVE = 8;
+
+interface Point {
+  x: number;
+  y: number;
 }
 
-const ROOT_CARD: PrototypeCard = {
-  id: "rusty_scythe",
-  label: "시작",
-  title: "녹슨 낫 갈기",
-  description: "오래 묵은 날을 갈아 첫 업그레이드 가지를 엽니다.",
+const BRANCH_LABEL: Record<UpgradePrototypeBranch, string> = {
+  root: "시작",
+  equipment: "장비",
+  harvest: "수확",
+  environment: "환경",
 };
-
-const BRANCH_CARDS: PrototypeCard[] = [
-  {
-    id: "equipment_branch",
-    label: "장비",
-    title: "튼튼한 손잡이",
-    description: "낫, 큰낫, 예초기, 트랙터처럼 플레이 방식을 바꾸는 장비 계열입니다.",
-  },
-  {
-    id: "harvest_branch",
-    label: "수확",
-    title: "수확 장부",
-    description: "골드, 깔끔한 잔디 보너스, 이동 효율, 플레이타임을 키우는 수확 계열입니다.",
-  },
-  {
-    id: "environment_branch",
-    label: "환경",
-    title: "밭 가장자리 살피기",
-    description: "신규 풀, 돌, 나무, 폭탄, 맵 확장처럼 새 목표를 여는 환경 계열입니다.",
-  },
-];
 
 export class UpgradePrototypeScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
-  private rootUnlocked = false;
+  private readonly unlocked = new Set<string>();
+  private selectedId = UPGRADE_PROTOTYPE_ROOT_ID;
+
+  private readonly positions: Record<string, Point> = {};
+  private worldW = 0;
+  private worldH = 0;
+
+  private viewport!: HTMLDivElement;
+  private world!: HTMLDivElement;
+  private detail!: HTMLElement;
+
+  private zoom = 1;
+  private panX = 0;
+  private panY = 0;
+  private fitted = false;
+  private dragging = false;
+  private dragStart: Point = { x: 0, y: 0 };
+  private panStart: Point = { x: 0, y: 0 };
+  private dragMoved = false;
 
   constructor(private readonly app: App) {
     this.scene.background = new THREE.Color("#102018");
@@ -48,6 +58,7 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.app.camera.position.set(4.5, 6, 4.5);
     this.app.camera.lookAt(0, 0, 0);
     this.addWorld();
+    this.computeBounds();
     this.render();
   }
 
@@ -73,81 +84,265 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.scene.add(ground);
   }
 
+  private computeBounds(): void {
+    const xs = UPGRADE_PROTOTYPE_NODES.map((node) => node.x);
+    const ys = UPGRADE_PROTOTYPE_NODES.map((node) => node.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs);
+    const maxY = Math.max(...ys);
+
+    this.worldW = maxX - minX + WORLD_MARGIN * 2;
+    this.worldH = maxY - minY + WORLD_MARGIN * 2;
+
+    for (const node of UPGRADE_PROTOTYPE_NODES) {
+      this.positions[node.id] = {
+        x: node.x - minX + WORLD_MARGIN,
+        y: node.y - minY + WORLD_MARGIN,
+      };
+    }
+  }
+
   private render(): void {
     this.layer.remove();
     this.layer.replaceChildren();
     this.layer.className = "upgrade-prototype-layer";
 
     const panel = document.createElement("div");
-    panel.className = "upgrade-prototype-panel";
+    panel.className = "upgrade-prototype-panel upgrade-prototype-graph-panel";
 
     const header = document.createElement("header");
     header.className = "upgrade-prototype-header";
     header.innerHTML = `
       <div>
-        <h2 class="panel-title">업그레이드 프로토타입</h2>
+        <h2 class="panel-title">업그레이드 트리</h2>
       </div>
+      <div class="upgrade-prototype-toolbar"></div>
     `;
-    panel.appendChild(header);
-
-    const tree = document.createElement("div");
-    tree.className = `upgrade-prototype-tree${this.rootUnlocked ? " is-open" : ""}`;
-    tree.appendChild(this.buildRootCard());
-
-    const branches = document.createElement("div");
-    branches.className = "upgrade-prototype-branches";
-    for (const card of BRANCH_CARDS) {
-      branches.appendChild(this.buildBranchCard(card));
-    }
-    tree.appendChild(branches);
-
-    panel.appendChild(tree);
-
-    const actions = document.createElement("div");
-    actions.className = "skill-actions";
-    actions.append(
+    const toolbar = header.querySelector(".upgrade-prototype-toolbar");
+    toolbar?.append(
+      createButton("-", () => this.zoomBy(0.86), "secondary-button upgrade-zoom-button"),
+      createButton("+", () => this.zoomBy(1.16), "secondary-button upgrade-zoom-button"),
+      createButton("맞춤", () => this.fitView(), "secondary-button"),
       createButton("메인 메뉴", () => this.app.show("menu"), "secondary-button"),
     );
-    panel.appendChild(actions);
+    panel.appendChild(header);
+
+    this.viewport = document.createElement("div");
+    this.viewport.className = "upgrade-graph-viewport";
+
+    this.world = document.createElement("div");
+    this.world.className = "upgrade-graph-world";
+    this.world.style.width = `${this.worldW}px`;
+    this.world.style.height = `${this.worldH}px`;
+    this.world.appendChild(this.buildBranches());
+
+    for (const node of getRevealedPrototypeNodes(this.unlocked)) {
+      this.world.appendChild(this.buildNode(node));
+    }
+
+    this.detail = document.createElement("aside");
+    this.detail.className = "upgrade-detail-panel";
+    this.updateDetail();
+
+    this.viewport.append(this.world, this.detail);
+    this.attachViewportEvents();
+    panel.appendChild(this.viewport);
 
     this.layer.appendChild(panel);
     this.app.uiRoot.appendChild(this.layer);
+
+    if (!this.fitted) {
+      this.fitView();
+      this.fitted = true;
+    } else {
+      this.applyTransform();
+    }
   }
 
-  private buildRootCard(): HTMLDivElement {
-    const card = document.createElement("div");
-    card.className = `upgrade-prototype-card upgrade-prototype-root${this.rootUnlocked ? " is-unlocked" : " is-locked"}`;
-    card.innerHTML = `
-      <span class="upgrade-prototype-label">${ROOT_CARD.label}</span>
-      <h3>${ROOT_CARD.title}</h3>
-      <p>${ROOT_CARD.description}</p>
-    `;
+  private buildBranches(): SVGSVGElement {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "upgrade-graph-branches");
+    svg.setAttribute("width", `${this.worldW}`);
+    svg.setAttribute("height", `${this.worldH}`);
 
-    const button = createButton(
-      this.rootUnlocked ? "해금됨" : "잠금 해제",
-      () => {
-        if (this.rootUnlocked) {
-          return;
+    const revealed = new Set(getRevealedPrototypeNodes(this.unlocked).map((node) => node.id));
+    for (const node of UPGRADE_PROTOTYPE_NODES) {
+      if (!revealed.has(node.id)) {
+        continue;
+      }
+      for (const prereq of node.prereq) {
+        const parent = getPrototypeNode(prereq);
+        const from = this.positions[prereq];
+        const to = this.positions[node.id];
+        if (!parent || !from || !to) {
+          continue;
         }
-        this.rootUnlocked = true;
-        this.render();
-      },
-      this.rootUnlocked ? "secondary-button" : "",
-    );
-    button.disabled = this.rootUnlocked;
-    card.appendChild(button);
-    return card;
+        const line = document.createElementNS(SVG_NS, "line");
+        line.setAttribute("x1", `${from.x}`);
+        line.setAttribute("y1", `${from.y}`);
+        line.setAttribute("x2", `${to.x}`);
+        line.setAttribute("y2", `${to.y}`);
+        line.setAttribute("class", [
+          "upgrade-graph-edge",
+          `branch-${node.branch}`,
+          this.unlocked.has(parent.id) && this.unlocked.has(node.id) ? "is-grown" : "is-visible",
+        ].join(" "));
+        svg.appendChild(line);
+      }
+    }
+
+    return svg;
   }
 
-  private buildBranchCard(cardData: PrototypeCard): HTMLDivElement {
-    const card = document.createElement("div");
-    card.className = "upgrade-prototype-card upgrade-prototype-branch";
-    card.innerHTML = `
-      <span class="upgrade-prototype-label">${cardData.label}</span>
-      <h3>${cardData.title}</h3>
-      <p>${cardData.description}</p>
-      <span class="upgrade-prototype-state">다음 단계 준비 중</span>
+  private buildNode(node: UpgradePrototypeNode): HTMLButtonElement {
+    const unlocked = this.unlocked.has(node.id);
+    const canUnlock = canUnlockPrototypeNode(node, this.unlocked);
+    const selected = this.selectedId === node.id;
+    const pos = this.positions[node.id];
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = [
+      "upgrade-graph-node",
+      `branch-${node.branch}`,
+      node.major ? "is-major" : "",
+      unlocked ? "is-unlocked" : "is-locked",
+      canUnlock ? "can-unlock" : "",
+      selected ? "is-selected" : "",
+    ].join(" ");
+    button.style.left = `${pos.x}px`;
+    button.style.top = `${pos.y}px`;
+    button.innerHTML = `
+      <span class="upgrade-node-label">${node.shortTitle}</span>
+      <span class="upgrade-node-cost">${unlocked ? "완료" : `${node.cost}g`}</span>
     `;
-    return card;
+
+    button.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+    button.addEventListener("mouseenter", () => {
+      this.selectedId = node.id;
+      this.updateDetail();
+    });
+    button.addEventListener("click", () => {
+      this.selectedId = node.id;
+      if (canUnlockPrototypeNode(node, this.unlocked)) {
+        this.unlocked.add(node.id);
+        this.render();
+      } else {
+        this.updateDetail();
+      }
+    });
+
+    return button;
+  }
+
+  private updateDetail(): void {
+    if (!this.detail) {
+      return;
+    }
+    const node = getPrototypeNode(this.selectedId) ?? getPrototypeNode(UPGRADE_PROTOTYPE_ROOT_ID);
+    if (!node) {
+      this.detail.replaceChildren();
+      return;
+    }
+
+    const unlocked = this.unlocked.has(node.id);
+    const available = canUnlockPrototypeNode(node, this.unlocked);
+    const prereqNames = node.prereq
+      .map((id) => getPrototypeNode(id)?.title)
+      .filter(Boolean)
+      .join(", ");
+
+    this.detail.innerHTML = `
+      <span class="upgrade-detail-branch branch-${node.branch}">${BRANCH_LABEL[node.branch]}</span>
+      <h3>${node.title}</h3>
+      <p>${node.description}</p>
+      <dl>
+        <div><dt>비용</dt><dd>${node.cost}g</dd></div>
+        <div><dt>상태</dt><dd>${unlocked ? "해금됨" : available ? "해금 가능" : "잠김"}</dd></div>
+        <div><dt>선행</dt><dd>${prereqNames || "없음"}</dd></div>
+      </dl>
+    `;
+  }
+
+  private attachViewportEvents(): void {
+    this.viewport.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      this.dragging = true;
+      this.dragMoved = false;
+      this.dragStart = { x: event.clientX, y: event.clientY };
+      this.panStart = { x: this.panX, y: this.panY };
+      this.viewport.setPointerCapture(event.pointerId);
+    });
+
+    this.viewport.addEventListener("pointermove", (event) => {
+      if (!this.dragging) {
+        return;
+      }
+      const dx = event.clientX - this.dragStart.x;
+      const dy = event.clientY - this.dragStart.y;
+      if (Math.hypot(dx, dy) > TAP_MOVE) {
+        this.dragMoved = true;
+      }
+      this.panX = this.panStart.x + dx;
+      this.panY = this.panStart.y + dy;
+      this.applyTransform();
+    });
+
+    const endDrag = (event: PointerEvent) => {
+      if (!this.dragging) {
+        return;
+      }
+      this.dragging = false;
+      if (this.viewport.hasPointerCapture(event.pointerId)) {
+        this.viewport.releasePointerCapture(event.pointerId);
+      }
+    };
+    this.viewport.addEventListener("pointerup", endDrag);
+    this.viewport.addEventListener("pointercancel", endDrag);
+
+    this.viewport.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const rect = this.viewport.getBoundingClientRect();
+      const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      this.zoomAt(event.deltaY < 0 ? 1.12 : 0.88, point);
+    }, { passive: false });
+  }
+
+  private fitView(): void {
+    if (!this.viewport) {
+      return;
+    }
+    const rect = this.viewport.getBoundingClientRect();
+    const zoom = Math.min(
+      MAX_ZOOM,
+      Math.max(MIN_ZOOM, Math.min((rect.width - 80) / this.worldW, (rect.height - 80) / this.worldH)),
+    );
+    this.zoom = zoom;
+    this.panX = (rect.width - this.worldW * zoom) / 2;
+    this.panY = (rect.height - this.worldH * zoom) / 2;
+    this.applyTransform();
+  }
+
+  private zoomBy(multiplier: number): void {
+    const rect = this.viewport.getBoundingClientRect();
+    this.zoomAt(multiplier, { x: rect.width / 2, y: rect.height / 2 });
+  }
+
+  private zoomAt(multiplier: number, screenPoint: Point): void {
+    const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, this.zoom * multiplier));
+    const worldX = (screenPoint.x - this.panX) / this.zoom;
+    const worldY = (screenPoint.y - this.panY) / this.zoom;
+    this.zoom = nextZoom;
+    this.panX = screenPoint.x - worldX * nextZoom;
+    this.panY = screenPoint.y - worldY * nextZoom;
+    this.applyTransform();
+  }
+
+  private applyTransform(): void {
+    this.world.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
   }
 }
