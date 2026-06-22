@@ -11,6 +11,7 @@ import {
 } from "../config/upgradePrototypeTree";
 import { createButton } from "../ui/Menu";
 import {
+  getUpgradePrototypePinchZoom,
   shouldPanUpgradePrototype,
   shouldShowUpgradeHoverDetail,
   shouldShowUpgradeLongPressDetail,
@@ -67,7 +68,8 @@ export class UpgradePrototypeScene implements GameSceneController {
   private readonly pointers = new Map<number, Point>();
   private panning = false;
   private lastPan: Point = { x: 0, y: 0 };
-  private touchPanMid: Point | null = null;
+  private touchGestureMid: Point | null = null;
+  private touchPinchDist = 0;
   private press: UpgradePrototypePress | null = null;
   private suppressNextClick = false;
 
@@ -214,13 +216,14 @@ export class UpgradePrototypeScene implements GameSceneController {
     return svg;
   }
 
-  private buildNode(node: UpgradePrototypeNode): HTMLButtonElement {
+  private buildNode(node: UpgradePrototypeNode): HTMLDivElement {
     const unlocked = this.unlocked.has(node.id);
     const canUnlock = canUnlockPrototypeNode(node, this.unlocked);
     const selected = this.selectedId === node.id;
     const pos = this.positions[node.id];
-    const button = document.createElement("button");
-    button.type = "button";
+    const button = document.createElement("div");
+    button.role = "button";
+    button.tabIndex = -1;
     button.className = [
       "upgrade-graph-node",
       `branch-${node.branch}`,
@@ -250,6 +253,7 @@ export class UpgradePrototypeScene implements GameSceneController {
       }
     });
     button.addEventListener("click", (event) => {
+      button.blur();
       if (this.suppressNextClick) {
         this.suppressNextClick = false;
         event.preventDefault();
@@ -259,9 +263,10 @@ export class UpgradePrototypeScene implements GameSceneController {
       if (canUnlockPrototypeNode(node, this.unlocked)) {
         this.unlocked.add(node.id);
         this.hideDetail();
+        this.resetGestures();
         this.render();
       } else {
-        this.render();
+        this.hideDetail();
       }
     });
 
@@ -341,6 +346,15 @@ export class UpgradePrototypeScene implements GameSceneController {
     }
   }
 
+  private resetGestures(): void {
+    this.clearPressTimer();
+    this.pointers.clear();
+    this.setPanning(false);
+    this.touchGestureMid = null;
+    this.touchPinchDist = 0;
+    this.press = null;
+  }
+
   private attachViewportEvents(): void {
     this.viewport.addEventListener("pointerdown", (event) => {
       this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -356,15 +370,22 @@ export class UpgradePrototypeScene implements GameSceneController {
           pointerType: event.pointerType,
           button: event.button,
           pointerCount: this.pointers.size,
+          startedOnNode: false,
         }));
         if (this.panning) {
-          this.capturePointer(event.pointerId);
+          this.captureActivePointers();
         }
-        this.touchPanMid = this.getPointerMidpoint();
+        this.touchGestureMid = this.getPointerMidpoint();
+        this.touchPinchDist = this.getPointerDistance();
         return;
       }
 
-      if (shouldPanUpgradePrototype({ pointerType: event.pointerType, button: event.button, pointerCount: this.pointers.size })) {
+      if (shouldPanUpgradePrototype({
+        pointerType: event.pointerType,
+        button: event.button,
+        pointerCount: this.pointers.size,
+        startedOnNode: Boolean(nodeId),
+      })) {
         this.clearPressTimer();
         this.press = null;
         this.hideDetail();
@@ -405,12 +426,19 @@ export class UpgradePrototypeScene implements GameSceneController {
 
       if (this.pointers.size >= 2 && this.panning) {
         const mid = this.getPointerMidpoint();
-        if (mid && this.touchPanMid) {
-          this.panX += mid.x - this.touchPanMid.x;
-          this.panY += mid.y - this.touchPanMid.y;
+        const dist = this.getPointerDistance();
+        if (mid && dist > 0 && this.touchGestureMid && this.touchPinchDist > 0) {
+          const rect = this.viewport.getBoundingClientRect();
+          this.zoomAt(getUpgradePrototypePinchZoom(this.touchPinchDist, dist), {
+            x: mid.x - rect.left,
+            y: mid.y - rect.top,
+          });
+          this.panX += mid.x - this.touchGestureMid.x;
+          this.panY += mid.y - this.touchGestureMid.y;
           this.applyTransform();
         }
-        this.touchPanMid = mid;
+        this.touchGestureMid = mid;
+        this.touchPinchDist = dist;
         return;
       }
 
@@ -439,7 +467,8 @@ export class UpgradePrototypeScene implements GameSceneController {
       }
       this.pointers.delete(event.pointerId);
       if (this.pointers.size < 2) {
-        this.touchPanMid = null;
+        this.touchGestureMid = null;
+        this.touchPinchDist = 0;
       }
       if (this.pointers.size === 0) {
         this.setPanning(false);
@@ -481,6 +510,14 @@ export class UpgradePrototypeScene implements GameSceneController {
     };
   }
 
+  private getPointerDistance(): number {
+    const points = [...this.pointers.values()];
+    if (points.length < 2) {
+      return 0;
+    }
+    return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+  }
+
   private setPanning(active: boolean): void {
     this.panning = active;
     this.viewport?.classList.toggle("is-panning", active);
@@ -491,6 +528,12 @@ export class UpgradePrototypeScene implements GameSceneController {
       this.viewport.setPointerCapture(pointerId);
     } catch {
       /* synthetic or already captured */
+    }
+  }
+
+  private captureActivePointers(): void {
+    for (const pointerId of this.pointers.keys()) {
+      this.capturePointer(pointerId);
     }
   }
 

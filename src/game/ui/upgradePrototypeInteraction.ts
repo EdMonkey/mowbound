@@ -4,6 +4,7 @@ export interface UpgradePrototypePointerPolicyInput {
   pointerType: string;
   button: number;
   pointerCount: number;
+  startedOnNode?: boolean;
 }
 
 export function shouldShowUpgradeHoverDetail(pointerType: string): boolean {
@@ -19,7 +20,14 @@ export function shouldPanUpgradePrototype(input: UpgradePrototypePointerPolicyIn
     return input.button === 2;
   }
   if (input.pointerType === "touch") {
-    return input.pointerCount >= 2;
+    return input.pointerCount >= 2 || !input.startedOnNode;
   }
   return false;
+}
+
+export function getUpgradePrototypePinchZoom(previousDistance: number, nextDistance: number): number {
+  if (previousDistance <= 0 || nextDistance <= 0) {
+    return 1;
+  }
+  return nextDistance / previousDistance;
 }

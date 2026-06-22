@@ -959,8 +959,13 @@ button:disabled {
   color: #f8f7ef;
   background: rgba(17, 28, 24, 0.96);
   text-align: center;
+  cursor: pointer;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
   transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .upgrade-graph-node.is-major {
