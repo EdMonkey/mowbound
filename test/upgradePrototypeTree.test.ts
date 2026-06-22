@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BRANCH_LAYOUT,
+  canUnlockPrototypeNode,
   getPrototypeNode,
   getRevealedPrototypeNodes,
   layoutPrototypeNode,
@@ -57,5 +58,11 @@ describe("upgrade prototype tree data", () => {
     expect(BRANCH_LAYOUT.equipment.x).toBeLessThan(BRANCH_LAYOUT.harvest.x);
     expect(BRANCH_LAYOUT.harvest.x).toBeLessThan(BRANCH_LAYOUT.environment.x);
     expect(getPrototypeNode("missing")).toBeUndefined();
+  });
+
+  it("lets the next tier center unlock from the directly connected previous center only", () => {
+    const tier2Center = getPrototypeNode("harvest_t02_core");
+    expect(tier2Center?.prereq).toEqual(["harvest_t01_core"]);
+    expect(tier2Center && canUnlockPrototypeNode(tier2Center, [UPGRADE_PROTOTYPE_ROOT_ID, "harvest_t01_core"])).toBe(true);
   });
 });

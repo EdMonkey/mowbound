@@ -110,9 +110,7 @@ function centerPrereq(branch: MainUpgradeBranch, tier: number): string[] {
   if (tier === 1) {
     return [UPGRADE_PROTOTYPE_ROOT_ID];
   }
-  const previousCore = nodeId(branch, tier - 1, 0);
-  const previousGate = nodeId(branch, tier - 1, tier % 2 === 0 ? 1 : -1);
-  return [previousCore, previousGate];
+  return [nodeId(branch, tier - 1, 0)];
 }
 
 function sidePrereq(branch: MainUpgradeBranch, tier: number, lane: number): string[] {
