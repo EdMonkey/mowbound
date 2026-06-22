@@ -157,8 +157,8 @@ describe("runtime stats from skill nodes", () => {
 describe("grass and coins", () => {
   it("temporarily disables grass chunk culling for result snapshots", () => {
     const field = new GrassField();
-    field.add({ id: "a", position: { x: 0, z: 0 }, hp: 5 });
-    field.add({ id: "b", position: { x: 8, z: 8 }, hp: 5 });
+    field.add({ id: "a", position: { x: 0, z: 0 }, hp: 5, kind: "normal", growthRatio: 1, regrowDelay: 0 });
+    field.add({ id: "b", position: { x: 8, z: 8 }, hp: 5, kind: "normal", growthRatio: 1, regrowDelay: 0 });
 
     const meshes = field.group.children as Array<{ frustumCulled: boolean }>;
     expect(meshes.length).toBeGreaterThan(1);
@@ -174,9 +174,9 @@ describe("grass and coins", () => {
 
   it("renders existing grass chunks without frustum culling while result snapshots render", () => {
     const field = new GrassField();
-    field.add({ id: "alive-a", position: { x: 0, z: 0 }, hp: 5 });
-    field.add({ id: "cut", position: { x: 3, z: 3 }, hp: 5 });
-    field.add({ id: "alive-b", position: { x: 8, z: 8 }, hp: 5 });
+    field.add({ id: "alive-a", position: { x: 0, z: 0 }, hp: 5, kind: "normal", growthRatio: 1, regrowDelay: 0 });
+    field.add({ id: "cut", position: { x: 3, z: 3 }, hp: 5, kind: "normal", growthRatio: 1, regrowDelay: 0 });
+    field.add({ id: "alive-b", position: { x: 8, z: 8 }, hp: 5, kind: "normal", growthRatio: 1, regrowDelay: 0 });
     field.destroy("cut");
 
     const chunkMeshes = [...field.group.children] as Array<{ visible: boolean; frustumCulled: boolean }>;

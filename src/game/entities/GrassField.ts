@@ -15,6 +15,12 @@ interface Chunk {
   fireDirty: boolean;
 }
 
+interface GrowthZone {
+  x: number;
+  z: number;
+  radius: number;
+}
+
 interface Instance {
   chunk: Chunk;
   index: number;
@@ -36,6 +42,11 @@ export class GrassField {
   /** 스킬로 조정 가능 — GameScene이 초기화 후 덮어씀 */
   regrowDelaySeconds: number = BALANCE.grassRegrowDelaySeconds;
   regrowDurationSeconds: number = BALANCE.grassRegrowDurationSeconds;
+
+  // Obstacle auras: rocks suppress regrowth in range, trees accelerate it.
+  private growthSuppressZones: ReadonlyArray<GrowthZone> = [];
+  private growthBoostZones: ReadonlyArray<GrowthZone> = [];
+  private growthBoostMultiplier = 1;
 
   private readonly geometry: THREE.BufferGeometry;
   private readonly fireGeometry: THREE.ConeGeometry;
@@ -187,6 +198,42 @@ export class GrassField {
     instance.chunk.fireDirty = true;
   }
 
+  /** Change an existing patch's kind in place (used to relocate special grass). */
+  setKind(id: string, kind: GrassKind): void {
+    const instance = this.instances.get(id);
+    if (!instance || instance.kind === kind) return;
+    instance.kind = kind;
+    instance.baseHp = kind === "tall"
+      ? BALANCE.baseGrassHp * BALANCE.tallGrassHpMultiplier
+      : BALANCE.baseGrassHp;
+    instance.hp = instance.baseHp * instance.growthRatio;
+    this.writeMatrix(instance, 0, 0); // tall changes the Y scale
+    this.writeMeshColor(instance);
+    instance.chunk.dirty = true;
+  }
+
+  /** Obstacle auras affecting regrowth: rocks suppress, trees boost. */
+  setGrowthZones(
+    suppress: ReadonlyArray<GrowthZone>,
+    boost: ReadonlyArray<GrowthZone>,
+    boostMultiplier: number,
+  ): void {
+    this.growthSuppressZones = suppress;
+    this.growthBoostZones = boost;
+    this.growthBoostMultiplier = boostMultiplier;
+  }
+
+  private inAnyZone(instance: Instance, zones: ReadonlyArray<GrowthZone>): boolean {
+    for (const zone of zones) {
+      const dx = instance.x - zone.x;
+      const dz = instance.z - zone.z;
+      if (dx * dx + dz * dz <= zone.radius * zone.radius) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   update(deltaSeconds: number): void {
     for (const instance of this.instances.values()) {
       if (instance.burningSeconds > 0) {
@@ -225,7 +272,12 @@ export class GrassField {
         continue;
       }
       if (instance.growthRatio < 1) {
-        instance.growthRatio = Math.min(1, instance.growthRatio + deltaSeconds / this.regrowDurationSeconds);
+        // Rocks pause regrowth in their aura; trees speed it up.
+        if (this.inAnyZone(instance, this.growthSuppressZones)) {
+          continue;
+        }
+        const mult = this.inAnyZone(instance, this.growthBoostZones) ? this.growthBoostMultiplier : 1;
+        instance.growthRatio = Math.min(1, instance.growthRatio + (deltaSeconds * mult) / this.regrowDurationSeconds);
         instance.hp = instance.baseHp * instance.growthRatio;
         this.writeMatrix(instance, 0, 0);
         this.writeMeshColor(instance);
