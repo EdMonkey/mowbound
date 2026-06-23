@@ -57,12 +57,56 @@ const SUMMON_NAME: Record<string, { ko: string; en: string }> = {
   tornado: { ko: "토네이도", en: "Tornado" },
 };
 
+const EFFECT_KINDS_WITH_REQUIRED_AMOUNT = new Set([
+  "attackDamage",
+  "attackInterval",
+  "attackRange",
+  "blueGrassSlow",
+  "bombBlastRadius",
+  "bombChainRadius",
+  "bombChainScore",
+  "bombCount10m",
+  "cleanPatchScore",
+  "clearBonusPercent",
+  "failedChopStunPercent",
+  "fireDamagePerSecond",
+  "fireIgniteChance",
+  "fireSpreadChancePerSecond",
+  "fireSpreadRadiusMeters",
+  "firstBombScorePercent",
+  "goldDivisor",
+  "grassGrowSpeed",
+  "grassRegrowDelay",
+  "grassScorePercent",
+  "initialGrassCount",
+  "mapExpandCap",
+  "moveSpeed",
+  "obstacleDamage",
+  "obstacleScorePercent",
+  "obstacleSize",
+  "obstacleSpawnRate",
+  "rockScore",
+  "roundDurationPercent",
+  "summon",
+  "tallGrassGold",
+  "timerGrassBonus",
+  "treeScore",
+]);
+
 export function toolLabel(tool: ToolId, language: Language): string {
   return language === "ko" ? TOOL_KO[tool] : TOOL_EN[tool];
 }
 
 function amount(effect: CardEffect): number {
   return effect.amount ?? 0;
+}
+
+function hasFiniteAmount(effect: CardEffect): boolean {
+  return Number.isFinite(effect.amount);
+}
+
+function missingAmountLabel(effect: CardEffect, language: Language): string {
+  return language === "ko" ? `${effect.kind}: amount 누락` : `${effect.kind}: missing amount`;
 }
 
 export function cardName(card: CardNode, language: Language): string {
@@ -107,6 +151,10 @@ function summonEffectText(effect: CardEffect, language: Language): string {
 }
 
 export function effectText(effect: CardEffect, language: Language): string {
+  if (EFFECT_KINDS_WITH_REQUIRED_AMOUNT.has(effect.kind) && !hasFiniteAmount(effect)) {
+    return missingAmountLabel(effect, language);
+  }
+
   if (effect.kind === "summon") {
     return summonEffectText(effect, language);
   }

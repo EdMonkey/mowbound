@@ -25,11 +25,15 @@ function isCardGateSatisfied(save: SaveData, gate: CardGate): boolean {
   const normalized = normalizeSave(save);
   switch (gate.kind) {
     case "bestClearPercent":
-      return (normalized.lifetimeStats.bestClearPercentByMap[String(gate.mapSize)] ?? 0) >= (gate.percent ?? 0);
+      return (
+        Number.isFinite(gate.mapSize) &&
+        Number.isFinite(gate.percent) &&
+        (normalized.lifetimeStats.bestClearPercentByMap[String(gate.mapSize)] ?? 0) >= gate.percent!
+      );
     case "lifetimeGrass":
-      return normalized.lifetimeStats.grassCut >= (gate.count ?? 0);
+      return Number.isFinite(gate.count) && normalized.lifetimeStats.grassCut >= gate.count!;
     case "bestBombChain":
-      return normalized.lifetimeStats.bestBombChain >= (gate.length ?? 0);
+      return Number.isFinite(gate.length) && normalized.lifetimeStats.bestBombChain >= gate.length!;
     default:
       return false;
   }

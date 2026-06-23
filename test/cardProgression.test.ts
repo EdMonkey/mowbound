@@ -94,6 +94,38 @@ describe("card progression", () => {
     expect(areCardGatesSatisfied(save, CARD_BY_ID.seed_bombs)).toBe(true);
   });
 
+  it("rejects malformed gate payloads instead of treating missing values as zero", () => {
+    const save = normalizeSave({
+      ...defaultSave(),
+      gold: 9999,
+      unlockedCards: { root_sharpen: 1 },
+      lifetimeStats: {
+        ...defaultSave().lifetimeStats,
+        grassCut: 9999,
+        bestBombChain: 99,
+        bestClearPercentByMap: { "10": 100 },
+      },
+    });
+    const withGate = (gate: unknown) => ({
+      ...CARD_BY_ID.seed_bombs,
+      gates: [gate],
+    }) as any;
+
+    expect(areCardGatesSatisfied(save, withGate({ kind: "bestClearPercent", percent: 1 } as any))).toBe(false);
+    expect(areCardGatesSatisfied(save, withGate({ kind: "bestClearPercent", mapSize: 10 } as any))).toBe(false);
+    expect(areCardGatesSatisfied(save, withGate({ kind: "lifetimeGrass" } as any))).toBe(false);
+    expect(areCardGatesSatisfied(save, withGate({ kind: "bestBombChain" } as any))).toBe(false);
+    expect(canUnlockCard(save, "seed_bombs")).toBe(true);
+
+    const originalGates = CARD_BY_ID.seed_bombs.gates;
+    try {
+      CARD_BY_ID.seed_bombs.gates = [{ kind: "lifetimeGrass" } as any];
+      expect(canUnlockCard(save, "seed_bombs")).toBe(false);
+    } finally {
+      CARD_BY_ID.seed_bombs.gates = originalGates;
+    }
+  });
+
   it("returns revealed cards and next affordable goals in cost order", () => {
     const save = normalizeSave({
       ...defaultSave(),

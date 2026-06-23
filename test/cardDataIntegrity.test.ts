@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CARD_BY_ID, CARD_EFFECT_KINDS, CARD_ROOT_ID, CARDS } from "../src/game/config/cards";
 import { TOOL_IDS } from "../src/game/config/tools";
+import { effectText } from "../src/game/i18n";
 
 interface EffectPayload {
   kind: string;
@@ -140,5 +141,9 @@ describe("card data integrity", () => {
         expect(getEffectPayloadIssues(effect), `${card.id} ${effect.kind}`).toEqual([]);
       }
     }
+  });
+
+  it("labels effects with missing required amount as invalid instead of zero", () => {
+    expect(effectText({ kind: "attackDamage" } as any, "en")).toContain("missing amount");
   });
 });
