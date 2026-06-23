@@ -15,6 +15,33 @@ interface ResultCallbacks {
   onMenu: () => void;
 }
 
+export interface ResultBreakdownRow {
+  label: string;
+  value: number;
+  emphasized: boolean;
+  suffix?: string;
+}
+
+export function getResultBreakdownRows(summary: RunSummary, language: Language): ResultBreakdownRow[] {
+  const rows: ResultBreakdownRow[] = [
+    { label: language === "ko" ? "풀" : "Grass", value: summary.score.breakdown.grass, emphasized: false },
+    { label: language === "ko" ? "장애물" : "Obstacles", value: summary.score.breakdown.obstacles, emphasized: false },
+    { label: language === "ko" ? "폭탄 연쇄" : "Bomb Chains", value: summary.score.breakdown.bombChains, emphasized: false },
+    { label: language === "ko" ? "클리어 보너스" : "Clear Bonus", value: summary.score.breakdown.clearBonus, emphasized: false },
+    { label: language === "ko" ? "획득 골드" : "Earned Gold", value: summary.gold, emphasized: true, suffix: "g" },
+  ];
+
+  if (summary.score.breakdown.cleanRows > 0) {
+    rows.splice(1, 0, {
+      label: language === "ko" ? "깔끔한 잔디" : "Clean Mow",
+      value: summary.score.breakdown.cleanRows,
+      emphasized: false,
+    });
+  }
+
+  return rows;
+}
+
 export class Hud {
   readonly element = document.createElement("div");
   private readonly values = new Map<string, HTMLSpanElement>();
@@ -122,12 +149,15 @@ export class Hud {
 
     const overlay = document.createElement("div");
     overlay.className = "result-overlay";
+    const earnedGoldCopy = this.language === "ko"
+      ? `획득 골드 <strong>${roundGold}g</strong>.`
+      : `Earned <strong>${roundGold}</strong> gold.`;
 
     const panel = document.createElement("div");
     panel.className = `result-panel${snapshotUrl ? " has-snapshot" : ""}`;
     panel.innerHTML = `
       <h2 class="panel-title">${this.language === "ko" ? "라운드 완료" : "Run Complete"}</h2>
-      <p class="panel-copy">${this.language === "ko" ? "획득 골드" : "Earned"} <strong>${roundGold}</strong>${this.language === "ko" ? "" : " gold"}.</p>
+      <p class="panel-copy">${earnedGoldCopy}</p>
     `;
 
     const detailsRoot = document.createElement("div");
@@ -157,25 +187,14 @@ export class Hud {
     if (summary) {
       const breakdown = document.createElement("div");
       breakdown.className = "result-breakdown is-score-reveal";
-      const rows: [string, number][] = [
-        [this.language === "ko" ? "풀" : "Grass", summary.score.breakdown.grass],
-        [this.language === "ko" ? "장애물" : "Obstacles", summary.score.breakdown.obstacles],
-        [this.language === "ko" ? "폭탄 연쇄" : "Bomb Chains", summary.score.breakdown.bombChains],
-        [this.language === "ko" ? "클리어 보너스" : "Clear Bonus", summary.score.breakdown.clearBonus],
-        [this.language === "ko" ? "총점" : "Total Score", summary.score.totalScore],
-      ];
-
-      if (summary.score.breakdown.cleanRows > 0) {
-        rows.splice(1, 0, [this.language === "ko" ? "깔끔한 잔디" : "Clean Mow", summary.score.breakdown.cleanRows]);
-      }
+      const rows = getResultBreakdownRows(summary, this.language);
 
       const rowDelayMs = 140;
       for (let index = 0; index < rows.length; index += 1) {
-        const [label, value] = rows[index];
-        const isTotal = index === rows.length - 1;
+        const { label, value, emphasized, suffix } = rows[index];
         const delayMs = 180 + index * rowDelayMs;
         const row = document.createElement("div");
-        row.className = `result-breakdown-row result-score-row${isTotal ? " is-total-score" : ""}`;
+        row.className = `result-breakdown-row result-score-row${emphasized ? " is-total-score" : ""}`;
         row.style.setProperty("--score-delay", `${delayMs}ms`);
 
         const labelElement = document.createElement("span");
@@ -188,7 +207,7 @@ export class Hud {
         row.appendChild(valueElement);
 
         breakdown.appendChild(row);
-        this.animateResultValue(valueElement, Math.floor(value), delayMs + 120, isTotal ? 620 : 420, isTotal);
+        this.animateResultValue(valueElement, Math.floor(value), delayMs + 120, emphasized ? 620 : 420, emphasized, suffix);
       }
       appendRoot.appendChild(breakdown);
     }
@@ -259,31 +278,33 @@ export class Hud {
     delayMs: number,
     durationMs: number,
     boom = false,
+    suffix = "",
   ): void {
     const finalValue = Math.floor(target);
+    const formatValue = (value: number) => `${value}${suffix}`;
     const reducedMotion =
       typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reducedMotion) {
-      element.textContent = `${finalValue}`;
+      element.textContent = formatValue(finalValue);
       return;
     }
 
-    element.textContent = "0";
+    element.textContent = formatValue(0);
     const timer = window.setTimeout(() => {
       const start = performance.now();
 
       const step = (now: number) => {
         const progress = Math.min(1, (now - start) / durationMs);
         const eased = 1 - (1 - progress) ** 3;
-        element.textContent = `${Math.floor(finalValue * eased)}`;
+        element.textContent = formatValue(Math.floor(finalValue * eased));
 
         if (progress < 1) {
           this.resultFrames.push(window.requestAnimationFrame(step));
           return;
         }
 
-        element.textContent = `${finalValue}`;
+        element.textContent = formatValue(finalValue);
         if (boom) {
           element.classList.add("score-value-boom");
         }
