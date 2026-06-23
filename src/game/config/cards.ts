@@ -1,6 +1,8 @@
 import rawCards from "./cards.json";
+import type { ToolId } from "./tools";
 
 export const CARD_CATEGORIES = ["equipment", "harvest", "environment", "ability"] as const;
+export const CARD_ROOT_ID = "root_sharpen";
 
 export type CardCategory = (typeof CARD_CATEGORIES)[number];
 
@@ -16,7 +18,7 @@ export interface CardEffect {
   kind: string;
   amount?: number;
   id?: string;
-  tool?: string;
+  tool?: ToolId;
   mapSize?: number;
   ability?: string;
   stat?: string;
@@ -72,6 +74,7 @@ const CARD_CATEGORY_ORDER: Record<CardCategory, number> = Object.fromEntries(
 ) as Record<CardCategory, number>;
 
 export const CARDS = rawCards as CardNode[];
+export const CARD_IDS = CARDS.map((card) => card.id);
 
 export const CARD_BY_ID: Record<string, CardNode> = Object.fromEntries(CARDS.map((card) => [card.id, card]));
 
