@@ -142,7 +142,7 @@ export class CardCatalogScene implements GameSceneController {
     this.filterButton.setAttribute("aria-expanded", "false");
     actions.append(
       this.filterButton,
-      createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgradePrototype"), "secondary-button"),
+      createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgrades"), "secondary-button"),
       createButton(this.app.language === "ko" ? "메인 메뉴" : "Main Menu", () => this.app.show("menu"), "secondary-button"),
     );
     header.appendChild(actions);

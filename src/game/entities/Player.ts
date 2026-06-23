@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ToolId } from "../config/skillTree";
+import type { ToolId } from "../config/tools";
 import type { VectorXZ } from "../types";
 import { cloneModel } from "../assets/models";
 import { resolveCollision, type Circle } from "../systems/ObstacleSystem";

@@ -14,6 +14,7 @@ import {
   unlockCard,
 } from "../src/game/systems/CardProgressionSystem";
 import { defaultSave, normalizeSave } from "../src/game/systems/SaveSystem";
+import { buildCheatCategories, unlockCheatCardCategory } from "../src/game/ui/CheatPanel";
 
 describe("card progression", () => {
   it("reveals root and allows unlocking root when a new save has enough gold", () => {
@@ -150,5 +151,16 @@ describe("card progression", () => {
 
     expect(selectTool(base, "tractor").selectedTool).toBe("default");
     expect(selectTool(unlocked, "tractor").selectedTool).toBe("tractor");
+  });
+
+  it("builds cheat unlock groups from cards and includes prereqs for category unlocks", () => {
+    const categories = buildCheatCategories();
+    const unlocks = unlockCheatCardCategory(["cyclone_cut"]);
+
+    expect(categories.length).toBeGreaterThan(0);
+    expect(categories.some((category) => category.label.includes("스킬"))).toBe(false);
+    expect(unlocks.cyclone_cut).toBe(1);
+    expect(unlocks.clean_sweep_2).toBe(1);
+    expect(unlocks.quick_recovery_2).toBe(1);
   });
 });
