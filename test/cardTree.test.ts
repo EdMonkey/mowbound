@@ -101,6 +101,8 @@ describe("card tree data", () => {
         expect(inRange(card.layout.x, -180, 220), card.id).toBe(true);
       } else if (card.category === "environment") {
         expect(inRange(card.layout.x, 350, 1000), card.id).toBe(true);
+      } else if (card.category === "ability") {
+        expect(Math.abs(card.layout.x), card.id).toBeGreaterThanOrEqual(1050);
       }
     }
   });

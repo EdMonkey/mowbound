@@ -301,7 +301,9 @@ function laneKey(card) {
 }
 
 function applyLaneGridLayout() {
-  const counts = Object.fromEntries(Object.keys(laneGrids).map((key) => [key, 0]));
+  const occupied = cards
+    .filter((card) => fixedLayoutIds.has(card.id))
+    .map((card) => ({ id: card.id, x: card.layout.x, y: card.layout.y }));
   const movable = cards
     .filter((card) => !fixedLayoutIds.has(card.id))
     .sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
@@ -309,14 +311,41 @@ function applyLaneGridLayout() {
   for (const card of movable) {
     const key = laneKey(card);
     const xs = laneGrids[key];
-    const index = counts[key];
-    const row = Math.floor(index / xs.length);
-    const col = index % xs.length;
-    card.layout = {
-      x: xs[col],
-      y: LANE_ROW_START_Y - row * LANE_ROW_STEP_Y,
-    };
-    counts[key] += 1;
+    const parentY = card.prereq.map((id) => requireCard(id).layout.y);
+    const requiredY = parentY.length > 0 ? Math.min(...parentY) - LANE_ROW_STEP_Y / 2 : LANE_ROW_START_Y;
+    const startRow = Math.max(0, Math.ceil((LANE_ROW_START_Y - requiredY) / LANE_ROW_STEP_Y));
+    let placed = false;
+
+    for (let row = startRow; row < startRow + 200 && !placed; row += 1) {
+      const y = LANE_ROW_START_Y - row * LANE_ROW_STEP_Y;
+      for (const candidateX of xs) {
+        const blocked = occupied.some((other) => Math.abs(other.x - candidateX) < 135 && Math.abs(other.y - y) < 95);
+        if (!blocked) {
+          card.layout = { x: candidateX, y };
+          occupied.push({ id: card.id, x: candidateX, y });
+          placed = true;
+          break;
+        }
+      }
+    }
+
+    if (!placed) {
+      throw new Error(`Could not place ${card.id} in ${key} lane above its prerequisites`);
+    }
+  }
+}
+
+function normalizeTiers() {
+  const ordered = [...cards].sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
+  for (const card of ordered) {
+    if (card.prereq.length === 0) {
+      continue;
+    }
+    const parentTier = Math.max(...card.prereq.map((id) => requireCard(id).tier));
+    const minTier = parentTier + (fixedLayoutIds.has(card.id) ? 0 : 1);
+    if (card.tier < minTier) {
+      card.tier = minTier;
+    }
   }
 }
 
@@ -422,6 +451,10 @@ function validateLaneLayout() {
       if (card.layout.x < 350 || card.layout.x > 1000) {
         invalid.push(`${card.id}: environment x ${card.layout.x}`);
       }
+    } else if (card.category === "ability") {
+      if (Math.abs(card.layout.x) < 1050) {
+        invalid.push(`${card.id}: ability x ${card.layout.x}`);
+      }
     }
   }
   if (invalid.length > 0) {
@@ -449,10 +482,29 @@ function validateLayoutSpacing() {
   }
 }
 
+function validatePrereqChronology() {
+  const inversions = [];
+  for (const card of cards) {
+    for (const prereq of card.prereq) {
+      const parent = requireCard(prereq);
+      if (card.tier < parent.tier) {
+        inversions.push(`${card.id} tier ${card.tier} below ${parent.id} tier ${parent.tier}`);
+      }
+      if (card.layout.y > parent.layout.y) {
+        inversions.push(`${card.id} y ${card.layout.y} below ${parent.id} y ${parent.layout.y}`);
+      }
+    }
+  }
+  if (inversions.length > 0) {
+    throw new Error(`Cards before prerequisite layer: ${inversions.join(", ")}`);
+  }
+}
+
 validateAssignments();
 validateSorts();
 validateReachability();
 validatePrereqSortOrder();
+normalizeTiers();
 applyLaneGridLayout();
 
 const missing = cards.filter((card) => !Number.isFinite(card.layout?.x) || !Number.isFinite(card.layout?.y));
@@ -470,6 +522,7 @@ for (const card of cards) {
 
 validateLaneLayout();
 validateLayoutSpacing();
+validatePrereqChronology();
 
 cards.sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
 fs.writeFileSync(cardsPath, `${JSON.stringify(cards, null, 2)}\n`);

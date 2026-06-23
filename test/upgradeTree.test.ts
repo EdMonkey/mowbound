@@ -64,6 +64,16 @@ describe("upgrade tree card data", () => {
     expect([...CARDS.map((card) => card.id).filter((id) => !reachable.has(id))]).toEqual([]);
   });
 
+  it("keeps child cards on or above their prerequisite tiers and layers", () => {
+    for (const card of CARDS) {
+      for (const prereq of card.prereq) {
+        const parent = CARD_BY_ID[prereq];
+        expect(card.tier, `${card.id} tier before ${prereq}`).toBeGreaterThanOrEqual(parent.tier);
+        expect(card.layout.y, `${card.id} y below ${prereq}`).toBeLessThanOrEqual(parent.layout.y);
+      }
+    }
+  });
+
   it("reveals at least one child after unlocking the root", () => {
     const root = CARD_BY_ID[CARD_ROOT_ID];
     const save = unlockCard({ ...defaultSave(), gold: root.cost }, CARD_ROOT_ID);
