@@ -15,6 +15,24 @@ import {
   type CardNode,
 } from "../config/cards";
 import { clearElement, createButton } from "../ui/Menu";
+import {
+  CARD_DETAIL_LONG_PRESS_MS,
+  CARD_DETAIL_TAP_MOVE_PX,
+  shouldOpenCardDetailFromClick,
+  shouldOpenCardDetailFromLongPress,
+} from "../ui/cardCatalogInteraction";
+
+interface CardCatalogPress {
+  pointerId: number;
+  pointerType: string;
+  card: CardNode;
+  x: number;
+  y: number;
+  moved: boolean;
+  longFired: boolean;
+  startedAt: number;
+  timer: number;
+}
 
 function option(value: string, label: string): HTMLOptionElement {
   const element = document.createElement("option");
@@ -61,11 +79,15 @@ export class CardCatalogScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
   private readonly filters: CardCatalogFilters = { category: "all", tier: "all", effectKind: "all", search: "" };
-  private selectedId = CARDS[0]?.id ?? "";
+  private filtersOpen = false;
+  private selectedId = "";
+  private press: CardCatalogPress | null = null;
 
   private tableBody!: HTMLTableSectionElement;
-  private detail!: HTMLElement;
   private countLabel!: HTMLElement;
+  private filterDrawer!: HTMLElement;
+  private filterButton!: HTMLButtonElement;
+  private detailOverlay!: HTMLDivElement;
 
   constructor(private readonly app: App) {
     this.scene.background = new THREE.Color("#102018");
@@ -81,6 +103,7 @@ export class CardCatalogScene implements GameSceneController {
   }
 
   dispose(): void {
+    this.clearPress();
     this.layer.remove();
     clearElement(this.layer);
   }
@@ -93,6 +116,7 @@ export class CardCatalogScene implements GameSceneController {
   }
 
   private render(): void {
+    this.clearPress();
     this.layer.remove();
     clearElement(this.layer);
     this.layer.className = "card-catalog-layer";
@@ -103,22 +127,30 @@ export class CardCatalogScene implements GameSceneController {
     const header = document.createElement("header");
     header.className = "card-catalog-header";
     header.innerHTML = `
-      <div>
+      <div class="card-catalog-title-wrap">
         <h2 class="panel-title">${this.app.language === "ko" ? "카드 목록" : "Card Catalog"}</h2>
-        <p class="panel-copy">${this.app.language === "ko" ? "분류, 티어, 효과 기준으로 카드 데이터를 확인합니다." : "Inspect cards by category, tier, and effect."}</p>
+        <strong class="card-count-label"></strong>
       </div>
     `;
+    this.countLabel = header.querySelector(".card-count-label") as HTMLElement;
 
     const actions = document.createElement("div");
     actions.className = "card-catalog-actions";
+    this.filterButton = createButton("☰", () => this.toggleFilters(), "secondary-button card-filter-menu-button");
+    this.filterButton.title = this.app.language === "ko" ? "필터" : "Filters";
+    this.filterButton.setAttribute("aria-label", this.app.language === "ko" ? "필터" : "Filters");
+    this.filterButton.setAttribute("aria-expanded", "false");
     actions.append(
+      this.filterButton,
       createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgradePrototype"), "secondary-button"),
       createButton(this.app.language === "ko" ? "메인 메뉴" : "Main Menu", () => this.app.show("menu"), "secondary-button"),
     );
     header.appendChild(actions);
     panel.appendChild(header);
 
-    panel.appendChild(this.buildFilters());
+    this.filterDrawer = this.buildFilters();
+    this.filterDrawer.hidden = !this.filtersOpen;
+    panel.appendChild(this.filterDrawer);
 
     const body = document.createElement("div");
     body.className = "card-catalog-body";
@@ -142,13 +174,11 @@ export class CardCatalogScene implements GameSceneController {
     this.tableBody = document.createElement("tbody");
     table.appendChild(this.tableBody);
     tableWrap.appendChild(table);
-
-    this.detail = document.createElement("aside");
-    this.detail.className = "card-detail";
-
-    body.append(tableWrap, this.detail);
+    body.appendChild(tableWrap);
     panel.appendChild(body);
-    this.layer.appendChild(panel);
+
+    this.detailOverlay = this.buildDetailOverlay();
+    this.layer.append(panel, this.detailOverlay);
     this.app.uiRoot.appendChild(this.layer);
 
     this.updateList();
@@ -212,22 +242,37 @@ export class CardCatalogScene implements GameSceneController {
       this.render();
     }, "secondary-button");
 
-    this.countLabel = document.createElement("strong");
-    this.countLabel.className = "card-count-label";
-
-    controls.append(search, category, tier, effect, reset, this.countLabel);
+    controls.append(search, category, tier, effect, reset);
     return controls;
+  }
+
+  private buildDetailOverlay(): HTMLDivElement {
+    const overlay = document.createElement("div");
+    overlay.className = "card-detail-overlay";
+    overlay.hidden = true;
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        this.hideDetail();
+      }
+    });
+    return overlay;
+  }
+
+  private toggleFilters(): void {
+    this.filtersOpen = !this.filtersOpen;
+    this.filterDrawer.hidden = !this.filtersOpen;
+    this.filterButton.setAttribute("aria-expanded", String(this.filtersOpen));
   }
 
   private updateList(): void {
     const cards = filterCards(this.filters).sort(compareCardsForCatalog);
 
     this.countLabel.textContent = this.app.language === "ko"
-      ? `${cards.length}/${CARDS.length}장`
+      ? `${cards.length}/${CARDS.length}개`
       : `${cards.length}/${CARDS.length}`;
 
-    if (!cards.some((card) => card.id === this.selectedId)) {
-      this.selectedId = cards[0]?.id ?? CARDS[0]?.id ?? "";
+    if (this.selectedId && !cards.some((card) => card.id === this.selectedId)) {
+      this.hideDetail();
     }
 
     this.tableBody.replaceChildren();
@@ -247,6 +292,7 @@ export class CardCatalogScene implements GameSceneController {
 
       const row = document.createElement("tr");
       row.className = card.id === this.selectedId ? "is-selected" : "";
+      row.tabIndex = 0;
       row.innerHTML = `
         <td><span class="card-tier-badge">${card.tier}</span></td>
         <td><span class="card-category-badge category-${card.category}">${this.categoryLabel(card.category)}</span></td>
@@ -255,38 +301,110 @@ export class CardCatalogScene implements GameSceneController {
         <td>${this.effectsSummary(card)}</td>
         <td>${card.prereq.length ? card.prereq.join(", ") : "-"}</td>
       `;
-      row.addEventListener("click", () => {
-        this.selectedId = card.id;
-        this.updateList();
-      });
+      this.attachRowEvents(row, card);
       this.tableBody.appendChild(row);
     }
-
-    this.updateDetail();
   }
 
-  private updateDetail(): void {
-    const card = CARDS.find((item) => item.id === this.selectedId);
-    if (!card) {
-      this.detail.replaceChildren();
-      return;
-    }
+  private attachRowEvents(row: HTMLTableRowElement, card: CardNode): void {
+    row.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      this.clearPress();
+      this.press = {
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        card,
+        x: event.clientX,
+        y: event.clientY,
+        moved: false,
+        longFired: false,
+        startedAt: performance.now(),
+        timer: window.setTimeout(() => {
+          if (!this.press) {
+            return;
+          }
+          const elapsed = performance.now() - this.press.startedAt;
+          if (shouldOpenCardDetailFromLongPress(this.press.pointerType, elapsed, this.press.moved)) {
+            this.press.longFired = true;
+            this.showDetail(this.press.card);
+          }
+        }, CARD_DETAIL_LONG_PRESS_MS),
+      };
+    });
 
-    this.detail.innerHTML = `
-      <span class="card-category-badge category-${card.category}">${this.categoryLabel(card.category)}</span>
-      <h3>${cardName(card, this.app.language)}</h3>
-      <p>${cardDescription(card, this.app.language)}</p>
-      <dl>
-        <div><dt>ID</dt><dd>${card.id}</dd></div>
-        <div><dt>${this.app.language === "ko" ? "티어" : "Tier"}</dt><dd>${card.tier}</dd></div>
-        <div><dt>${this.app.language === "ko" ? "비용" : "Cost"}</dt><dd>${card.cost}g</dd></div>
-        <div><dt>${this.app.language === "ko" ? "브랜치" : "Branch"}</dt><dd>${card.branch}</dd></div>
-        <div><dt>${this.app.language === "ko" ? "선행" : "Prereq"}</dt><dd>${card.prereq.length ? card.prereq.join(", ") : "-"}</dd></div>
-        <div><dt>${this.app.language === "ko" ? "태그" : "Tags"}</dt><dd>${card.tags.join(", ")}</dd></div>
-        <div><dt>${this.app.language === "ko" ? "효과" : "Effects"}</dt><dd>${this.effectsSummary(card)}</dd></div>
-        <div><dt>${this.app.language === "ko" ? "트리 좌표" : "Tree Position"}</dt><dd>${card.layout.x}, ${card.layout.y}</dd></div>
-      </dl>
+    row.addEventListener("pointermove", (event) => {
+      if (!this.press || this.press.pointerId !== event.pointerId || this.press.moved) {
+        return;
+      }
+      if (Math.hypot(event.clientX - this.press.x, event.clientY - this.press.y) > CARD_DETAIL_TAP_MOVE_PX) {
+        this.press.moved = true;
+        window.clearTimeout(this.press.timer);
+      }
+    });
+
+    row.addEventListener("pointerup", (event) => {
+      if (!this.press || this.press.pointerId !== event.pointerId) {
+        return;
+      }
+      const press = this.press;
+      this.clearPress();
+      if (press.longFired || press.moved) {
+        return;
+      }
+      if (shouldOpenCardDetailFromClick(press.pointerType)) {
+        this.showDetail(card);
+      }
+    });
+
+    row.addEventListener("pointercancel", () => this.clearPress());
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        this.showDetail(card);
+      }
+    });
+  }
+
+  private clearPress(): void {
+    if (this.press) {
+      window.clearTimeout(this.press.timer);
+      this.press = null;
+    }
+  }
+
+  private showDetail(card: CardNode): void {
+    this.selectedId = card.id;
+    this.detailOverlay.hidden = false;
+    this.detailOverlay.innerHTML = `
+      <article class="card-detail-card">
+        <button type="button" class="card-detail-close">${this.app.language === "ko" ? "닫기" : "Close"}</button>
+        <span class="card-category-badge category-${card.category}">${this.categoryLabel(card.category)}</span>
+        <h3>${cardName(card, this.app.language)}</h3>
+        <p>${cardDescription(card, this.app.language)}</p>
+        <dl>
+          <div><dt>ID</dt><dd>${card.id}</dd></div>
+          <div><dt>${this.app.language === "ko" ? "티어" : "Tier"}</dt><dd>${card.tier}</dd></div>
+          <div><dt>${this.app.language === "ko" ? "비용" : "Cost"}</dt><dd>${card.cost}g</dd></div>
+          <div><dt>${this.app.language === "ko" ? "가지" : "Branch"}</dt><dd>${card.branch}</dd></div>
+          <div><dt>${this.app.language === "ko" ? "선행" : "Prereq"}</dt><dd>${card.prereq.length ? card.prereq.join(", ") : "-"}</dd></div>
+          <div><dt>${this.app.language === "ko" ? "태그" : "Tags"}</dt><dd>${card.tags.join(", ")}</dd></div>
+          <div><dt>${this.app.language === "ko" ? "효과" : "Effects"}</dt><dd>${this.effectsSummary(card)}</dd></div>
+          <div><dt>${this.app.language === "ko" ? "트리 좌표" : "Tree Position"}</dt><dd>${card.layout.x}, ${card.layout.y}</dd></div>
+        </dl>
+      </article>
     `;
+    this.detailOverlay.querySelector(".card-detail-close")?.addEventListener("click", () => this.hideDetail());
+    this.updateList();
+  }
+
+  private hideDetail(): void {
+    this.selectedId = "";
+    if (this.detailOverlay) {
+      this.detailOverlay.hidden = true;
+      this.detailOverlay.replaceChildren();
+    }
   }
 
   private categoryLabel(category: CardCategory): string {

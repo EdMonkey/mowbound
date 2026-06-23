@@ -110,6 +110,7 @@ export class CheatPanel {
     card.appendChild(title);
 
     const actions: Array<{ label: string; fn: () => void }> = [
+      { label: "카드 목록 보기", fn: () => this.openCardCatalog() },
       { label: "모든 스킬 해금", fn: () => this.unlockAll() },
       { label: "스킬 리셋", fn: () => this.resetSkills() },
       { label: "골드 +99999", fn: () => this.giveGold() },
@@ -209,6 +210,11 @@ export class CheatPanel {
 
   private setStatus(msg: string): void {
     this.statusEl.textContent = msg;
+  }
+
+  private openCardCatalog(): void {
+    this.close();
+    this.app.show("cardCatalog");
   }
 
   private unlockAll(): void {
