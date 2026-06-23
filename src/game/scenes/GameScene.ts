@@ -56,9 +56,9 @@ import {
   computeTractorStripHits,
   getEconomyStats,
   getRuntimeStats,
-  nextAffordableGoals,
   type RuntimeStats,
-} from "../systems/SkillSystem";
+} from "../systems/CardEffectSystem";
+import { nextAffordableCardGoals } from "../systems/CardProgressionSystem";
 import { FireParticles } from "../entities/FireParticles";
 import { SummonSystem, type SummonCut } from "../entities/SummonedAbilities";
 import { summarizeRun } from "../systems/RunSummarySystem";
@@ -1187,7 +1187,7 @@ export class GameScene implements GameSceneController {
       onRetry: () => this.app.show("game"),
       onSkills: () => this.app.show("skills"),
       onMenu: () => this.app.show("menu"),
-    }, summary, nextAffordableGoals(this.save, 3), snapshotUrl);
+    }, summary, nextAffordableCardGoals(this.save, 3), snapshotUrl);
   }
 
   private readonly updateInputMode = (): void => {

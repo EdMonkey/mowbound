@@ -7,7 +7,7 @@ import { SkillTreeScene } from "./scenes/SkillTreeScene";
 import { UpgradePrototypeScene } from "./scenes/UpgradePrototypeScene";
 import { loadLanguage, saveLanguage, type Language } from "./i18n";
 import { loadSave } from "./systems/SaveSystem";
-import { isMapUnlocked } from "./systems/SkillSystem";
+import { isMapUnlocked } from "./systems/CardProgressionSystem";
 import { CheatPanel } from "./ui/CheatPanel";
 import type { SceneName } from "./types";
 

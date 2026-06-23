@@ -2,11 +2,11 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { cloneModel } from "../assets/models";
 import { MAP_SIZE_OPTIONS } from "../config/balance";
-import type { ToolId } from "../config/skillTree";
+import type { ToolId } from "../config/tools";
 import { toolLabel, type Language } from "../i18n";
 import { Player } from "../entities/Player";
 import { loadSave, resetSave, saveGame, unlockAllSkillsForTest } from "../systems/SaveSystem";
-import { canSelectTool, isMapUnlocked, selectTool } from "../systems/SkillSystem";
+import { canSelectTool, isMapUnlocked, selectTool } from "../systems/CardProgressionSystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { clearElement, createButton } from "../ui/Menu";
 
