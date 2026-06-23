@@ -15,4 +15,4 @@ export interface GrassState {
   burningSeconds?: number;
 }
 
-export type SceneName = "menu" | "game" | "skills" | "upgradePrototype";
+export type SceneName = "menu" | "game" | "skills" | "upgradePrototype" | "cardCatalog";

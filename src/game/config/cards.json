@@ -1,0 +1,4419 @@
+[
+  {
+    "id": "root_sharpen",
+    "nameKo": "첫 날 갈기",
+    "nameEn": "First Sharpening",
+    "category": "equipment",
+    "branch": "root",
+    "tier": 0,
+    "cost": 10,
+    "prereq": [],
+    "gates": [],
+    "tags": [
+      "attackDamage",
+      "equipment",
+      "root"
+    ],
+    "effects": [
+      {
+        "kind": "attackDamage",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "공격력 +1",
+    "descriptionEn": "Damage +1.",
+    "layout": {
+      "x": -540,
+      "y": 0
+    },
+    "sort": 0
+  },
+  {
+    "id": "sharp_edge_1",
+    "nameKo": "예리한 날 I",
+    "nameEn": "Sharp Edge I",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 1,
+    "cost": 18,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "attackDamage",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackDamage",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "공격력 +1",
+    "descriptionEn": "Damage +1. Reaches one-hit grass with root.",
+    "layout": {
+      "x": -610,
+      "y": -170
+    },
+    "sort": 1
+  },
+  {
+    "id": "sharp_edge_2",
+    "nameKo": "예리한 날 II",
+    "nameEn": "Sharp Edge II",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 2,
+    "cost": 60,
+    "prereq": [
+      "sharp_edge_1"
+    ],
+    "gates": [],
+    "tags": [
+      "attackDamage",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackDamage",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "공격력 +1",
+    "descriptionEn": "Damage +1. Reaches obstacle break threshold.",
+    "layout": {
+      "x": -610,
+      "y": -340
+    },
+    "sort": 2
+  },
+  {
+    "id": "clean_sweep_1",
+    "nameKo": "넓은 베기 I",
+    "nameEn": "Clean Sweep I",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 1,
+    "cost": 28,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.1
+      }
+    ],
+    "descriptionKo": "공격범위 +0.1m",
+    "descriptionEn": "Attack range +0.10m.",
+    "layout": {
+      "x": -558,
+      "y": -170
+    },
+    "sort": 3
+  },
+  {
+    "id": "clean_sweep_2",
+    "nameKo": "넓은 베기 II",
+    "nameEn": "Clean Sweep II",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 2,
+    "cost": 90,
+    "prereq": [
+      "clean_sweep_1"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.12
+      }
+    ],
+    "descriptionKo": "공격범위 +0.12m",
+    "descriptionEn": "Attack range +0.12m.",
+    "layout": {
+      "x": -558,
+      "y": -340
+    },
+    "sort": 4
+  },
+  {
+    "id": "wide_arc_1",
+    "nameKo": "넓은 궤적 I",
+    "nameEn": "Wide Arc I",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 3,
+    "cost": 140,
+    "prereq": [
+      "clean_sweep_2"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.12
+      }
+    ],
+    "descriptionKo": "공격범위 +0.12m",
+    "descriptionEn": "Attack range +0.12m.",
+    "layout": {
+      "x": -610,
+      "y": -510
+    },
+    "sort": 5
+  },
+  {
+    "id": "wide_arc_2",
+    "nameKo": "넓은 궤적 II",
+    "nameEn": "Wide Arc II",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 4,
+    "cost": 210,
+    "prereq": [
+      "wide_arc_1"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.14
+      }
+    ],
+    "descriptionKo": "공격범위 +0.14m",
+    "descriptionEn": "Attack range +0.14m.",
+    "layout": {
+      "x": -610,
+      "y": -680
+    },
+    "sort": 6
+  },
+  {
+    "id": "wide_arc_3",
+    "nameKo": "넓은 궤적 III",
+    "nameEn": "Wide Arc III",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 5,
+    "cost": 300,
+    "prereq": [
+      "wide_arc_2"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.16
+      }
+    ],
+    "descriptionKo": "공격범위 +0.16m",
+    "descriptionEn": "Attack range +0.16m.",
+    "layout": {
+      "x": -610,
+      "y": -850
+    },
+    "sort": 7
+  },
+  {
+    "id": "grand_sweep_1",
+    "nameKo": "대형 베기 I",
+    "nameEn": "Grand Sweep I",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 6,
+    "cost": 400,
+    "prereq": [
+      "wide_arc_3"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.15
+      }
+    ],
+    "descriptionKo": "공격범위 +0.15m",
+    "descriptionEn": "Attack range +0.15m.",
+    "layout": {
+      "x": -610,
+      "y": -1020
+    },
+    "sort": 8
+  },
+  {
+    "id": "grand_sweep_2",
+    "nameKo": "대형 베기 II",
+    "nameEn": "Grand Sweep II",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 7,
+    "cost": 520,
+    "prereq": [
+      "grand_sweep_1"
+    ],
+    "gates": [],
+    "tags": [
+      "attackRange",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackRange",
+        "amount": 0.15
+      }
+    ],
+    "descriptionKo": "공격범위 +0.15m",
+    "descriptionEn": "Attack range +0.15m.",
+    "layout": {
+      "x": -610,
+      "y": -1190
+    },
+    "sort": 9
+  },
+  {
+    "id": "quick_recovery_1",
+    "nameKo": "빠른 회수 I",
+    "nameEn": "Quick Recovery I",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 1,
+    "cost": 35,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "attackInterval",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackInterval",
+        "amount": -100
+      }
+    ],
+    "descriptionKo": "공격간격 -100ms",
+    "descriptionEn": "Attack interval -100ms.",
+    "layout": {
+      "x": -662,
+      "y": -170
+    },
+    "sort": 10
+  },
+  {
+    "id": "quick_recovery_2",
+    "nameKo": "빠른 회수 II",
+    "nameEn": "Quick Recovery II",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 2,
+    "cost": 130,
+    "prereq": [
+      "quick_recovery_1"
+    ],
+    "gates": [],
+    "tags": [
+      "attackInterval",
+      "blade",
+      "equipment"
+    ],
+    "effects": [
+      {
+        "kind": "attackInterval",
+        "amount": -100
+      }
+    ],
+    "descriptionKo": "공격간격 -100ms",
+    "descriptionEn": "Attack interval -100ms.",
+    "layout": {
+      "x": -662,
+      "y": -340
+    },
+    "sort": 11
+  },
+  {
+    "id": "heavy_edge",
+    "nameKo": "묵직한 날",
+    "nameEn": "Heavy Edge",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 3,
+    "cost": 110,
+    "prereq": [
+      "sharp_edge_2"
+    ],
+    "gates": [],
+    "tags": [
+      "attackDamage",
+      "blade",
+      "equipment",
+      "obstacleDamage"
+    ],
+    "effects": [
+      {
+        "kind": "attackDamage",
+        "amount": 1
+      },
+      {
+        "kind": "obstacleDamage",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "공격력 +1, 장애물 피해 +1",
+    "descriptionEn": "Damage +1 and obstacle damage +1.",
+    "layout": {
+      "x": -558,
+      "y": -510
+    },
+    "sort": 12
+  },
+  {
+    "id": "ember",
+    "nameKo": "불씨 날",
+    "nameEn": "Ember Edge",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 1,
+    "cost": 36,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireIgniteChance"
+    ],
+    "effects": [
+      {
+        "kind": "fireIgniteChance",
+        "amount": 0.05
+      }
+    ],
+    "descriptionKo": "불붙임 확률 +5%",
+    "descriptionEn": "Hits have a 5% chance to ignite grass.",
+    "layout": {
+      "x": -506,
+      "y": -170
+    },
+    "sort": 13
+  },
+  {
+    "id": "burn1",
+    "nameKo": "화상 피해 +",
+    "nameEn": "Burn Damage +",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 2,
+    "cost": 34,
+    "prereq": [
+      "ember"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireDamagePerSecond"
+    ],
+    "effects": [
+      {
+        "kind": "fireDamagePerSecond",
+        "amount": 0.35
+      }
+    ],
+    "descriptionKo": "화상 피해 +0.35/초",
+    "descriptionEn": "Fire damage +0.35/s.",
+    "layout": {
+      "x": -506,
+      "y": -340
+    },
+    "sort": 14
+  },
+  {
+    "id": "burn2",
+    "nameKo": "화상 피해 ++",
+    "nameEn": "Burn Damage ++",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 3,
+    "cost": 52,
+    "prereq": [
+      "burn1"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireDamagePerSecond"
+    ],
+    "effects": [
+      {
+        "kind": "fireDamagePerSecond",
+        "amount": 0.35
+      }
+    ],
+    "descriptionKo": "화상 피해 +0.35/초",
+    "descriptionEn": "Fire damage +0.35/s.",
+    "layout": {
+      "x": -662,
+      "y": -510
+    },
+    "sort": 15
+  },
+  {
+    "id": "burn3",
+    "nameKo": "화상 피해 +++",
+    "nameEn": "Burn Damage +++",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 4,
+    "cost": 76,
+    "prereq": [
+      "burn2"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireDamagePerSecond"
+    ],
+    "effects": [
+      {
+        "kind": "fireDamagePerSecond",
+        "amount": 0.35
+      }
+    ],
+    "descriptionKo": "화상 피해 +0.35/초",
+    "descriptionEn": "Fire damage +0.35/s.",
+    "layout": {
+      "x": -558,
+      "y": -680
+    },
+    "sort": 16
+  },
+  {
+    "id": "spread1",
+    "nameKo": "확산 반경 +",
+    "nameEn": "Spread Radius +",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 2,
+    "cost": 38,
+    "prereq": [
+      "ember"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireSpreadRadiusMeters"
+    ],
+    "effects": [
+      {
+        "kind": "fireSpreadRadiusMeters",
+        "amount": 0.05
+      }
+    ],
+    "descriptionKo": "불 확산 반경 +0.05m",
+    "descriptionEn": "Fire spread radius +0.05m.",
+    "layout": {
+      "x": -714,
+      "y": -340
+    },
+    "sort": 17
+  },
+  {
+    "id": "spread2",
+    "nameKo": "확산 반경 ++",
+    "nameEn": "Spread Radius ++",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 3,
+    "cost": 58,
+    "prereq": [
+      "spread1"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireSpreadRadiusMeters"
+    ],
+    "effects": [
+      {
+        "kind": "fireSpreadRadiusMeters",
+        "amount": 0.05
+      }
+    ],
+    "descriptionKo": "불 확산 반경 +0.05m",
+    "descriptionEn": "Fire spread radius +0.05m.",
+    "layout": {
+      "x": -506,
+      "y": -510
+    },
+    "sort": 18
+  },
+  {
+    "id": "spread3",
+    "nameKo": "확산 반경 +++",
+    "nameEn": "Spread Radius +++",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 4,
+    "cost": 84,
+    "prereq": [
+      "spread2"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireSpreadRadiusMeters"
+    ],
+    "effects": [
+      {
+        "kind": "fireSpreadRadiusMeters",
+        "amount": 0.05
+      }
+    ],
+    "descriptionKo": "불 확산 반경 +0.05m",
+    "descriptionEn": "Fire spread radius +0.05m.",
+    "layout": {
+      "x": -662,
+      "y": -680
+    },
+    "sort": 19
+  },
+  {
+    "id": "kindle1",
+    "nameKo": "불쏘시개 +",
+    "nameEn": "Kindling +",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 2,
+    "cost": 42,
+    "prereq": [
+      "ember"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireSpreadChancePerSecond"
+    ],
+    "effects": [
+      {
+        "kind": "fireSpreadChancePerSecond",
+        "amount": 0.06
+      }
+    ],
+    "descriptionKo": "불 확산 속도 +0.06/초",
+    "descriptionEn": "Fire spread speed +0.06/s.",
+    "layout": {
+      "x": -454,
+      "y": -340
+    },
+    "sort": 20
+  },
+  {
+    "id": "kindle2",
+    "nameKo": "불쏘시개 ++",
+    "nameEn": "Kindling ++",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 3,
+    "cost": 64,
+    "prereq": [
+      "kindle1"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireSpreadChancePerSecond"
+    ],
+    "effects": [
+      {
+        "kind": "fireSpreadChancePerSecond",
+        "amount": 0.06
+      }
+    ],
+    "descriptionKo": "불 확산 속도 +0.06/초",
+    "descriptionEn": "Fire spread speed +0.06/s.",
+    "layout": {
+      "x": -714,
+      "y": -510
+    },
+    "sort": 21
+  },
+  {
+    "id": "kindle3",
+    "nameKo": "불쏘시개 +++",
+    "nameEn": "Kindling +++",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 4,
+    "cost": 92,
+    "prereq": [
+      "kindle2"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "equipment",
+      "fireSpreadChancePerSecond"
+    ],
+    "effects": [
+      {
+        "kind": "fireSpreadChancePerSecond",
+        "amount": 0.06
+      }
+    ],
+    "descriptionKo": "불 확산 속도 +0.06/초",
+    "descriptionEn": "Fire spread speed +0.06/s.",
+    "layout": {
+      "x": -506,
+      "y": -680
+    },
+    "sort": 22
+  },
+  {
+    "id": "cyclone_cut",
+    "nameKo": "회오리 베기",
+    "nameEn": "Cyclone Cut",
+    "category": "equipment",
+    "branch": "blade",
+    "tier": 3,
+    "cost": 1200,
+    "prereq": [
+      "clean_sweep_2",
+      "quick_recovery_2"
+    ],
+    "gates": [],
+    "tags": [
+      "blade",
+      "cyclone_cut",
+      "equipment",
+      "special"
+    ],
+    "effects": [
+      {
+        "kind": "special",
+        "id": "cyclone_cut"
+      }
+    ],
+    "descriptionKo": "6번째 공격마다 원형 베기",
+    "descriptionEn": "Every 6th attack performs a 0.85m circle cut.",
+    "layout": {
+      "x": -454,
+      "y": -510
+    },
+    "sort": 23
+  },
+  {
+    "id": "light_boots_1",
+    "nameKo": "가벼운 장화 I",
+    "nameEn": "Light Boots I",
+    "category": "equipment",
+    "branch": "movement",
+    "tier": 1,
+    "cost": 14,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "moveSpeed",
+      "movement"
+    ],
+    "effects": [
+      {
+        "kind": "moveSpeed",
+        "amount": 0.12
+      }
+    ],
+    "descriptionKo": "이동속도 +0.12",
+    "descriptionEn": "Move speed +0.12.",
+    "layout": {
+      "x": -574,
+      "y": -170
+    },
+    "sort": 24
+  },
+  {
+    "id": "light_boots_2",
+    "nameKo": "가벼운 장화 II",
+    "nameEn": "Light Boots II",
+    "category": "equipment",
+    "branch": "movement",
+    "tier": 2,
+    "cost": 55,
+    "prereq": [
+      "light_boots_1"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "moveSpeed",
+      "movement"
+    ],
+    "effects": [
+      {
+        "kind": "moveSpeed",
+        "amount": 0.14
+      }
+    ],
+    "descriptionKo": "이동속도 +0.14",
+    "descriptionEn": "Move speed +0.14.",
+    "layout": {
+      "x": -626,
+      "y": -340
+    },
+    "sort": 25
+  },
+  {
+    "id": "field_rhythm_1",
+    "nameKo": "밭 리듬 I",
+    "nameEn": "Field Rhythm I",
+    "category": "equipment",
+    "branch": "movement",
+    "tier": 1,
+    "cost": 32,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "movement",
+      "roundDurationPercent"
+    ],
+    "effects": [
+      {
+        "kind": "roundDurationPercent",
+        "amount": 8
+      }
+    ],
+    "descriptionKo": "라운드 시간 +8%",
+    "descriptionEn": "Round duration +8%.",
+    "layout": {
+      "x": -314,
+      "y": -170
+    },
+    "sort": 26
+  },
+  {
+    "id": "field_rhythm_2",
+    "nameKo": "밭 리듬 II",
+    "nameEn": "Field Rhythm II",
+    "category": "equipment",
+    "branch": "movement",
+    "tier": 2,
+    "cost": 125,
+    "prereq": [
+      "field_rhythm_1"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "movement",
+      "roundDurationPercent"
+    ],
+    "effects": [
+      {
+        "kind": "roundDurationPercent",
+        "amount": 8
+      }
+    ],
+    "descriptionKo": "라운드 시간 +8%",
+    "descriptionEn": "Round duration +8%.",
+    "layout": {
+      "x": -262,
+      "y": -340
+    },
+    "sort": 27
+  },
+  {
+    "id": "sprint_harvest",
+    "nameKo": "질주 수확",
+    "nameEn": "Sprint Harvest",
+    "category": "equipment",
+    "branch": "movement",
+    "tier": 3,
+    "cost": 260,
+    "prereq": [
+      "light_boots_2",
+      "clean_rows_1"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "movement",
+      "special",
+      "sprint_harvest"
+    ],
+    "effects": [
+      {
+        "kind": "special",
+        "id": "sprint_harvest"
+      }
+    ],
+    "descriptionKo": "깔끔한 잔디 후 2초간 이동속도 증가",
+    "descriptionEn": "After a clean patch, move speed +20% for 2s.",
+    "layout": {
+      "x": -626,
+      "y": -510
+    },
+    "sort": 28
+  },
+  {
+    "id": "long_day",
+    "nameKo": "긴 하루",
+    "nameEn": "Long Day",
+    "category": "equipment",
+    "branch": "movement",
+    "tier": 3,
+    "cost": 700,
+    "prereq": [
+      "field_rhythm_2"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "movement",
+      "roundDurationPercent"
+    ],
+    "effects": [
+      {
+        "kind": "roundDurationPercent",
+        "amount": 12
+      }
+    ],
+    "descriptionKo": "라운드 시간 +12%",
+    "descriptionEn": "Round duration +12%.",
+    "layout": {
+      "x": -262,
+      "y": -510
+    },
+    "sort": 29
+  },
+  {
+    "id": "market_cart_1",
+    "nameKo": "시장 손수레 I",
+    "nameEn": "Market Cart I",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 1,
+    "cost": 20,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "goldDivisor",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "goldDivisor",
+        "amount": -0.3
+      }
+    ],
+    "descriptionKo": "골드 환산 효율 +0.3",
+    "descriptionEn": "Gold divisor 4.0 -> 3.7.",
+    "layout": {
+      "x": -180,
+      "y": -170
+    },
+    "sort": 30
+  },
+  {
+    "id": "market_cart_2",
+    "nameKo": "시장 손수레 II",
+    "nameEn": "Market Cart II",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 2,
+    "cost": 80,
+    "prereq": [
+      "market_cart_1"
+    ],
+    "gates": [],
+    "tags": [
+      "goldDivisor",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "goldDivisor",
+        "amount": -0.3
+      }
+    ],
+    "descriptionKo": "골드 환산 효율 +0.3",
+    "descriptionEn": "Gold divisor 3.7 -> 3.4.",
+    "layout": {
+      "x": -180,
+      "y": -340
+    },
+    "sort": 31
+  },
+  {
+    "id": "clean_rows_1",
+    "nameKo": "깔끔한 줄 I",
+    "nameEn": "Clean Mow I",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 1,
+    "cost": 26,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "cleanPatchScore",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "cleanPatchScore",
+        "amount": 8
+      }
+    ],
+    "descriptionKo": "깔끔한 잔디 점수 +8",
+    "descriptionEn": "Driving-skill clean mow bonus +8 score.",
+    "layout": {
+      "x": -128,
+      "y": -170
+    },
+    "sort": 32
+  },
+  {
+    "id": "clean_rows_2",
+    "nameKo": "깔끔한 줄 II",
+    "nameEn": "Clean Mow II",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 2,
+    "cost": 110,
+    "prereq": [
+      "clean_rows_1"
+    ],
+    "gates": [],
+    "tags": [
+      "cleanPatchScore",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "cleanPatchScore",
+        "amount": 14
+      }
+    ],
+    "descriptionKo": "깔끔한 잔디 점수 +14",
+    "descriptionEn": "Driving-skill clean mow bonus +14 score.",
+    "layout": {
+      "x": -128,
+      "y": -340
+    },
+    "sort": 33
+  },
+  {
+    "id": "bulk_buyer_1",
+    "nameKo": "대량 구매자 I",
+    "nameEn": "Bulk Buyer I",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 2,
+    "cost": 75,
+    "prereq": [
+      "market_cart_1"
+    ],
+    "gates": [],
+    "tags": [
+      "clearBonusPercent",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "clearBonusPercent",
+        "amount": 10
+      }
+    ],
+    "descriptionKo": "클리어 보너스 +10%",
+    "descriptionEn": "Clear percent bonus +10%.",
+    "layout": {
+      "x": -232,
+      "y": -340
+    },
+    "sort": 34
+  },
+  {
+    "id": "bulk_buyer_2",
+    "nameKo": "대량 구매자 II",
+    "nameEn": "Bulk Buyer II",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 3,
+    "cost": 210,
+    "prereq": [
+      "bulk_buyer_1"
+    ],
+    "gates": [],
+    "tags": [
+      "clearBonusPercent",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "clearBonusPercent",
+        "amount": 15
+      }
+    ],
+    "descriptionKo": "클리어 보너스 +15%",
+    "descriptionEn": "Clear percent bonus +15%.",
+    "layout": {
+      "x": -180,
+      "y": -510
+    },
+    "sort": 35
+  },
+  {
+    "id": "golden_field",
+    "nameKo": "황금 밭",
+    "nameEn": "Golden Field",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 3,
+    "cost": 380,
+    "prereq": [
+      "market_cart_2",
+      "clean_rows_2"
+    ],
+    "gates": [],
+    "tags": [
+      "golden_field",
+      "harvest",
+      "special"
+    ],
+    "effects": [
+      {
+        "kind": "special",
+        "id": "golden_field"
+      }
+    ],
+    "descriptionKo": "초반 10초 수확 점수 증가",
+    "descriptionEn": "First 10s harvest score +25%.",
+    "layout": {
+      "x": -128,
+      "y": -510
+    },
+    "sort": 36
+  },
+  {
+    "id": "accountant",
+    "nameKo": "회계사",
+    "nameEn": "Accountant",
+    "category": "harvest",
+    "branch": "harvest",
+    "tier": 4,
+    "cost": 1200,
+    "prereq": [
+      "bulk_buyer_2"
+    ],
+    "gates": [],
+    "tags": [
+      "clearBonusPercent",
+      "harvest"
+    ],
+    "effects": [
+      {
+        "kind": "clearBonusPercent",
+        "amount": 10
+      }
+    ],
+    "descriptionKo": "클리어 보너스 +10%",
+    "descriptionEn": "Final gold +10%.",
+    "layout": {
+      "x": -180,
+      "y": -680
+    },
+    "sort": 37
+  },
+  {
+    "id": "stone_chips",
+    "nameKo": "돌 조각",
+    "nameEn": "Stone Chips",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 3,
+    "cost": 70,
+    "prereq": [
+      "sharp_edge_2"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacles",
+      "rockScore"
+    ],
+    "effects": [
+      {
+        "kind": "rockScore",
+        "amount": 25
+      }
+    ],
+    "descriptionKo": "돌 파괴 점수 +25",
+    "descriptionEn": "Rock break +25 score.",
+    "layout": {
+      "x": 110,
+      "y": -510
+    },
+    "sort": 38
+  },
+  {
+    "id": "wood_haul",
+    "nameKo": "목재 운반",
+    "nameEn": "Wood Haul",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 3,
+    "cost": 95,
+    "prereq": [
+      "sharp_edge_2"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacles",
+      "treeScore"
+    ],
+    "effects": [
+      {
+        "kind": "treeScore",
+        "amount": 40
+      }
+    ],
+    "descriptionKo": "나무 파괴 점수 +40",
+    "descriptionEn": "Tree break +40 score.",
+    "layout": {
+      "x": 162,
+      "y": -510
+    },
+    "sort": 39
+  },
+  {
+    "id": "stump_grinder",
+    "nameKo": "그루터기 분쇄기",
+    "nameEn": "Stump Grinder",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 4,
+    "cost": 160,
+    "prereq": [
+      "wood_haul"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacles",
+      "stumpNoCollision"
+    ],
+    "effects": [
+      {
+        "kind": "stumpNoCollision"
+      }
+    ],
+    "descriptionKo": "부서진 그루터기 충돌 제거",
+    "descriptionEn": "Tree stumps stop blocking after break.",
+    "layout": {
+      "x": 110,
+      "y": -680
+    },
+    "sort": 40
+  },
+  {
+    "id": "recoil_training",
+    "nameKo": "반동 훈련",
+    "nameEn": "Recoil Training",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 4,
+    "cost": 120,
+    "prereq": [
+      "stone_chips"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "failedChopStunPercent",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "failedChopStunPercent",
+        "amount": -25
+      }
+    ],
+    "descriptionKo": "실패 타격 스턴 -25%",
+    "descriptionEn": "Failed chop stun -25%.",
+    "layout": {
+      "x": 162,
+      "y": -680
+    },
+    "sort": 41
+  },
+  {
+    "id": "quarry_blade",
+    "nameKo": "채석장 날",
+    "nameEn": "Quarry Blade",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 4,
+    "cost": 240,
+    "prereq": [
+      "stone_chips"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleDamage",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleDamage",
+        "amount": 2
+      }
+    ],
+    "descriptionKo": "장애물 피해 +2",
+    "descriptionEn": "Obstacle damage +2.",
+    "layout": {
+      "x": 58,
+      "y": -680
+    },
+    "sort": 42
+  },
+  {
+    "id": "clearcut",
+    "nameKo": "개벌",
+    "nameEn": "Clearcut",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 4,
+    "cost": 360,
+    "prereq": [
+      "wood_haul",
+      "clean_sweep_2"
+    ],
+    "gates": [],
+    "tags": [
+      "clearcut",
+      "environment",
+      "obstacles",
+      "special"
+    ],
+    "effects": [
+      {
+        "kind": "special",
+        "id": "clearcut"
+      }
+    ],
+    "descriptionKo": "장애물 파괴 시 주변 풀 제거",
+    "descriptionEn": "Obstacle breaks also cut nearby grass.",
+    "layout": {
+      "x": 214,
+      "y": -680
+    },
+    "sort": 43
+  },
+  {
+    "id": "lumberjack",
+    "nameKo": "나무꾼 장부",
+    "nameEn": "Lumberjack Ledger",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 5,
+    "cost": 1400,
+    "prereq": [
+      "clearcut"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleScorePercent",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleScorePercent",
+        "amount": 50
+      }
+    ],
+    "descriptionKo": "장애물 점수 +50%",
+    "descriptionEn": "Obstacle score +50%.",
+    "layout": {
+      "x": 110,
+      "y": -850
+    },
+    "sort": 44
+  },
+  {
+    "id": "seed_bombs",
+    "nameKo": "씨앗 폭탄",
+    "nameEn": "Seed Bombs",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 1,
+    "cost": 160,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [
+      {
+        "kind": "bestClearPercent",
+        "mapSize": 10,
+        "percent": 15
+      },
+      {
+        "kind": "lifetimeGrass",
+        "count": 500
+      }
+    ],
+    "tags": [
+      "ability",
+      "bombCount10m",
+      "bombs"
+    ],
+    "effects": [
+      {
+        "kind": "bombCount10m",
+        "amount": 3
+      }
+    ],
+    "descriptionKo": "10m 맵 폭탄 +3개",
+    "descriptionEn": "Spawn 3 bombs on the 10m map.",
+    "layout": {
+      "x": 420,
+      "y": -170
+    },
+    "sort": 45
+  },
+  {
+    "id": "fuse_training_1",
+    "nameKo": "도화선 훈련 I",
+    "nameEn": "Fuse Training I",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 2,
+    "cost": 190,
+    "prereq": [
+      "seed_bombs"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "bombChainRadius",
+      "bombs"
+    ],
+    "effects": [
+      {
+        "kind": "bombChainRadius",
+        "amount": 0.35
+      }
+    ],
+    "descriptionKo": "폭탄 연쇄 반경 +0.35m",
+    "descriptionEn": "Bomb chain radius +0.35m.",
+    "layout": {
+      "x": 420,
+      "y": -340
+    },
+    "sort": 46
+  },
+  {
+    "id": "blast_control_1",
+    "nameKo": "폭발 제어 I",
+    "nameEn": "Blast Control I",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 2,
+    "cost": 220,
+    "prereq": [
+      "seed_bombs"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "bombBlastRadius",
+      "bombs"
+    ],
+    "effects": [
+      {
+        "kind": "bombBlastRadius",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "폭발 반경 +0.2m",
+    "descriptionEn": "Bomb blast radius +0.20m.",
+    "layout": {
+      "x": 472,
+      "y": -340
+    },
+    "sort": 47
+  },
+  {
+    "id": "chain_payout_1",
+    "nameKo": "연쇄 보상 I",
+    "nameEn": "Chain Payout I",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 2,
+    "cost": 260,
+    "prereq": [
+      "seed_bombs"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "bombChainScore",
+      "bombs"
+    ],
+    "effects": [
+      {
+        "kind": "bombChainScore",
+        "amount": 30
+      }
+    ],
+    "descriptionKo": "연쇄 폭탄 점수 +30",
+    "descriptionEn": "Each extra chained bomb gives +30 score.",
+    "layout": {
+      "x": 368,
+      "y": -340
+    },
+    "sort": 48
+  },
+  {
+    "id": "fuse_training_2",
+    "nameKo": "도화선 훈련 II",
+    "nameEn": "Fuse Training II",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 3,
+    "cost": 780,
+    "prereq": [
+      "fuse_training_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "bombChainRadius",
+      "bombs"
+    ],
+    "effects": [
+      {
+        "kind": "bombChainRadius",
+        "amount": 0.35
+      }
+    ],
+    "descriptionKo": "폭탄 연쇄 반경 +0.35m",
+    "descriptionEn": "Bomb chain radius +0.35m.",
+    "layout": {
+      "x": 420,
+      "y": -510
+    },
+    "sort": 49
+  },
+  {
+    "id": "blast_control_2",
+    "nameKo": "폭발 제어 II",
+    "nameEn": "Blast Control II",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 3,
+    "cost": 850,
+    "prereq": [
+      "blast_control_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "bombBlastRadius",
+      "bombs"
+    ],
+    "effects": [
+      {
+        "kind": "bombBlastRadius",
+        "amount": 0.25
+      }
+    ],
+    "descriptionKo": "폭발 반경 +0.25m",
+    "descriptionEn": "Bomb blast radius +0.25m.",
+    "layout": {
+      "x": 472,
+      "y": -510
+    },
+    "sort": 50
+  },
+  {
+    "id": "harvest_detonation",
+    "nameKo": "수확 폭파",
+    "nameEn": "Harvest Detonation",
+    "category": "ability",
+    "branch": "bombs",
+    "tier": 4,
+    "cost": 1800,
+    "prereq": [
+      "fuse_training_2",
+      "blast_control_2",
+      "chain_payout_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "bombs",
+      "firstBombScorePercent"
+    ],
+    "effects": [
+      {
+        "kind": "firstBombScorePercent",
+        "amount": 50
+      }
+    ],
+    "descriptionKo": "첫 폭탄 점수 +50%",
+    "descriptionEn": "First bomb each run scores +50%.",
+    "layout": {
+      "x": 420,
+      "y": -680
+    },
+    "sort": 51
+  },
+  {
+    "id": "open_acre",
+    "nameKo": "넓은 밭 계약",
+    "nameEn": "Open Acre",
+    "category": "environment",
+    "branch": "land",
+    "tier": 1,
+    "cost": 600,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [
+      {
+        "kind": "bestClearPercent",
+        "mapSize": 10,
+        "percent": 30
+      },
+      {
+        "kind": "bestBombChain",
+        "length": 2
+      }
+    ],
+    "tags": [
+      "environment",
+      "land",
+      "unlockMap"
+    ],
+    "effects": [
+      {
+        "kind": "unlockMap",
+        "mapSize": 30
+      }
+    ],
+    "descriptionKo": "30m 맵 해금",
+    "descriptionEn": "Unlock the 30m map.",
+    "layout": {
+      "x": 250,
+      "y": -170
+    },
+    "sort": 52
+  },
+  {
+    "id": "dense_growth",
+    "nameKo": "빽빽한 성장",
+    "nameEn": "Dense Growth",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 220,
+    "prereq": [
+      "open_acre"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "initialGrassCount",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "initialGrassCount",
+        "amount": 120
+      }
+    ],
+    "descriptionKo": "기본 풀 +120",
+    "descriptionEn": "Base grass +120.",
+    "layout": {
+      "x": 250,
+      "y": -340
+    },
+    "sort": 53
+  },
+  {
+    "id": "fertile_soil",
+    "nameKo": "비옥한 토양",
+    "nameEn": "Fertile Soil",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 300,
+    "prereq": [
+      "open_acre"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassScorePercent",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassScorePercent",
+        "amount": 10
+      }
+    ],
+    "descriptionKo": "풀 점수 +10%",
+    "descriptionEn": "Grass score +10%.",
+    "layout": {
+      "x": 302,
+      "y": -340
+    },
+    "sort": 54
+  },
+  {
+    "id": "wide_sickle",
+    "nameKo": "넓은 낫",
+    "nameEn": "Wide Sickle",
+    "category": "equipment",
+    "branch": "land",
+    "tier": 3,
+    "cost": 1200,
+    "prereq": [
+      "open_acre",
+      "clean_sweep_2"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "land",
+      "toolUnlock",
+      "wide_sickle"
+    ],
+    "effects": [
+      {
+        "kind": "toolUnlock",
+        "tool": "wide_sickle"
+      }
+    ],
+    "descriptionKo": "넓은 낫 해금",
+    "descriptionEn": "Tool: range +0.25m, interval +150ms.",
+    "layout": {
+      "x": -678,
+      "y": -510
+    },
+    "sort": 55
+  },
+  {
+    "id": "fast_sickle",
+    "nameKo": "빠른 낫",
+    "nameEn": "Fast Sickle",
+    "category": "equipment",
+    "branch": "land",
+    "tier": 3,
+    "cost": 1200,
+    "prereq": [
+      "open_acre",
+      "quick_recovery_2"
+    ],
+    "gates": [],
+    "tags": [
+      "equipment",
+      "fast_sickle",
+      "land",
+      "toolUnlock"
+    ],
+    "effects": [
+      {
+        "kind": "toolUnlock",
+        "tool": "fast_sickle"
+      }
+    ],
+    "descriptionKo": "빠른 낫 해금",
+    "descriptionEn": "Tool: interval -150ms, range -0.05m.",
+    "layout": {
+      "x": -210,
+      "y": -510
+    },
+    "sort": 56
+  },
+  {
+    "id": "bomb_sickle",
+    "nameKo": "폭탄 낫",
+    "nameEn": "Bomb Sickle",
+    "category": "equipment",
+    "branch": "land",
+    "tier": 5,
+    "cost": 1500,
+    "prereq": [
+      "open_acre",
+      "harvest_detonation"
+    ],
+    "gates": [],
+    "tags": [
+      "bomb_sickle",
+      "equipment",
+      "land",
+      "toolUnlock"
+    ],
+    "effects": [
+      {
+        "kind": "toolUnlock",
+        "tool": "bomb_sickle"
+      }
+    ],
+    "descriptionKo": "폭탄 낫 해금",
+    "descriptionEn": "Tool: bombs +2, chain payout +20%.",
+    "layout": {
+      "x": -418,
+      "y": -850
+    },
+    "sort": 57
+  },
+  {
+    "id": "alien_crop_mark",
+    "nameKo": "외계 문양",
+    "nameEn": "Alien Crop Mark",
+    "category": "ability",
+    "branch": "spectacle",
+    "tier": 3,
+    "cost": 1200,
+    "prereq": [
+      "clean_sweep_2",
+      "chain_payout_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "alien_crop_mark",
+      "special",
+      "spectacle"
+    ],
+    "effects": [
+      {
+        "kind": "special",
+        "id": "alien_crop_mark"
+      }
+    ],
+    "descriptionKo": "하늘에서 외계 문양 잔디깎기",
+    "descriptionEn": "Every 12s, stamps a 2.4m crop mark after a 0.4s warning.",
+    "layout": {
+      "x": 488,
+      "y": -510
+    },
+    "sort": 58
+  },
+  {
+    "id": "mower_laser",
+    "nameKo": "잔디깎이 레이저",
+    "nameEn": "Mower Laser",
+    "category": "ability",
+    "branch": "spectacle",
+    "tier": 4,
+    "cost": 1500,
+    "prereq": [
+      "sharp_edge_2",
+      "alien_crop_mark"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "mower_laser",
+      "special",
+      "spectacle"
+    ],
+    "effects": [
+      {
+        "kind": "special",
+        "id": "mower_laser"
+      }
+    ],
+    "descriptionKo": "전방으로 잔디깎이 레이저 발사",
+    "descriptionEn": "Every 8th attack fires a 6m beam that can trigger bombs.",
+    "layout": {
+      "x": 592,
+      "y": -680
+    },
+    "sort": 59
+  },
+  {
+    "id": "tractor_license",
+    "nameKo": "트랙터 면허",
+    "nameEn": "Tractor License",
+    "category": "ability",
+    "branch": "spectacle",
+    "tier": 4,
+    "cost": 2200,
+    "prereq": [
+      "open_acre",
+      "wide_sickle",
+      "long_day"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "spectacle",
+      "toolUnlock",
+      "tractor"
+    ],
+    "effects": [
+      {
+        "kind": "toolUnlock",
+        "tool": "tractor"
+      }
+    ],
+    "descriptionKo": "트랙터 해금",
+    "descriptionEn": "Tool: moving continuously mows a 1.2m front strip, turn response -15%.",
+    "layout": {
+      "x": 488,
+      "y": -680
+    },
+    "sort": 60
+  },
+  {
+    "id": "grasslore",
+    "nameKo": "풀 연구",
+    "nameEn": "Grass Lore",
+    "category": "environment",
+    "branch": "land",
+    "tier": 1,
+    "cost": 20,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land"
+    ],
+    "effects": [],
+    "descriptionKo": "환경 계열 카드가 열립니다.",
+    "descriptionEn": "Reveals special grass types.",
+    "layout": {
+      "x": 302,
+      "y": -170
+    },
+    "sort": 61
+  },
+  {
+    "id": "bluefoot",
+    "nameKo": "파란 풀 적응",
+    "nameEn": "Blue Foot",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 28,
+    "prereq": [
+      "grasslore"
+    ],
+    "gates": [],
+    "tags": [
+      "blueGrassSlow",
+      "environment",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "blueGrassSlow",
+        "amount": -0.17
+      }
+    ],
+    "descriptionKo": "파란 풀 감속 -0.17",
+    "descriptionEn": "Blue grass slows only 1/6 instead of 1/3.",
+    "layout": {
+      "x": 198,
+      "y": -340
+    },
+    "sort": 62
+  },
+  {
+    "id": "timerboon",
+    "nameKo": "시간 풀 보너스",
+    "nameEn": "Timer Boon",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 32,
+    "prereq": [
+      "grasslore"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land",
+      "timerGrassBonus"
+    ],
+    "effects": [
+      {
+        "kind": "timerGrassBonus",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "시간 풀 보너스 +1",
+    "descriptionEn": "Timer grass restores +1s extra.",
+    "layout": {
+      "x": 354,
+      "y": -340
+    },
+    "sort": 63
+  },
+  {
+    "id": "fastgrowth",
+    "nameKo": "빠른 재성장",
+    "nameEn": "Fast Regrowth",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 36,
+    "prereq": [
+      "grasslore"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassRegrowDelay",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassRegrowDelay",
+        "amount": -6
+      }
+    ],
+    "descriptionKo": "풀 재성장 지연 -6초",
+    "descriptionEn": "Grass regrows 6s faster.",
+    "layout": {
+      "x": 146,
+      "y": -340
+    },
+    "sort": 64
+  },
+  {
+    "id": "tallbounty",
+    "nameKo": "키 큰 풀 현상금",
+    "nameEn": "Tall Bounty",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 30,
+    "prereq": [
+      "grasslore"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land",
+      "tallGrassGold"
+    ],
+    "effects": [
+      {
+        "kind": "tallGrassGold",
+        "amount": 2
+      }
+    ],
+    "descriptionKo": "키 큰 풀 골드 +2",
+    "descriptionEn": "Tall grass gives +2 bonus gold.",
+    "layout": {
+      "x": 406,
+      "y": -340
+    },
+    "sort": 65
+  },
+  {
+    "id": "grow_speed_1",
+    "nameKo": "빠른 성장 I",
+    "nameEn": "Fast Growth I",
+    "category": "environment",
+    "branch": "land",
+    "tier": 3,
+    "cost": 50,
+    "prereq": [
+      "fastgrowth"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassGrowSpeed",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassGrowSpeed",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "풀 성장속도 +1",
+    "descriptionEn": "Grass grows 1s faster.",
+    "layout": {
+      "x": 198,
+      "y": -510
+    },
+    "sort": 66
+  },
+  {
+    "id": "grow_speed_2",
+    "nameKo": "빠른 성장 II",
+    "nameEn": "Fast Growth II",
+    "category": "environment",
+    "branch": "land",
+    "tier": 4,
+    "cost": 90,
+    "prereq": [
+      "grow_speed_1"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassGrowSpeed",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassGrowSpeed",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "풀 성장속도 +1",
+    "descriptionEn": "Grass grows 1s faster.",
+    "layout": {
+      "x": 146,
+      "y": -680
+    },
+    "sort": 67
+  },
+  {
+    "id": "grow_speed_3",
+    "nameKo": "빠른 성장 III",
+    "nameEn": "Fast Growth III",
+    "category": "environment",
+    "branch": "land",
+    "tier": 5,
+    "cost": 140,
+    "prereq": [
+      "grow_speed_2"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassGrowSpeed",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassGrowSpeed",
+        "amount": 1.2
+      }
+    ],
+    "descriptionKo": "풀 성장속도 +1.2",
+    "descriptionEn": "Grass grows 1.2s faster.",
+    "layout": {
+      "x": 302,
+      "y": -850
+    },
+    "sort": 68
+  },
+  {
+    "id": "grow_speed_4",
+    "nameKo": "빠른 성장 IV",
+    "nameEn": "Fast Growth IV",
+    "category": "environment",
+    "branch": "land",
+    "tier": 6,
+    "cost": 210,
+    "prereq": [
+      "grow_speed_3"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassGrowSpeed",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassGrowSpeed",
+        "amount": 1.2
+      }
+    ],
+    "descriptionKo": "풀 성장속도 +1.2",
+    "descriptionEn": "Grass grows 1.2s faster.",
+    "layout": {
+      "x": 250,
+      "y": -1020
+    },
+    "sort": 69
+  },
+  {
+    "id": "grow_speed_5",
+    "nameKo": "빠른 성장 V",
+    "nameEn": "Fast Growth V",
+    "category": "environment",
+    "branch": "land",
+    "tier": 7,
+    "cost": 300,
+    "prereq": [
+      "grow_speed_4"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "grassGrowSpeed",
+      "land"
+    ],
+    "effects": [
+      {
+        "kind": "grassGrowSpeed",
+        "amount": 1.6
+      }
+    ],
+    "descriptionKo": "풀 성장속도 +1.6",
+    "descriptionEn": "Grass grows 1.6s faster.",
+    "layout": {
+      "x": 250,
+      "y": -1190
+    },
+    "sort": 70
+  },
+  {
+    "id": "summon_codex",
+    "nameKo": "소환 교본",
+    "nameEn": "Summoner's Codex",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 1,
+    "cost": 120,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon"
+    ],
+    "effects": [],
+    "descriptionKo": "능력 계열 카드가 열립니다.",
+    "descriptionEn": "Opens the summon branch of auto-fighting abilities.",
+    "layout": {
+      "x": 712,
+      "y": -170
+    },
+    "sort": 71
+  },
+  {
+    "id": "summon_shadow",
+    "nameKo": "그림자 분신",
+    "nameEn": "Shadow Clone",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 220,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "그림자 분신 개수 +1",
+    "descriptionEn": "Summon a shadow clone that mows grass at random spots (half your damage).",
+    "layout": {
+      "x": 764,
+      "y": -340
+    },
+    "sort": 72
+  },
+  {
+    "id": "shadow_count_2",
+    "nameKo": "그림자 분신 +1",
+    "nameEn": "Shadow Clone +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 320,
+    "prereq": [
+      "summon_shadow"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "그림자 분신 개수 +1",
+    "descriptionEn": "Up to 2 shadow clones at once.",
+    "layout": {
+      "x": 764,
+      "y": -510
+    },
+    "sort": 73
+  },
+  {
+    "id": "shadow_count_3",
+    "nameKo": "그림자 분신 +1",
+    "nameEn": "Shadow Clone +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 440,
+    "prereq": [
+      "shadow_count_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "그림자 분신 개수 +1",
+    "descriptionEn": "Up to 3 shadow clones at once.",
+    "layout": {
+      "x": 764,
+      "y": -680
+    },
+    "sort": 74
+  },
+  {
+    "id": "shadow_dmg_1",
+    "nameKo": "분신 날 I",
+    "nameEn": "Clone Edge I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 200,
+    "prereq": [
+      "summon_shadow"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "damage",
+        "amount": 0.17
+      }
+    ],
+    "descriptionKo": "그림자 분신 피해량 +0.17",
+    "descriptionEn": "Shadow clone damage +17% of player.",
+    "layout": {
+      "x": 556,
+      "y": -510
+    },
+    "sort": 75
+  },
+  {
+    "id": "shadow_dmg_2",
+    "nameKo": "분신 날 II",
+    "nameEn": "Clone Edge II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 300,
+    "prereq": [
+      "shadow_dmg_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "damage",
+        "amount": 0.17
+      }
+    ],
+    "descriptionKo": "그림자 분신 피해량 +0.17",
+    "descriptionEn": "Shadow clone damage +17% of player.",
+    "layout": {
+      "x": 556,
+      "y": -680
+    },
+    "sort": 76
+  },
+  {
+    "id": "shadow_dmg_3",
+    "nameKo": "분신 날 III",
+    "nameEn": "Clone Edge III",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 5,
+    "cost": 420,
+    "prereq": [
+      "shadow_dmg_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "damage",
+        "amount": 0.16
+      }
+    ],
+    "descriptionKo": "그림자 분신 피해량 +0.16",
+    "descriptionEn": "Shadow clone reaches full player damage.",
+    "layout": {
+      "x": 660,
+      "y": -850
+    },
+    "sort": 77
+  },
+  {
+    "id": "shadow_cd_1",
+    "nameKo": "분신 호출 I",
+    "nameEn": "Clone Recall I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 180,
+    "prereq": [
+      "summon_shadow"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "interval",
+        "amount": -0.5
+      }
+    ],
+    "descriptionKo": "그림자 분신 간격 -0.5",
+    "descriptionEn": "Shadow clones appear 0.5s sooner.",
+    "layout": {
+      "x": 816,
+      "y": -510
+    },
+    "sort": 78
+  },
+  {
+    "id": "shadow_cd_2",
+    "nameKo": "분신 호출 II",
+    "nameEn": "Clone Recall II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 270,
+    "prereq": [
+      "shadow_cd_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "interval",
+        "amount": -0.5
+      }
+    ],
+    "descriptionKo": "그림자 분신 간격 -0.5",
+    "descriptionEn": "Shadow clones appear 0.5s sooner.",
+    "layout": {
+      "x": 816,
+      "y": -680
+    },
+    "sort": 79
+  },
+  {
+    "id": "shadow_cd_3",
+    "nameKo": "분신 호출 III",
+    "nameEn": "Clone Recall III",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 5,
+    "cost": 360,
+    "prereq": [
+      "shadow_cd_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "shadowClone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "shadowClone",
+        "stat": "interval",
+        "amount": -0.5
+      }
+    ],
+    "descriptionKo": "그림자 분신 간격 -0.5",
+    "descriptionEn": "Shadow clones appear 0.5s sooner.",
+    "layout": {
+      "x": 712,
+      "y": -850
+    },
+    "sort": 80
+  },
+  {
+    "id": "summon_scythe",
+    "nameKo": "날아다니는 낫",
+    "nameEn": "Flying Scythe",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 240,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 개수 +1",
+    "descriptionEn": "Launch a scythe forward that stops and spins, mowing grass.",
+    "layout": {
+      "x": 556,
+      "y": -340
+    },
+    "sort": 81
+  },
+  {
+    "id": "scythe_count_2",
+    "nameKo": "낫 부채 +1",
+    "nameEn": "Scythe Fan +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 320,
+    "prereq": [
+      "summon_scythe"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 개수 +1",
+    "descriptionEn": "Throw 2 scythes spread in a fan.",
+    "layout": {
+      "x": 504,
+      "y": -510
+    },
+    "sort": 82
+  },
+  {
+    "id": "scythe_count_3",
+    "nameKo": "낫 부채 +1",
+    "nameEn": "Scythe Fan +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 400,
+    "prereq": [
+      "scythe_count_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 개수 +1",
+    "descriptionEn": "Throw 3 scythes spread in a fan.",
+    "layout": {
+      "x": 504,
+      "y": -680
+    },
+    "sort": 83
+  },
+  {
+    "id": "scythe_count_4",
+    "nameKo": "낫 부채 +1",
+    "nameEn": "Scythe Fan +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 5,
+    "cost": 500,
+    "prereq": [
+      "scythe_count_3"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 개수 +1",
+    "descriptionEn": "Throw 4 scythes spread in a fan.",
+    "layout": {
+      "x": 608,
+      "y": -850
+    },
+    "sort": 84
+  },
+  {
+    "id": "scythe_count_5",
+    "nameKo": "낫 부채 +1",
+    "nameEn": "Scythe Fan +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 6,
+    "cost": 620,
+    "prereq": [
+      "scythe_count_4"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 개수 +1",
+    "descriptionEn": "Throw 5 scythes spread in a fan.",
+    "layout": {
+      "x": 660,
+      "y": -1020
+    },
+    "sort": 85
+  },
+  {
+    "id": "scythe_dmg_1",
+    "nameKo": "날아다니는 낫날 I",
+    "nameEn": "Scythe Edge I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 220,
+    "prereq": [
+      "summon_scythe"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "damage",
+        "amount": 0.13
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 피해량 +0.13",
+    "descriptionEn": "Scythe damage +13% of player.",
+    "layout": {
+      "x": 868,
+      "y": -510
+    },
+    "sort": 86
+  },
+  {
+    "id": "scythe_dmg_2",
+    "nameKo": "날아다니는 낫날 II",
+    "nameEn": "Scythe Edge II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 320,
+    "prereq": [
+      "scythe_dmg_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "damage",
+        "amount": 0.13
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 피해량 +0.13",
+    "descriptionEn": "Scythe damage +13% of player.",
+    "layout": {
+      "x": 868,
+      "y": -680
+    },
+    "sort": 87
+  },
+  {
+    "id": "scythe_dmg_3",
+    "nameKo": "날아다니는 낫날 III",
+    "nameEn": "Scythe Edge III",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 5,
+    "cost": 440,
+    "prereq": [
+      "scythe_dmg_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "damage",
+        "amount": 0.14
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 피해량 +0.14",
+    "descriptionEn": "Scythe reaches full player damage.",
+    "layout": {
+      "x": 764,
+      "y": -850
+    },
+    "sort": 88
+  },
+  {
+    "id": "scythe_radius_1",
+    "nameKo": "넓은 회전 I",
+    "nameEn": "Wide Spin I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 260,
+    "prereq": [
+      "summon_scythe"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "radius",
+        "amount": 0.15
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 반경 +0.15",
+    "descriptionEn": "Scythe spin radius +0.15m.",
+    "layout": {
+      "x": 452,
+      "y": -510
+    },
+    "sort": 89
+  },
+  {
+    "id": "scythe_radius_2",
+    "nameKo": "넓은 회전 II",
+    "nameEn": "Wide Spin II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 360,
+    "prereq": [
+      "scythe_radius_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "radius",
+        "amount": 0.15
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 반경 +0.15",
+    "descriptionEn": "Scythe spin radius +0.15m.",
+    "layout": {
+      "x": 452,
+      "y": -680
+    },
+    "sort": 90
+  },
+  {
+    "id": "scythe_spin_1",
+    "nameKo": "긴 회전 I",
+    "nameEn": "Long Spin I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_scythe"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "spins",
+        "amount": 2
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 회전 수 +2",
+    "descriptionEn": "Scythe spins 2 more times before fading.",
+    "layout": {
+      "x": 920,
+      "y": -510
+    },
+    "sort": 91
+  },
+  {
+    "id": "scythe_spin_2",
+    "nameKo": "긴 회전 II",
+    "nameEn": "Long Spin II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "scythe_spin_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "flyingScythe",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "flyingScythe",
+        "stat": "spins",
+        "amount": 2
+      }
+    ],
+    "descriptionKo": "날아다니는 낫 회전 수 +2",
+    "descriptionEn": "Scythe spins 2 more times before fading.",
+    "layout": {
+      "x": 920,
+      "y": -680
+    },
+    "sort": 92
+  },
+  {
+    "id": "summon_tractor",
+    "nameKo": "트랙터 호출",
+    "nameEn": "Tractor Call",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 300,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "소환 트랙터 개수 +1",
+    "descriptionEn": "Summon a tractor that drives across the map mowing a wide strip.",
+    "layout": {
+      "x": 816,
+      "y": -340
+    },
+    "sort": 93
+  },
+  {
+    "id": "tractor_width_1",
+    "nameKo": "넓은 데크 I",
+    "nameEn": "Wide Deck I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 260,
+    "prereq": [
+      "summon_tractor"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "width",
+        "amount": 0.4
+      }
+    ],
+    "descriptionKo": "소환 트랙터 폭 +0.4",
+    "descriptionEn": "Tractor strip width +0.4m.",
+    "layout": {
+      "x": 400,
+      "y": -510
+    },
+    "sort": 94
+  },
+  {
+    "id": "tractor_width_2",
+    "nameKo": "넓은 데크 II",
+    "nameEn": "Wide Deck II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 360,
+    "prereq": [
+      "tractor_width_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "width",
+        "amount": 0.4
+      }
+    ],
+    "descriptionKo": "소환 트랙터 폭 +0.4",
+    "descriptionEn": "Tractor strip width +0.4m.",
+    "layout": {
+      "x": 400,
+      "y": -680
+    },
+    "sort": 95
+  },
+  {
+    "id": "tractor_dmg_1",
+    "nameKo": "트랙터 날 I",
+    "nameEn": "Tractor Blades I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_tractor"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "소환 트랙터 피해량 +0.2",
+    "descriptionEn": "Tractor damage +20% of player.",
+    "layout": {
+      "x": 972,
+      "y": -510
+    },
+    "sort": 96
+  },
+  {
+    "id": "tractor_dmg_2",
+    "nameKo": "트랙터 날 II",
+    "nameEn": "Tractor Blades II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "tractor_dmg_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "소환 트랙터 피해량 +0.2",
+    "descriptionEn": "Tractor damage +20% of player.",
+    "layout": {
+      "x": 972,
+      "y": -680
+    },
+    "sort": 97
+  },
+  {
+    "id": "tractor_cd_1",
+    "nameKo": "빠른 시동 I",
+    "nameEn": "Quick Ignition I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 220,
+    "prereq": [
+      "summon_tractor"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "interval",
+        "amount": -1
+      }
+    ],
+    "descriptionKo": "소환 트랙터 간격 -1",
+    "descriptionEn": "Tractor arrives 1s sooner.",
+    "layout": {
+      "x": 348,
+      "y": -510
+    },
+    "sort": 98
+  },
+  {
+    "id": "tractor_cd_2",
+    "nameKo": "빠른 시동 II",
+    "nameEn": "Quick Ignition II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 320,
+    "prereq": [
+      "tractor_cd_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tractorSummon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tractorSummon",
+        "stat": "interval",
+        "amount": -1
+      }
+    ],
+    "descriptionKo": "소환 트랙터 간격 -1",
+    "descriptionEn": "Tractor arrives 1s sooner.",
+    "layout": {
+      "x": 348,
+      "y": -680
+    },
+    "sort": 99
+  },
+  {
+    "id": "summon_boomerang",
+    "nameKo": "부메랑 낫",
+    "nameEn": "Boomerang Scythe",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 240,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "부메랑 개수 +1",
+    "descriptionEn": "Throw a scythe that flies out and returns, cutting both ways.",
+    "layout": {
+      "x": 504,
+      "y": -340
+    },
+    "sort": 100
+  },
+  {
+    "id": "boom_count_2",
+    "nameKo": "부메랑 +1",
+    "nameEn": "Boomerang +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 340,
+    "prereq": [
+      "summon_boomerang"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "부메랑 개수 +1",
+    "descriptionEn": "Throw 2 boomerangs in a fan.",
+    "layout": {
+      "x": 1024,
+      "y": -510
+    },
+    "sort": 101
+  },
+  {
+    "id": "boom_count_3",
+    "nameKo": "부메랑 +1",
+    "nameEn": "Boomerang +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 460,
+    "prereq": [
+      "boom_count_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "부메랑 개수 +1",
+    "descriptionEn": "Throw 3 boomerangs in a fan.",
+    "layout": {
+      "x": 1024,
+      "y": -680
+    },
+    "sort": 102
+  },
+  {
+    "id": "boom_dmg_1",
+    "nameKo": "부메랑 날 I",
+    "nameEn": "Boomerang Edge I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_boomerang"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "부메랑 피해량 +0.2",
+    "descriptionEn": "Boomerang damage +20% of player.",
+    "layout": {
+      "x": 296,
+      "y": -510
+    },
+    "sort": 103
+  },
+  {
+    "id": "boom_dmg_2",
+    "nameKo": "부메랑 날 II",
+    "nameEn": "Boomerang Edge II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "boom_dmg_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "부메랑 피해량 +0.2",
+    "descriptionEn": "Boomerang damage +20% of player.",
+    "layout": {
+      "x": 296,
+      "y": -680
+    },
+    "sort": 104
+  },
+  {
+    "id": "boom_range_1",
+    "nameKo": "긴 투척 I",
+    "nameEn": "Long Throw I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 220,
+    "prereq": [
+      "summon_boomerang"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "range",
+        "amount": 0.6
+      }
+    ],
+    "descriptionKo": "부메랑 거리 +0.6",
+    "descriptionEn": "Boomerang flies 0.6m farther.",
+    "layout": {
+      "x": 1076,
+      "y": -510
+    },
+    "sort": 105
+  },
+  {
+    "id": "boom_range_2",
+    "nameKo": "긴 투척 II",
+    "nameEn": "Long Throw II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 320,
+    "prereq": [
+      "boom_range_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "boomerang",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "boomerang",
+        "stat": "range",
+        "amount": 0.6
+      }
+    ],
+    "descriptionKo": "부메랑 거리 +0.6",
+    "descriptionEn": "Boomerang flies 0.6m farther.",
+    "layout": {
+      "x": 1076,
+      "y": -680
+    },
+    "sort": 106
+  },
+  {
+    "id": "summon_lightning",
+    "nameKo": "번개 강타",
+    "nameEn": "Lightning Strike",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 260,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "번개 개수 +1",
+    "descriptionEn": "Strike a random spot with lightning that burns grass.",
+    "layout": {
+      "x": 868,
+      "y": -340
+    },
+    "sort": 107
+  },
+  {
+    "id": "light_count_2",
+    "nameKo": "폭풍 +1",
+    "nameEn": "Storm +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 360,
+    "prereq": [
+      "summon_lightning"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "번개 개수 +1",
+    "descriptionEn": "2 lightning strikes per cast.",
+    "layout": {
+      "x": 244,
+      "y": -510
+    },
+    "sort": 108
+  },
+  {
+    "id": "light_count_3",
+    "nameKo": "폭풍 +1",
+    "nameEn": "Storm +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 480,
+    "prereq": [
+      "light_count_2"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "번개 개수 +1",
+    "descriptionEn": "3 lightning strikes per cast.",
+    "layout": {
+      "x": 244,
+      "y": -680
+    },
+    "sort": 109
+  },
+  {
+    "id": "light_radius_1",
+    "nameKo": "넓은 번개 I",
+    "nameEn": "Wide Bolt I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_lightning"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "radius",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "번개 반경 +0.2",
+    "descriptionEn": "Lightning radius +0.2m.",
+    "layout": {
+      "x": 1128,
+      "y": -510
+    },
+    "sort": 110
+  },
+  {
+    "id": "light_radius_2",
+    "nameKo": "넓은 번개 II",
+    "nameEn": "Wide Bolt II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "light_radius_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "radius",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "번개 반경 +0.2",
+    "descriptionEn": "Lightning radius +0.2m.",
+    "layout": {
+      "x": 1128,
+      "y": -680
+    },
+    "sort": 111
+  },
+  {
+    "id": "light_cd_1",
+    "nameKo": "충전 I",
+    "nameEn": "Charged I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_lightning"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "interval",
+        "amount": -1
+      }
+    ],
+    "descriptionKo": "번개 간격 -1",
+    "descriptionEn": "Lightning strikes 1s sooner.",
+    "layout": {
+      "x": 192,
+      "y": -510
+    },
+    "sort": 112
+  },
+  {
+    "id": "light_cd_2",
+    "nameKo": "충전 II",
+    "nameEn": "Charged II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "light_cd_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "lightning",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "lightning",
+        "stat": "interval",
+        "amount": -1
+      }
+    ],
+    "descriptionKo": "번개 간격 -1",
+    "descriptionEn": "Lightning strikes 1s sooner.",
+    "layout": {
+      "x": 192,
+      "y": -680
+    },
+    "sort": 113
+  },
+  {
+    "id": "summon_drone",
+    "nameKo": "잔디깎이 드론",
+    "nameEn": "Mower Drone",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 280,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "드론 개수 +1",
+    "descriptionEn": "Deploy a drone that roams the map mowing grass below it.",
+    "layout": {
+      "x": 452,
+      "y": -340
+    },
+    "sort": 114
+  },
+  {
+    "id": "drone_count_2",
+    "nameKo": "드론 +1",
+    "nameEn": "Drone +1",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 420,
+    "prereq": [
+      "summon_drone"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "드론 개수 +1",
+    "descriptionEn": "Up to 2 drones at once.",
+    "layout": {
+      "x": 1180,
+      "y": -510
+    },
+    "sort": 115
+  },
+  {
+    "id": "drone_radius_1",
+    "nameKo": "넓은 훑기 I",
+    "nameEn": "Wide Sweep I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_drone"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "radius",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "드론 반경 +0.2",
+    "descriptionEn": "Drone mow radius +0.2m.",
+    "layout": {
+      "x": 140,
+      "y": -510
+    },
+    "sort": 116
+  },
+  {
+    "id": "drone_radius_2",
+    "nameKo": "넓은 훑기 II",
+    "nameEn": "Wide Sweep II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "drone_radius_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "radius",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "드론 반경 +0.2",
+    "descriptionEn": "Drone mow radius +0.2m.",
+    "layout": {
+      "x": 1180,
+      "y": -680
+    },
+    "sort": 117
+  },
+  {
+    "id": "drone_dur_1",
+    "nameKo": "긴 비행 I",
+    "nameEn": "Long Flight I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 240,
+    "prereq": [
+      "summon_drone"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "duration",
+        "amount": 2
+      }
+    ],
+    "descriptionKo": "드론 지속시간 +2",
+    "descriptionEn": "Drone stays 2s longer.",
+    "layout": {
+      "x": 1232,
+      "y": -510
+    },
+    "sort": 118
+  },
+  {
+    "id": "drone_dur_2",
+    "nameKo": "긴 비행 II",
+    "nameEn": "Long Flight II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 340,
+    "prereq": [
+      "drone_dur_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "duration",
+        "amount": 2
+      }
+    ],
+    "descriptionKo": "드론 지속시간 +2",
+    "descriptionEn": "Drone stays 2s longer.",
+    "layout": {
+      "x": 140,
+      "y": -680
+    },
+    "sort": 119
+  },
+  {
+    "id": "drone_dmg_1",
+    "nameKo": "드론 날",
+    "nameEn": "Drone Blades",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 320,
+    "prereq": [
+      "summon_drone"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "drone",
+      "summon"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "drone",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "드론 피해량 +0.2",
+    "descriptionEn": "Drone damage +20% of player.",
+    "layout": {
+      "x": 88,
+      "y": -510
+    },
+    "sort": 120
+  },
+  {
+    "id": "summon_tornado",
+    "nameKo": "토네이도",
+    "nameEn": "Tornado",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 2,
+    "cost": 320,
+    "prereq": [
+      "summon_codex"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "count",
+        "amount": 1
+      }
+    ],
+    "descriptionKo": "토네이도 개수 +1",
+    "descriptionEn": "Conjure a tornado that weaves across the map sweeping grass.",
+    "layout": {
+      "x": 920,
+      "y": -340
+    },
+    "sort": 121
+  },
+  {
+    "id": "torn_size_1",
+    "nameKo": "큰 깔때기 I",
+    "nameEn": "Bigger Funnel I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 280,
+    "prereq": [
+      "summon_tornado"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "size",
+        "amount": 0.3
+      }
+    ],
+    "descriptionKo": "토네이도 크기 +0.3",
+    "descriptionEn": "Tornado radius +0.3m.",
+    "layout": {
+      "x": 1284,
+      "y": -510
+    },
+    "sort": 122
+  },
+  {
+    "id": "torn_size_2",
+    "nameKo": "큰 깔때기 II",
+    "nameEn": "Bigger Funnel II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 380,
+    "prereq": [
+      "torn_size_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "size",
+        "amount": 0.3
+      }
+    ],
+    "descriptionKo": "토네이도 크기 +0.3",
+    "descriptionEn": "Tornado radius +0.3m.",
+    "layout": {
+      "x": 1232,
+      "y": -680
+    },
+    "sort": 123
+  },
+  {
+    "id": "torn_dur_1",
+    "nameKo": "오래가는 폭풍 I",
+    "nameEn": "Lasting Storm I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 260,
+    "prereq": [
+      "summon_tornado"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "duration",
+        "amount": 1.5
+      }
+    ],
+    "descriptionKo": "토네이도 지속시간 +1.5",
+    "descriptionEn": "Tornado lasts 1.5s longer.",
+    "layout": {
+      "x": 36,
+      "y": -510
+    },
+    "sort": 124
+  },
+  {
+    "id": "torn_dur_2",
+    "nameKo": "오래가는 폭풍 II",
+    "nameEn": "Lasting Storm II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 360,
+    "prereq": [
+      "torn_dur_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "duration",
+        "amount": 1.5
+      }
+    ],
+    "descriptionKo": "토네이도 지속시간 +1.5",
+    "descriptionEn": "Tornado lasts 1.5s longer.",
+    "layout": {
+      "x": 88,
+      "y": -680
+    },
+    "sort": 125
+  },
+  {
+    "id": "torn_dmg_1",
+    "nameKo": "토네이도 위력 I",
+    "nameEn": "Tornado Force I",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 3,
+    "cost": 300,
+    "prereq": [
+      "summon_tornado"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "토네이도 피해량 +0.2",
+    "descriptionEn": "Tornado damage +20% of player.",
+    "layout": {
+      "x": 1336,
+      "y": -510
+    },
+    "sort": 126
+  },
+  {
+    "id": "torn_dmg_2",
+    "nameKo": "토네이도 위력 II",
+    "nameEn": "Tornado Force II",
+    "category": "ability",
+    "branch": "summon",
+    "tier": 4,
+    "cost": 400,
+    "prereq": [
+      "torn_dmg_1"
+    ],
+    "gates": [],
+    "tags": [
+      "ability",
+      "summon",
+      "tornado"
+    ],
+    "effects": [
+      {
+        "kind": "summon",
+        "ability": "tornado",
+        "stat": "damage",
+        "amount": 0.2
+      }
+    ],
+    "descriptionKo": "토네이도 피해량 +0.2",
+    "descriptionEn": "Tornado damage +20% of player.",
+    "layout": {
+      "x": 1284,
+      "y": -680
+    },
+    "sort": 127
+  },
+  {
+    "id": "wide_lands_1",
+    "nameKo": "측량 말뚝 I",
+    "nameEn": "Survey Stakes I",
+    "category": "environment",
+    "branch": "land",
+    "tier": 1,
+    "cost": 180,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land",
+      "mapExpandCap"
+    ],
+    "effects": [
+      {
+        "kind": "mapExpandCap",
+        "amount": 6
+      }
+    ],
+    "descriptionKo": "자동 맵 확장 한도 +6m",
+    "descriptionEn": "Map can auto-grow up to +6m larger.",
+    "layout": {
+      "x": 198,
+      "y": -170
+    },
+    "sort": 128
+  },
+  {
+    "id": "wide_lands_2",
+    "nameKo": "측량 말뚝 II",
+    "nameEn": "Survey Stakes II",
+    "category": "environment",
+    "branch": "land",
+    "tier": 2,
+    "cost": 320,
+    "prereq": [
+      "wide_lands_1"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land",
+      "mapExpandCap"
+    ],
+    "effects": [
+      {
+        "kind": "mapExpandCap",
+        "amount": 8
+      }
+    ],
+    "descriptionKo": "자동 맵 확장 한도 +8m",
+    "descriptionEn": "Map can auto-grow up to +8m more.",
+    "layout": {
+      "x": 94,
+      "y": -340
+    },
+    "sort": 129
+  },
+  {
+    "id": "wide_lands_3",
+    "nameKo": "측량 말뚝 III",
+    "nameEn": "Survey Stakes III",
+    "category": "environment",
+    "branch": "land",
+    "tier": 3,
+    "cost": 480,
+    "prereq": [
+      "wide_lands_2"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land",
+      "mapExpandCap"
+    ],
+    "effects": [
+      {
+        "kind": "mapExpandCap",
+        "amount": 10
+      }
+    ],
+    "descriptionKo": "자동 맵 확장 한도 +10m",
+    "descriptionEn": "Map can auto-grow up to +10m more.",
+    "layout": {
+      "x": 354,
+      "y": -510
+    },
+    "sort": 130
+  },
+  {
+    "id": "wide_lands_4",
+    "nameKo": "측량 말뚝 IV",
+    "nameEn": "Survey Stakes IV",
+    "category": "environment",
+    "branch": "land",
+    "tier": 4,
+    "cost": 680,
+    "prereq": [
+      "wide_lands_3"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "land",
+      "mapExpandCap"
+    ],
+    "effects": [
+      {
+        "kind": "mapExpandCap",
+        "amount": 12
+      }
+    ],
+    "descriptionKo": "자동 맵 확장 한도 +12m",
+    "descriptionEn": "Map can auto-grow up to +12m more.",
+    "layout": {
+      "x": 406,
+      "y": -680
+    },
+    "sort": 131
+  },
+  {
+    "id": "survey_rock",
+    "nameKo": "돌 조사",
+    "nameEn": "Rock Survey",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 1,
+    "cost": 160,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleSurvey",
+      "obstacles",
+      "rock"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleSurvey",
+        "obstacle": "rock"
+      }
+    ],
+    "descriptionKo": "돌 등장 해금",
+    "descriptionEn": "Rocks start appearing (1 every 10s). They block grass nearby.",
+    "layout": {
+      "x": 214,
+      "y": -170
+    },
+    "sort": 132
+  },
+  {
+    "id": "survey_tree",
+    "nameKo": "나무 조사",
+    "nameEn": "Tree Survey",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 1,
+    "cost": 190,
+    "prereq": [
+      "root_sharpen"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleSurvey",
+      "obstacles",
+      "tree"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleSurvey",
+        "obstacle": "tree"
+      }
+    ],
+    "descriptionKo": "나무 등장 해금",
+    "descriptionEn": "Trees start appearing. Grass grows faster around them.",
+    "layout": {
+      "x": 6,
+      "y": -170
+    },
+    "sort": 133
+  },
+  {
+    "id": "field_churn_1",
+    "nameKo": "밭 뒤섞임 I",
+    "nameEn": "Field Churn I",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 2,
+    "cost": 220,
+    "prereq": [
+      "survey_rock"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleSpawnRate",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleSpawnRate",
+        "amount": -2
+      }
+    ],
+    "descriptionKo": "장애물 등장 간격 -2초",
+    "descriptionEn": "Obstacles appear 2s sooner.",
+    "layout": {
+      "x": 318,
+      "y": -340
+    },
+    "sort": 134
+  },
+  {
+    "id": "field_churn_2",
+    "nameKo": "밭 뒤섞임 II",
+    "nameEn": "Field Churn II",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 3,
+    "cost": 320,
+    "prereq": [
+      "field_churn_1"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleSpawnRate",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleSpawnRate",
+        "amount": -2
+      }
+    ],
+    "descriptionKo": "장애물 등장 간격 -2초",
+    "descriptionEn": "Obstacles appear 2s sooner.",
+    "layout": {
+      "x": 6,
+      "y": -510
+    },
+    "sort": 135
+  },
+  {
+    "id": "boulder_lore_1",
+    "nameKo": "큰 돌 지식 I",
+    "nameEn": "Boulder Lore I",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 2,
+    "cost": 240,
+    "prereq": [
+      "survey_rock"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleSize",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleSize",
+        "amount": 0.3
+      }
+    ],
+    "descriptionKo": "장애물 크기 +0.3",
+    "descriptionEn": "Obstacles spawn larger (tougher, worth more).",
+    "layout": {
+      "x": -98,
+      "y": -340
+    },
+    "sort": 136
+  },
+  {
+    "id": "boulder_lore_2",
+    "nameKo": "큰 돌 지식 II",
+    "nameEn": "Boulder Lore II",
+    "category": "environment",
+    "branch": "obstacles",
+    "tier": 3,
+    "cost": 360,
+    "prereq": [
+      "boulder_lore_1"
+    ],
+    "gates": [],
+    "tags": [
+      "environment",
+      "obstacleSize",
+      "obstacles"
+    ],
+    "effects": [
+      {
+        "kind": "obstacleSize",
+        "amount": 0.4
+      }
+    ],
+    "descriptionKo": "장애물 크기 +0.4",
+    "descriptionEn": "Obstacles spawn even larger.",
+    "layout": {
+      "x": 266,
+      "y": -510
+    },
+    "sort": 137
+  }
+]
