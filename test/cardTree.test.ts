@@ -11,10 +11,31 @@ import {
 import { getRuntimeStats } from "../src/game/systems/CardEffectSystem";
 import { defaultSave } from "../src/game/systems/SaveSystem";
 
+const FIVE_MINUTE_LAYER_Y = 220;
+
+const MAJOR_TIME_LAYERS = [
+  { minute: 0, ids: ["root_sharpen"] },
+  { minute: 5, ids: ["clean_rows_1"] },
+  { minute: 10, ids: ["ember", "survey_rock"] },
+  { minute: 15, ids: ["seed_bombs"] },
+  { minute: 20, ids: ["golden_field", "survey_tree"] },
+  { minute: 25, ids: ["open_acre"] },
+  { minute: 30, ids: ["wide_sickle", "fast_sickle"] },
+  { minute: 35, ids: ["alien_crop_mark"] },
+  { minute: 40, ids: ["tractor_license"] },
+  { minute: 45, ids: ["mower_laser"] },
+  { minute: 50, ids: ["summon_codex", "summon_drone", "summon_lightning"] },
+  { minute: 55, ids: ["summon_tornado", "summon_tractor"] },
+];
+
+function expectedLayerY(minute: number): number {
+  return minute === 0 ? 0 : -(minute / 5) * FIVE_MINUTE_LAYER_Y;
+}
+
 describe("card tree data", () => {
   it("contains the expected card count and total cost", () => {
     expect(CARDS).toHaveLength(138);
-    expect(CARDS.reduce((sum, card) => sum + card.cost, 0)).toBe(45855);
+    expect(CARDS.reduce((sum, card) => sum + card.cost, 0)).toBe(55597);
     expect(CARD_ROOT_ID).toBe("root_sharpen");
   });
 
@@ -22,51 +43,23 @@ describe("card tree data", () => {
     const costs = Object.fromEntries(CARDS.map((card) => [card.id, card.cost]));
     expect(costs).toMatchObject({
       root_sharpen: 10,
-      sharp_edge_1: 18,
-      sharp_edge_2: 60,
-      clean_sweep_1: 28,
-      clean_sweep_2: 90,
-      quick_recovery_1: 35,
-      quick_recovery_2: 130,
-      heavy_edge: 110,
-      cyclone_cut: 1200,
-      light_boots_1: 14,
-      light_boots_2: 55,
-      field_rhythm_1: 32,
-      field_rhythm_2: 125,
-      sprint_harvest: 260,
-      long_day: 700,
-      market_cart_1: 20,
-      market_cart_2: 80,
-      clean_rows_1: 26,
-      clean_rows_2: 110,
-      bulk_buyer_1: 75,
-      bulk_buyer_2: 210,
-      golden_field: 380,
-      accountant: 1200,
-      stone_chips: 70,
-      wood_haul: 95,
-      stump_grinder: 160,
-      recoil_training: 120,
-      quarry_blade: 240,
-      clearcut: 360,
-      lumberjack: 1400,
-      seed_bombs: 160,
-      fuse_training_1: 190,
-      blast_control_1: 220,
-      chain_payout_1: 260,
-      fuse_training_2: 780,
-      blast_control_2: 850,
-      harvest_detonation: 1800,
-      open_acre: 600,
-      dense_growth: 220,
-      fertile_soil: 300,
-      wide_sickle: 1200,
-      fast_sickle: 1200,
-      bomb_sickle: 1500,
-      alien_crop_mark: 1200,
-      mower_laser: 1500,
-      tractor_license: 2200,
+      clean_rows_1: 34,
+      ember: 90,
+      survey_rock: 130,
+      seed_bombs: 220,
+      golden_field: 420,
+      survey_tree: 360,
+      open_acre: 420,
+      wide_sickle: 600,
+      fast_sickle: 600,
+      alien_crop_mark: 1300,
+      tractor_license: 1900,
+      mower_laser: 1700,
+      summon_codex: 1600,
+      summon_drone: 2100,
+      summon_lightning: 2200,
+      summon_tornado: 3000,
+      summon_tractor: 3200,
     });
   });
 
@@ -74,6 +67,40 @@ describe("card tree data", () => {
     for (const card of CARDS) {
       for (const prereq of card.prereq) {
         expect(CARD_BY_ID[prereq], `${card.id} prereq ${prereq}`).toBeDefined();
+      }
+    }
+  });
+
+  it("places major experience cards on 5-minute time layers", () => {
+    for (const layer of MAJOR_TIME_LAYERS) {
+      for (const id of layer.ids) {
+        const card = CARD_BY_ID[id];
+        expect(card, id).toBeDefined();
+        expect(card.layout.y, id).toBe(expectedLayerY(layer.minute));
+      }
+    }
+  });
+
+  it("keeps equipment left, harvest center, environment right, and special fruit outside", () => {
+    const inRange = (value: number, min: number, max: number) => value >= min && value <= max;
+
+    for (const card of CARDS) {
+      const effectKinds = card.effects.map((effect) => effect.kind);
+      const isSpecialFruit =
+        card.branch === "summon" ||
+        card.branch === "spectacle" ||
+        effectKinds.includes("bombCount10m");
+
+      if (card.id === "root_sharpen") {
+        expect(card.layout.x, card.id).toBe(0);
+      } else if (isSpecialFruit) {
+        expect(Math.abs(card.layout.x), card.id).toBeGreaterThanOrEqual(1050);
+      } else if (card.category === "equipment") {
+        expect(inRange(card.layout.x, -1000, -350), card.id).toBe(true);
+      } else if (card.category === "harvest") {
+        expect(inRange(card.layout.x, -180, 220), card.id).toBe(true);
+      } else if (card.category === "environment") {
+        expect(inRange(card.layout.x, 350, 1000), card.id).toBe(true);
       }
     }
   });
@@ -88,7 +115,7 @@ describe("card runtime", () => {
   });
 
   it("uses softened seed_bombs gate", () => {
-    const save = { ...defaultSave(), gold: 999, unlockedCards: { root_sharpen: 1 } };
+    const save = { ...defaultSave(), gold: 999, unlockedCards: { root_sharpen: 1, survey_rock: 1 } };
     expect(canUnlockCard(save, "seed_bombs")).toBe(false);
     const cleared = {
       ...save,

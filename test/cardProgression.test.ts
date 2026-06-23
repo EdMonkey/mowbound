@@ -99,7 +99,7 @@ describe("card progression", () => {
     const save = normalizeSave({
       ...defaultSave(),
       gold: 9999,
-      unlockedCards: { root_sharpen: 1 },
+      unlockedCards: { root_sharpen: 1, survey_rock: 1 },
       lifetimeStats: {
         ...defaultSave().lifetimeStats,
         grassCut: 9999,

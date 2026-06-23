@@ -24,6 +24,46 @@ describe("upgrade tree card data", () => {
     }
   });
 
+  it("keeps upgrade cards far enough apart to avoid visual overlap", () => {
+    const minXGap = 135;
+    const minYGap = 95;
+
+    for (let i = 0; i < CARDS.length; i += 1) {
+      for (let j = i + 1; j < CARDS.length; j += 1) {
+        const a = CARDS[i];
+        const b = CARDS[j];
+        const dx = Math.abs(a.layout.x - b.layout.x);
+        const dy = Math.abs(a.layout.y - b.layout.y);
+        expect(dx >= minXGap || dy >= minYGap, `${a.id} overlaps ${b.id}`).toBe(true);
+      }
+    }
+  });
+
+  it("keeps every card reachable from the root through prerequisites", () => {
+    const extraRoots = CARDS.filter((card) => card.id !== CARD_ROOT_ID && card.prereq.length === 0).map(
+      (card) => card.id,
+    );
+    expect(extraRoots).toEqual([]);
+
+    const reachable = new Set<string>([CARD_ROOT_ID]);
+    let changed = true;
+
+    while (changed) {
+      changed = false;
+      for (const card of CARDS) {
+        if (reachable.has(card.id)) {
+          continue;
+        }
+        if (card.prereq.every((id) => reachable.has(id))) {
+          reachable.add(card.id);
+          changed = true;
+        }
+      }
+    }
+
+    expect([...CARDS.map((card) => card.id).filter((id) => !reachable.has(id))]).toEqual([]);
+  });
+
   it("reveals at least one child after unlocking the root", () => {
     const root = CARD_BY_ID[CARD_ROOT_ID];
     const save = unlockCard({ ...defaultSave(), gold: root.cost }, CARD_ROOT_ID);

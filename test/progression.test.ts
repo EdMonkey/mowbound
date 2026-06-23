@@ -4,7 +4,6 @@ import { defaultSave, type SaveData } from "../src/game/systems/SaveSystem";
 import {
   canUnlockCard,
   isCardUnlocked,
-  isCardRevealed,
   nextAffordableCardGoals,
   unlockCard,
 } from "../src/game/systems/CardProgressionSystem";
@@ -36,6 +35,27 @@ const demoGrassCutByRun = [
   930, 990, 1050, 1120, 1200,
 ];
 
+const milestoneIds = [
+  "root_sharpen",
+  "clean_rows_1",
+  "ember",
+  "survey_rock",
+  "seed_bombs",
+  "golden_field",
+  "survey_tree",
+  "open_acre",
+  "wide_sickle",
+  "fast_sickle",
+  "alien_crop_mark",
+  "tractor_license",
+  "mower_laser",
+  "summon_codex",
+  "summon_drone",
+  "summon_lightning",
+  "summon_tornado",
+  "summon_tractor",
+];
+
 const spectacleOrSummonIds = CARDS.filter((card) => card.category === "ability" || card.branch === "spectacle").map(
   (card) => card.id,
 );
@@ -57,12 +77,9 @@ function applyDemoMilestones(save: SaveData, runIndex: number): SaveData {
 }
 
 function chooseNextPurchase(save: SaveData) {
-  const firstSpectacleOrSummon = spectacleOrSummonIds.find((id) => !isCardUnlocked(save, id) && canUnlockCard(save, id));
-  if (firstSpectacleOrSummon) {
-    return CARDS.find((card) => card.id === firstSpectacleOrSummon);
-  }
-  if (!isCardUnlocked(save, "alien_crop_mark") && isCardRevealed(save, "alien_crop_mark")) {
-    return undefined;
+  const milestone = milestoneIds.find((id) => !isCardUnlocked(save, id) && canUnlockCard(save, id));
+  if (milestone) {
+    return CARDS.find((card) => card.id === milestone);
   }
   return nextAffordableCardGoals(save, 1)[0];
 }
@@ -99,19 +116,29 @@ describe("one hour demo progression", () => {
   it("does not complete the whole tree within the 60 minute target curve", () => {
     const save = simulateOneHour();
     const unlockedCount = Object.keys(save.unlockedCards).length;
-    expect(unlockedCount).toBeGreaterThan(26);
-    expect(unlockedCount).toBeLessThan(45);
+    expect(unlockedCount).toBeGreaterThan(30);
+    expect(unlockedCount).toBeLessThan(60);
     expect(unlockedCount).toBeLessThan(CARDS.length);
+  });
+
+  it("unlocks at least ten milestone experience cards during the one hour route", () => {
+    const save = simulateOneHour();
+    const unlockedMilestones = milestoneIds.filter((id) => isCardUnlocked(save, id));
+
+    expect(unlockedMilestones.length).toBeGreaterThanOrEqual(10);
+    expect(unlockedMilestones).toContain("seed_bombs");
+    expect(unlockedMilestones).toContain("open_acre");
+    expect(unlockedMilestones).toContain("wide_sickle");
+    expect(unlockedMilestones).toContain("fast_sickle");
   });
 
   it("allows one spectacle skill after its midgame prerequisites", () => {
     const save = {
       ...defaultSave(),
-      gold: 1200,
+      gold: 1300,
       unlockedCards: {
         root_sharpen: 1,
-        clean_sweep_1: 1,
-        clean_sweep_2: 1,
+        survey_rock: 1,
         seed_bombs: 1,
         chain_payout_1: 1,
       },
