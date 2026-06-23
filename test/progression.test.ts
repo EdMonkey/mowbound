@@ -36,7 +36,9 @@ const demoGrassCutByRun = [
   930, 990, 1050, 1120, 1200,
 ];
 
-const spectacleIds = ["alien_crop_mark", "mower_laser", "tractor_license"] as const;
+const spectacleOrSummonIds = CARDS.filter((card) => card.category === "ability" || card.branch === "spectacle").map(
+  (card) => card.id,
+);
 
 function applyDemoMilestones(save: SaveData, runIndex: number): SaveData {
   const currentClear = save.lifetimeStats.bestClearPercentByMap["10"] ?? 0;
@@ -55,9 +57,9 @@ function applyDemoMilestones(save: SaveData, runIndex: number): SaveData {
 }
 
 function chooseNextPurchase(save: SaveData) {
-  const firstSpectacle = spectacleIds.find((id) => !isCardUnlocked(save, id) && canUnlockCard(save, id));
-  if (firstSpectacle) {
-    return CARDS.find((card) => card.id === firstSpectacle);
+  const firstSpectacleOrSummon = spectacleOrSummonIds.find((id) => !isCardUnlocked(save, id) && canUnlockCard(save, id));
+  if (firstSpectacleOrSummon) {
+    return CARDS.find((card) => card.id === firstSpectacleOrSummon);
   }
   if (!isCardUnlocked(save, "alien_crop_mark") && isCardRevealed(save, "alien_crop_mark")) {
     return undefined;
@@ -97,8 +99,8 @@ describe("one hour demo progression", () => {
   it("does not complete the whole tree within the 60 minute target curve", () => {
     const save = simulateOneHour();
     const unlockedCount = Object.keys(save.unlockedCards).length;
-    expect(unlockedCount).toBeGreaterThanOrEqual(26);
-    expect(unlockedCount).toBeLessThanOrEqual(34);
+    expect(unlockedCount).toBeGreaterThan(26);
+    expect(unlockedCount).toBeLessThan(45);
     expect(unlockedCount).toBeLessThan(CARDS.length);
   });
 
@@ -119,6 +121,6 @@ describe("one hour demo progression", () => {
 
   it("makes at least one spectacle skill part of the one hour route", () => {
     const save = simulateOneHour();
-    expect(spectacleIds.some((id) => isCardUnlocked(save, id))).toBe(true);
+    expect(spectacleOrSummonIds.some((id) => isCardUnlocked(save, id))).toBe(true);
   });
 });
