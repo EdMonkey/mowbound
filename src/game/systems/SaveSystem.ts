@@ -228,4 +228,3 @@ export function addGold(save: SaveData, amount: number): SaveData {
     gold: normalized.gold + Math.max(0, Math.floor(amount)),
   });
 }
-

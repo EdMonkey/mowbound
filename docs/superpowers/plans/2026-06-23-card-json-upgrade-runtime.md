@@ -71,7 +71,7 @@ describe("card data integrity", () => {
 
 - [ ] **Step 2: Run test to verify current baseline**
 
-Run: `npm test -- test/cardDataIntegrity.test.ts`  
+Run: `npm test -- test/cardDataIntegrity.test.ts`
 Expected: PASS after basic export exists, or FAIL on missing `CARD_ROOT_ID` before implementation.
 
 - [ ] **Step 3: Add tool type source**
@@ -90,7 +90,7 @@ In `src/game/config/cards.ts`, import `ToolId`, add `CARD_ROOT_ID = "root_sharpe
 
 - [ ] **Step 5: Verify**
 
-Run: `npm test -- test/cardDataIntegrity.test.ts`  
+Run: `npm test -- test/cardDataIntegrity.test.ts`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -148,7 +148,7 @@ describe("card save schema", () => {
 
 - [ ] **Step 2: Run test to verify failure**
 
-Run: `npm test -- test/saveSystem.test.ts`  
+Run: `npm test -- test/saveSystem.test.ts`
 Expected: FAIL because `schemaVersion` is still `2` and `unlockedCards` does not exist.
 
 - [ ] **Step 3: Implement schema v3**
@@ -173,7 +173,7 @@ Replace `unlockAllSkillsForTest` with `unlockAllCardsForTest`. It returns all `C
 
 - [ ] **Step 5: Verify**
 
-Run: `npm test -- test/saveSystem.test.ts`  
+Run: `npm test -- test/saveSystem.test.ts`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -231,7 +231,7 @@ describe("card progression", () => {
 
 - [ ] **Step 2: Run test to verify failure**
 
-Run: `npm test -- test/cardProgression.test.ts`  
+Run: `npm test -- test/cardProgression.test.ts`
 Expected: FAIL because `CardProgressionSystem` does not exist.
 
 - [ ] **Step 3: Implement card progression**
@@ -324,7 +324,7 @@ describe("card runtime effects", () => {
 
 - [ ] **Step 2: Run test to verify failure**
 
-Run: `npm test -- test/cardEffects.test.ts`  
+Run: `npm test -- test/cardEffects.test.ts`
 Expected: FAIL because `CardEffectSystem` does not exist.
 
 - [ ] **Step 3: Move runtime folding from SkillSystem**
@@ -395,7 +395,7 @@ describe("upgrade tree data", () => {
 
 - [ ] **Step 2: Run test**
 
-Run: `npm test -- test/upgradeTree.test.ts`  
+Run: `npm test -- test/upgradeTree.test.ts`
 Expected: PASS after Task 3; this guards tree source before UI migration.
 
 - [ ] **Step 3: Rename scene class**
@@ -633,7 +633,7 @@ git commit -m "refactor: remove legacy skill tree source"
 
 - [ ] **Step 1: Re-run current one-hour simulation**
 
-Run: `npm test -- test/progression.test.ts`  
+Run: `npm test -- test/progression.test.ts`
 Expected before rebaseline: the known count/spectacle assertions may fail.
 
 - [ ] **Step 2: Decide target assertions**
