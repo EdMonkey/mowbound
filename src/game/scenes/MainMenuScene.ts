@@ -229,6 +229,11 @@ export class MainMenuScene implements GameSceneController {
     choices.className = "menu-options-choices";
 
     const tools: ToolId[] = ["default", "wide_sickle", "fast_sickle", "bomb_sickle", "tractor"];
+    const currentTool: ToolId = canSelectTool(this.save, this.save.selectedTool) ? this.save.selectedTool : "default";
+    if (currentTool !== this.save.selectedTool) {
+      this.save = selectTool(this.save, currentTool);
+      saveGame(this.save);
+    }
 
     const buttons = tools.map((id) => {
       const text = toolLabel(id, this.app.language);
@@ -243,7 +248,7 @@ export class MainMenuScene implements GameSceneController {
         : this.app.language === "ko"
           ? "스킬 트리에서 이 도구를 해금하세요"
           : "Unlock this tool in the skill tree";
-      button.setAttribute("aria-pressed", String(unlocked && this.save.selectedTool === id));
+      button.setAttribute("aria-pressed", String(unlocked && currentTool === id));
       button.addEventListener("click", () => {
         if (!canSelectTool(this.save, id)) {
           return;
