@@ -76,6 +76,30 @@ describe("save v3", () => {
     }).unlockedCards).toEqual({ root_sharpen: 1 });
   });
 
+  it("merges v3 unlockedCards and legacy levels mirror during normalization", () => {
+    const save = normalizeSave({
+      schemaVersion: 3,
+      gold: 0,
+      unlockedCards: {
+        root_sharpen: 1,
+        missing_card: 1,
+      },
+      levels: {
+        root_sharpen: 1,
+        sharp_edge_1: 1,
+        missing_node: 1,
+      },
+      selectedTool: "default",
+      lifetimeStats: {},
+    });
+
+    expect(save.unlockedCards).toEqual({
+      root_sharpen: 1,
+      sharp_edge_1: 1,
+    });
+    expect(save.levels).toEqual(save.unlockedCards);
+  });
+
   it("updates lifetime stats from run result", () => {
     const save = applyRunResultToSave(defaultSave(), {
       gold: 12,

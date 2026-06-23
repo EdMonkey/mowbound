@@ -153,11 +153,10 @@ export function normalizeSave(value: unknown): SaveData {
   const selectedTool = typeof candidate.selectedTool === "string" && VALID_TOOL_IDS.has(candidate.selectedTool as ToolId)
     ? candidate.selectedTool as ToolId
     : "default";
-  const unlockedCards = normalizeCardUnlocks(
-    candidate.schemaVersion === 3 && "unlockedCards" in candidate
-      ? candidate.unlockedCards
-      : candidate.levels,
-  );
+  const unlockedCards = {
+    ...normalizeCardUnlocks(candidate.schemaVersion === 3 ? candidate.unlockedCards : null),
+    ...normalizeCardUnlocks(candidate.levels),
+  };
 
   return {
     schemaVersion: 3,
