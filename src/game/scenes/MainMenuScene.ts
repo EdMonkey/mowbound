@@ -99,7 +99,6 @@ export class MainMenuScene implements GameSceneController {
     stack.append(
       createButton(this.app.language === "ko" ? "시작" : "Start", () => this.app.show("game")),
       createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgradePrototype"), "secondary-button"),
-      createButton(this.app.language === "ko" ? "스킬 트리" : "Skill Tree", () => this.app.show("skills"), "secondary-button"),
       ...(this.isTestMode()
         ? [
             createButton(
@@ -246,8 +245,8 @@ export class MainMenuScene implements GameSceneController {
       button.title = unlocked
         ? text
         : this.app.language === "ko"
-          ? "스킬 트리에서 이 도구를 해금하세요"
-          : "Unlock this tool in the skill tree";
+          ? "업그레이드에서 이 도구를 해금하세요"
+          : "Unlock this tool in upgrades";
       button.setAttribute("aria-pressed", String(unlocked && currentTool === id));
       button.addEventListener("click", () => {
         if (!canSelectTool(this.save, id)) {

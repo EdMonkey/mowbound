@@ -3,7 +3,6 @@ import { BALANCE } from "./config/balance";
 import { GameScene } from "./scenes/GameScene";
 import { CardCatalogScene } from "./scenes/CardCatalogScene";
 import { MainMenuScene } from "./scenes/MainMenuScene";
-import { SkillTreeScene } from "./scenes/SkillTreeScene";
 import { UpgradeTreeScene } from "./scenes/UpgradeTreeScene";
 import { loadLanguage, saveLanguage, type Language } from "./i18n";
 import { loadSave } from "./systems/SaveSystem";
@@ -63,12 +62,10 @@ export class App {
       }
       this.bypassMapLock = false;
       this.activeScene = new GameScene(this);
-    } else if (sceneName === "upgradePrototype" || sceneName === "upgrades") {
+    } else if (sceneName === "upgradePrototype" || sceneName === "upgrades" || sceneName === "skills") {
       this.activeScene = new UpgradeTreeScene(this);
     } else if (sceneName === "cardCatalog") {
       this.activeScene = new CardCatalogScene(this);
-    } else if (sceneName === "skills") {
-      this.activeScene = new SkillTreeScene(this);
     } else {
       this.activeScene = new MainMenuScene(this);
     }

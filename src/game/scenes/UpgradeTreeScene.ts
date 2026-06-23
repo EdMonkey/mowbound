@@ -75,6 +75,19 @@ const CATEGORY_LABEL_EN: Record<CardCategory, string> = {
   ability: "Ability",
 };
 
+export function getUpgradeTreeEdgeClass(card: CardNode, grown: boolean): string {
+  return [
+    "upgrade-graph-edge",
+    `category-${card.category}`,
+    `branch-${card.branch}`,
+    grown ? "is-grown" : "is-visible",
+  ].join(" ");
+}
+
+export function shouldDrawUpgradeTreeEdge(card: CardNode, prereq: string, revealedIds: ReadonlySet<string>): boolean {
+  return revealedIds.has(card.id) && revealedIds.has(prereq);
+}
+
 export class UpgradeTreeScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
@@ -245,6 +258,9 @@ export class UpgradeTreeScene implements GameSceneController {
         continue;
       }
       for (const prereq of card.prereq) {
+        if (!shouldDrawUpgradeTreeEdge(card, prereq, revealed)) {
+          continue;
+        }
         const parent = CARD_BY_ID[prereq];
         const from = this.positions[prereq];
         const to = this.positions[card.id];
@@ -266,12 +282,7 @@ export class UpgradeTreeScene implements GameSceneController {
             `${to.x} ${to.y}`,
           ].join(" "),
         );
-        path.setAttribute("class", [
-          "upgrade-graph-edge",
-          `category-${card.category}`,
-          `branch-${card.branch}`,
-          isCardUnlocked(this.save, parent.id) && isCardUnlocked(this.save, card.id) ? "is-grown" : "is-visible",
-        ].join(" "));
+        path.setAttribute("class", getUpgradeTreeEdgeClass(card, isCardUnlocked(this.save, parent.id) && isCardUnlocked(this.save, card.id)));
         svg.appendChild(path);
       }
     }

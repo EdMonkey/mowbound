@@ -958,17 +958,24 @@ button:disabled {
   stroke: #ffe08a;
 }
 
-.upgrade-graph-edge.branch-equipment {
+.upgrade-graph-edge.branch-equipment,
+.upgrade-graph-edge.category-equipment {
   stroke: #75bfff;
 }
 
-.upgrade-graph-edge.branch-harvest {
+.upgrade-graph-edge.branch-harvest,
+.upgrade-graph-edge.category-harvest {
   stroke: #f4c542;
   stroke-width: 5;
 }
 
-.upgrade-graph-edge.branch-environment {
+.upgrade-graph-edge.branch-environment,
+.upgrade-graph-edge.category-environment {
   stroke: #70d98d;
+}
+
+.upgrade-graph-edge.category-ability {
+  stroke: #c79cff;
 }
 
 .upgrade-graph-node {
@@ -1019,19 +1026,26 @@ button:disabled {
   border-color: rgba(255, 224, 138, 0.8);
 }
 
-.upgrade-graph-node.branch-equipment {
+.upgrade-graph-node.branch-equipment,
+.upgrade-graph-node.category-equipment {
   border-color: rgba(117, 191, 255, 0.86);
 }
 
-.upgrade-graph-node.branch-harvest {
+.upgrade-graph-node.branch-harvest,
+.upgrade-graph-node.category-harvest {
   border-color: rgba(244, 197, 66, 0.95);
   box-shadow:
     0 0 0 1px rgba(244, 197, 66, 0.2),
     0 10px 28px rgba(0, 0, 0, 0.38);
 }
 
-.upgrade-graph-node.branch-environment {
+.upgrade-graph-node.branch-environment,
+.upgrade-graph-node.category-environment {
   border-color: rgba(112, 217, 141, 0.88);
+}
+
+.upgrade-graph-node.category-ability {
+  border-color: rgba(199, 156, 255, 0.9);
 }
 
 .upgrade-node-label {
@@ -1134,6 +1148,26 @@ button:disabled {
 .upgrade-detail-branch.branch-environment {
   color: #d8fffa;
   background: rgba(120, 206, 196, 0.18);
+}
+
+.upgrade-detail-branch.category-equipment {
+  color: #d8efff;
+  background: rgba(117, 191, 255, 0.18);
+}
+
+.upgrade-detail-branch.category-harvest {
+  color: #fff4c8;
+  background: rgba(240, 200, 90, 0.18);
+}
+
+.upgrade-detail-branch.category-environment {
+  color: #d8fffa;
+  background: rgba(120, 206, 196, 0.18);
+}
+
+.upgrade-detail-branch.category-ability {
+  color: #f0dcff;
+  background: rgba(199, 156, 255, 0.18);
 }
 
 .card-catalog-layer {

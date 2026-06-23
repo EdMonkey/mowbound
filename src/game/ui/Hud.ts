@@ -236,7 +236,7 @@ export class Hud {
     const skills = document.createElement("button");
     skills.type = "button";
     skills.className = "secondary-button";
-    skills.textContent = this.language === "ko" ? "스킬 트리" : "Skill Tree";
+    skills.textContent = this.language === "ko" ? "업그레이드" : "Upgrades";
     skills.addEventListener("click", callbacks.onSkills);
     stack.appendChild(skills);
 

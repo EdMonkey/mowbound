@@ -6,6 +6,7 @@ import {
   isCardUnlocked,
   unlockCard,
 } from "../src/game/systems/CardProgressionSystem";
+import { getUpgradeTreeEdgeClass, shouldDrawUpgradeTreeEdge } from "../src/game/scenes/UpgradeTreeScene";
 import { defaultSave } from "../src/game/systems/SaveSystem";
 
 describe("upgrade tree card data", () => {
@@ -42,5 +43,21 @@ describe("upgrade tree card data", () => {
     expect(unlocked.gold).toBe(5);
     expect(isCardUnlocked(unlocked, CARD_ROOT_ID)).toBe(true);
     expect(unlocked.unlockedCards[CARD_ROOT_ID]).toBe(1);
+  });
+
+  it("adds category classes to upgrade tree edges", () => {
+    const card = CARD_BY_ID.sharp_edge_1;
+
+    expect(getUpgradeTreeEdgeClass(card, false)).toContain("category-equipment");
+    expect(getUpgradeTreeEdgeClass(card, false)).toContain("branch-blade");
+    expect(getUpgradeTreeEdgeClass(card, false)).toContain("is-visible");
+  });
+
+  it("draws an edge only when both child and parent are revealed", () => {
+    const card = CARD_BY_ID.cyclone_cut;
+    const revealed = new Set(["cyclone_cut", "clean_sweep_2"]);
+
+    expect(shouldDrawUpgradeTreeEdge(card, "clean_sweep_2", revealed)).toBe(true);
+    expect(shouldDrawUpgradeTreeEdge(card, "quick_recovery_2", revealed)).toBe(false);
   });
 });
