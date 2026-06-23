@@ -56,9 +56,9 @@ import {
   computeTractorStripHits,
   getEconomyStats,
   getRuntimeStats,
-  nextAffordableGoals,
   type RuntimeStats,
-} from "../systems/SkillSystem";
+} from "../systems/CardEffectSystem";
+import { nextAffordableCardGoals } from "../systems/CardProgressionSystem";
 import { FireParticles } from "../entities/FireParticles";
 import { SummonSystem, type SummonCut } from "../entities/SummonedAbilities";
 import { summarizeRun } from "../systems/RunSummarySystem";
@@ -161,8 +161,8 @@ export class GameScene implements GameSceneController {
     // parameter property, which isn't available when field initializers run.
     this.stats = getRuntimeStats(this.save);
     // Hybrid map size: the chosen/cheated size acts as a floor, and the map
-    // also auto-grows with the number of unlocked skills (capped by Wide-Lands
-    // skills). A cheat custom size (e.g. 100) wins via the max.
+    // also auto-grows with unlocked upgrade cards. A cheat custom size (e.g.
+    // 100) wins via the max.
     this.mapSize = Math.max(this.app.mapSizeMeters, this.stats.autoMapSizeMeters);
     this.player.setToolStyle(this.stats.selectedTool);
     // Round length is fixed (base + skill bonuses) and does NOT scale with map
@@ -1185,9 +1185,9 @@ export class GameScene implements GameSceneController {
     const snapshotUrl = this.captureResultSnapshot();
     this.hud.showResult(this.roundGold, {
       onRetry: () => this.app.show("game"),
-      onSkills: () => this.app.show("skills"),
+      onSkills: () => this.app.show("upgrades"),
       onMenu: () => this.app.show("menu"),
-    }, summary, nextAffordableGoals(this.save, 3), snapshotUrl);
+    }, summary, nextAffordableCardGoals(this.save, 3), snapshotUrl);
   }
 
   private readonly updateInputMode = (): void => {

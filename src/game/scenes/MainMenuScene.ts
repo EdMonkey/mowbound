@@ -2,11 +2,11 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { cloneModel } from "../assets/models";
 import { MAP_SIZE_OPTIONS } from "../config/balance";
-import type { ToolId } from "../config/skillTree";
+import type { ToolId } from "../config/tools";
 import { toolLabel, type Language } from "../i18n";
 import { Player } from "../entities/Player";
-import { loadSave, resetSave, saveGame, unlockAllSkillsForTest } from "../systems/SaveSystem";
-import { canSelectTool, isMapUnlocked, selectTool } from "../systems/SkillSystem";
+import { loadSave, resetSave, saveGame, unlockAllCardsForTest } from "../systems/SaveSystem";
+import { canSelectTool, isMapUnlocked, selectTool } from "../systems/CardProgressionSystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { clearElement, createButton } from "../ui/Menu";
 
@@ -98,14 +98,13 @@ export class MainMenuScene implements GameSceneController {
     stack.className = "button-stack";
     stack.append(
       createButton(this.app.language === "ko" ? "시작" : "Start", () => this.app.show("game")),
-      createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgradePrototype"), "secondary-button"),
-      createButton(this.app.language === "ko" ? "스킬 트리" : "Skill Tree", () => this.app.show("skills"), "secondary-button"),
+      createButton(this.app.language === "ko" ? "업그레이드" : "Upgrades", () => this.app.show("upgrades"), "secondary-button"),
       ...(this.isTestMode()
         ? [
             createButton(
-              this.app.language === "ko" ? "테스트: 모든 스킬 해금" : "Test: Unlock All Skills",
+              this.app.language === "ko" ? "테스트: 모든 카드 해금" : "Test: Unlock All Cards",
               () => {
-                this.save = unlockAllSkillsForTest(this.save);
+                this.save = unlockAllCardsForTest(this.save);
                 saveGame(this.save);
                 this.sound.play("purchase");
                 this.buildMenu();
@@ -229,6 +228,11 @@ export class MainMenuScene implements GameSceneController {
     choices.className = "menu-options-choices";
 
     const tools: ToolId[] = ["default", "wide_sickle", "fast_sickle", "bomb_sickle", "tractor"];
+    const currentTool: ToolId = canSelectTool(this.save, this.save.selectedTool) ? this.save.selectedTool : "default";
+    if (currentTool !== this.save.selectedTool) {
+      this.save = selectTool(this.save, currentTool);
+      saveGame(this.save);
+    }
 
     const buttons = tools.map((id) => {
       const text = toolLabel(id, this.app.language);
@@ -241,9 +245,9 @@ export class MainMenuScene implements GameSceneController {
       button.title = unlocked
         ? text
         : this.app.language === "ko"
-          ? "스킬 트리에서 이 도구를 해금하세요"
-          : "Unlock this tool in the skill tree";
-      button.setAttribute("aria-pressed", String(unlocked && this.save.selectedTool === id));
+          ? "업그레이드에서 이 도구를 해금하세요"
+          : "Unlock this tool in upgrades";
+      button.setAttribute("aria-pressed", String(unlocked && currentTool === id));
       button.addEventListener("click", () => {
         if (!canSelectTool(this.save, id)) {
           return;

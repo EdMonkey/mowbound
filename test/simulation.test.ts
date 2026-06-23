@@ -16,15 +16,17 @@ import {
   resolveObstacleAttack,
 } from "../src/game/systems/ObstacleSystem";
 import {
-  canUnlockNode,
+  canUnlockCard,
+  isCardRevealed,
+  isCardUnlocked,
+  unlockCard,
+} from "../src/game/systems/CardProgressionSystem";
+import {
   computeCropMarkHits,
   computeLaserHits,
   computeTractorStripHits,
   getRuntimeStats,
-  isNodeRevealed,
-  isNodeUnlocked,
-  unlockNode,
-} from "../src/game/systems/SkillSystem";
+} from "../src/game/systems/CardEffectSystem";
 import {
   InputSystem,
   mapScreenInputToWorldMovement,
@@ -148,12 +150,12 @@ describe("runtime stats from skill nodes", () => {
   });
 
   it("accumulates the effects of unlocked nodes", () => {
-    const save = { ...defaultSave(), levels: { root_sharpen: 1, sharp_edge_1: 1 } };
+    const save = { ...defaultSave(), unlockedCards: { root_sharpen: 1, sharp_edge_1: 1 } };
     expect(getRuntimeStats(save).attackDamage).toBe(5); // 3 + 1 + 1
   });
 
   it("applies the play-time skill to round duration", () => {
-    const save = { ...defaultSave(), levels: { field_rhythm_1: 1, field_rhythm_2: 1 } };
+    const save = { ...defaultSave(), unlockedCards: { field_rhythm_1: 1, field_rhythm_2: 1 } };
     expect(getRuntimeStats(save).roundDurationMs).toBe(11600);
   });
 });
@@ -375,40 +377,40 @@ describe("rock/tree obstacles", () => {
   });
 });
 
-describe("skill tree unlocks", () => {
+describe("card tree unlocks", () => {
   it("reveals a node only after its prerequisite is unlocked", () => {
     const save = { ...defaultSave(), gold: 9999 };
 
-    expect(isNodeRevealed(save, "root_sharpen")).toBe(true); // root
-    expect(isNodeRevealed(save, "sharp_edge_1")).toBe(false);
-    expect(canUnlockNode(save, "sharp_edge_1")).toBe(false);
+    expect(isCardRevealed(save, "root_sharpen")).toBe(true); // root
+    expect(isCardRevealed(save, "sharp_edge_1")).toBe(false);
+    expect(canUnlockCard(save, "sharp_edge_1")).toBe(false);
 
-    const afterRoot = unlockNode(save, "root_sharpen");
-    expect(isNodeUnlocked(afterRoot, "root_sharpen")).toBe(true);
+    const afterRoot = unlockCard(save, "root_sharpen");
+    expect(isCardUnlocked(afterRoot, "root_sharpen")).toBe(true);
     expect(afterRoot.gold).toBeLessThan(9999);
-    expect(isNodeRevealed(afterRoot, "sharp_edge_1")).toBe(true);
-    expect(isNodeRevealed(afterRoot, "clean_sweep_1")).toBe(true);
-    expect(canUnlockNode(afterRoot, "sharp_edge_1")).toBe(true);
+    expect(isCardRevealed(afterRoot, "sharp_edge_1")).toBe(true);
+    expect(isCardRevealed(afterRoot, "clean_sweep_1")).toBe(true);
+    expect(canUnlockCard(afterRoot, "sharp_edge_1")).toBe(true);
     // deeper tier stays hidden until its own prerequisite is unlocked
-    expect(isNodeRevealed(afterRoot, "sharp_edge_2")).toBe(false);
+    expect(isCardRevealed(afterRoot, "sharp_edge_2")).toBe(false);
   });
 
   it("unlocks each node once and refuses locked nodes", () => {
     let save = defaultSave();
-    save = { ...save, gold: 9999, levels: { root_sharpen: 1 } };
-    save = unlockNode(save, "sharp_edge_1");
-    expect(isNodeUnlocked(save, "sharp_edge_1")).toBe(true);
+    save = { ...save, gold: 9999, unlockedCards: { root_sharpen: 1 } };
+    save = unlockCard(save, "sharp_edge_1");
+    expect(isCardUnlocked(save, "sharp_edge_1")).toBe(true);
 
     // unlocking again is a no-op: no duplicate, no extra spend
     const goldAfter = save.gold;
-    const again = unlockNode(save, "sharp_edge_1");
+    const again = unlockCard(save, "sharp_edge_1");
     expect(again.gold).toBe(goldAfter);
-    expect(again.levels.sharp_edge_1).toBe(1);
+    expect(again.unlockedCards.sharp_edge_1).toBe(1);
 
     // a node whose prerequisite isn't unlocked is refused
-    const locked = unlockNode(save, "field_rhythm_2");
+    const locked = unlockCard(save, "field_rhythm_2");
     expect(locked.gold).toBe(goldAfter);
-    expect(isNodeUnlocked(locked, "field_rhythm_2")).toBe(false);
+    expect(isCardUnlocked(locked, "field_rhythm_2")).toBe(false);
   });
 });
 

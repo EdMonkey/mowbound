@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getAllPrototypeNodeIds } from "../src/game/config/upgradePrototypeTree";
+import { CARDS, CARD_ROOT_ID } from "../src/game/config/cards";
 import {
   parseUpgradePrototypeLayoutOverrides,
   serializeUpgradePrototypeLayoutOverrides,
   type UpgradePrototypePositionOverrides,
 } from "../src/game/ui/upgradePrototypeLayoutStorage";
+
+const validCardIds = CARDS.map((card) => card.id);
 
 describe("upgrade prototype layout storage", () => {
   it("keeps only known node ids with finite coordinates", () => {
@@ -12,36 +14,36 @@ describe("upgrade prototype layout storage", () => {
       JSON.stringify({
         version: 1,
         positions: {
-          rusty_scythe: { x: 320.5, y: 640 },
+          [CARD_ROOT_ID]: { x: 320.5, y: 640 },
           missing_node: { x: 10, y: 20 },
-          harvest_t01_core: { x: "bad", y: 120 },
-          equipment_t01_core: { x: 200, y: Number.NaN },
+          market_cart_1: { x: "bad", y: 120 },
+          sharp_edge_1: { x: 200, y: Number.NaN },
         },
       }),
-      getAllPrototypeNodeIds(),
+      validCardIds,
     );
 
     expect(parsed).toEqual({
-      rusty_scythe: { x: 320.5, y: 640 },
+      [CARD_ROOT_ID]: { x: 320.5, y: 640 },
     });
   });
 
   it("round-trips editor positions in a stable versioned shape", () => {
     const positions: UpgradePrototypePositionOverrides = {
-      rusty_scythe: { x: 410, y: 720 },
-      harvest_t01_core: { x: 420, y: 560 },
+      [CARD_ROOT_ID]: { x: 410, y: 720 },
+      market_cart_1: { x: 420, y: 560 },
     };
 
     const serialized = serializeUpgradePrototypeLayoutOverrides(positions);
-    const parsed = parseUpgradePrototypeLayoutOverrides(serialized, getAllPrototypeNodeIds());
+    const parsed = parseUpgradePrototypeLayoutOverrides(serialized, validCardIds);
 
     expect(JSON.parse(serialized)).toEqual({ version: 1, positions });
     expect(parsed).toEqual(positions);
   });
 
   it("returns an empty object for malformed saved data", () => {
-    expect(parseUpgradePrototypeLayoutOverrides("{", getAllPrototypeNodeIds())).toEqual({});
-    expect(parseUpgradePrototypeLayoutOverrides(null, getAllPrototypeNodeIds())).toEqual({});
-    expect(parseUpgradePrototypeLayoutOverrides(JSON.stringify({ version: 1, positions: [] }), getAllPrototypeNodeIds())).toEqual({});
+    expect(parseUpgradePrototypeLayoutOverrides("{", validCardIds)).toEqual({});
+    expect(parseUpgradePrototypeLayoutOverrides(null, validCardIds)).toEqual({});
+    expect(parseUpgradePrototypeLayoutOverrides(JSON.stringify({ version: 1, positions: [] }), validCardIds)).toEqual({});
   });
 });

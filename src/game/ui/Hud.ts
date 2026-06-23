@@ -1,5 +1,5 @@
-import type { SkillNode } from "../config/skillTree";
-import { skillName, type Language } from "../i18n";
+import type { CardNode } from "../config/cards";
+import { cardName, type Language } from "../i18n";
 import type { RunSummary } from "../systems/RunSummarySystem";
 
 interface DamageText {
@@ -114,7 +114,7 @@ export class Hud {
     roundGold: number,
     callbacks: ResultCallbacks,
     summary?: RunSummary,
-    goals: SkillNode[] = [],
+    goals: CardNode[] = [],
     snapshotUrl?: string,
   ): void {
     this.clearResultAnimations();
@@ -200,7 +200,7 @@ export class Hud {
       for (const goal of goals) {
         const row = document.createElement("div");
         row.className = "result-breakdown-row";
-        row.innerHTML = `<span>${skillName(goal, this.language)}</span><strong>${goal.cost}g</strong>`;
+        row.innerHTML = `<span>${cardName(goal, this.language)}</span><strong>${goal.cost}g</strong>`;
         next.appendChild(row);
       }
       appendRoot.appendChild(next);
@@ -236,7 +236,7 @@ export class Hud {
     const skills = document.createElement("button");
     skills.type = "button";
     skills.className = "secondary-button";
-    skills.textContent = this.language === "ko" ? "스킬 트리" : "Skill Tree";
+    skills.textContent = this.language === "ko" ? "업그레이드" : "Upgrades";
     skills.addEventListener("click", callbacks.onSkills);
     stack.appendChild(skills);
 

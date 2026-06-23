@@ -1,4 +1,4 @@
-export const UPGRADE_PROTOTYPE_LAYOUT_STORAGE_KEY = "mowbound.upgradePrototype.layout.v1";
+export const UPGRADE_PROTOTYPE_LAYOUT_STORAGE_KEY = "mowbound-upgrade-tree-layout-v1";
 
 export interface UpgradePrototypePosition {
   x: number;

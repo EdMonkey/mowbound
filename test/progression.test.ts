@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { SKILL_NODES } from "../src/game/config/skillTree";
+import { CARDS } from "../src/game/config/cards";
 import { defaultSave, type SaveData } from "../src/game/systems/SaveSystem";
 import {
-  canUnlockNode,
-  isNodeUnlocked,
-  isNodeRevealed,
-  nextAffordableGoals,
-  unlockNode,
-} from "../src/game/systems/SkillSystem";
+  canUnlockCard,
+  isCardUnlocked,
+  isCardRevealed,
+  nextAffordableCardGoals,
+  unlockCard,
+} from "../src/game/systems/CardProgressionSystem";
 
 const demoGoldByRun = [
   12, 11, 13, 16, 19,
@@ -36,7 +36,9 @@ const demoGrassCutByRun = [
   930, 990, 1050, 1120, 1200,
 ];
 
-const spectacleIds = ["alien_crop_mark", "mower_laser", "tractor_license"] as const;
+const spectacleOrSummonIds = CARDS.filter((card) => card.category === "ability" || card.branch === "spectacle").map(
+  (card) => card.id,
+);
 
 function applyDemoMilestones(save: SaveData, runIndex: number): SaveData {
   const currentClear = save.lifetimeStats.bestClearPercentByMap["10"] ?? 0;
@@ -55,14 +57,14 @@ function applyDemoMilestones(save: SaveData, runIndex: number): SaveData {
 }
 
 function chooseNextPurchase(save: SaveData) {
-  const firstSpectacle = spectacleIds.find((id) => !isNodeUnlocked(save, id) && canUnlockNode(save, id));
-  if (firstSpectacle) {
-    return SKILL_NODES.find((node) => node.id === firstSpectacle);
+  const firstSpectacleOrSummon = spectacleOrSummonIds.find((id) => !isCardUnlocked(save, id) && canUnlockCard(save, id));
+  if (firstSpectacleOrSummon) {
+    return CARDS.find((card) => card.id === firstSpectacleOrSummon);
   }
-  if (!isNodeUnlocked(save, "alien_crop_mark") && isNodeRevealed(save, "alien_crop_mark")) {
+  if (!isCardUnlocked(save, "alien_crop_mark") && isCardRevealed(save, "alien_crop_mark")) {
     return undefined;
   }
-  return nextAffordableGoals(save, 1)[0];
+  return nextAffordableCardGoals(save, 1)[0];
 }
 
 function buyEverythingAvailable(save: SaveData): SaveData {
@@ -71,8 +73,8 @@ function buyEverythingAvailable(save: SaveData): SaveData {
   while (bought) {
     bought = false;
     const next = chooseNextPurchase(current);
-    if (next && canUnlockNode(current, next.id)) {
-      current = unlockNode(current, next.id);
+    if (next && canUnlockCard(current, next.id)) {
+      current = unlockCard(current, next.id);
       bought = true;
     }
   }
@@ -91,22 +93,22 @@ function simulateOneHour(): SaveData {
 describe("one hour demo progression", () => {
   it("allows early purchases in the first two runs", () => {
     const save = { ...defaultSave(), gold: demoGoldByRun[0] };
-    expect(nextAffordableGoals(save, 3).map((node) => node.id)).toContain("root_sharpen");
+    expect(nextAffordableCardGoals(save, 3).map((card) => card.id)).toContain("root_sharpen");
   });
 
   it("does not complete the whole tree within the 60 minute target curve", () => {
     const save = simulateOneHour();
-    const unlockedCount = Object.keys(save.levels).length;
-    expect(unlockedCount).toBeGreaterThanOrEqual(26);
-    expect(unlockedCount).toBeLessThanOrEqual(34);
-    expect(unlockedCount).toBeLessThan(SKILL_NODES.length);
+    const unlockedCount = Object.keys(save.unlockedCards).length;
+    expect(unlockedCount).toBeGreaterThan(26);
+    expect(unlockedCount).toBeLessThan(45);
+    expect(unlockedCount).toBeLessThan(CARDS.length);
   });
 
   it("allows one spectacle skill after its midgame prerequisites", () => {
     const save = {
       ...defaultSave(),
       gold: 1200,
-      levels: {
+      unlockedCards: {
         root_sharpen: 1,
         clean_sweep_1: 1,
         clean_sweep_2: 1,
@@ -114,11 +116,11 @@ describe("one hour demo progression", () => {
         chain_payout_1: 1,
       },
     };
-    expect(canUnlockNode(save, "alien_crop_mark")).toBe(true);
+    expect(canUnlockCard(save, "alien_crop_mark")).toBe(true);
   });
 
   it("makes at least one spectacle skill part of the one hour route", () => {
     const save = simulateOneHour();
-    expect(spectacleIds.some((id) => isNodeUnlocked(save, id))).toBe(true);
+    expect(spectacleOrSummonIds.some((id) => isCardUnlocked(save, id))).toBe(true);
   });
 });

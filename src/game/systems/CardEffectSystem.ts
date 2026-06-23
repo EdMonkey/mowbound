@@ -5,20 +5,33 @@ import {
   SUMMON_BASE,
   type RuntimeStats as BaseRuntimeStats,
 } from "../config/balance";
-import {
-  SKILL_NODE_BY_ID,
-  SKILL_NODES,
-  type SkillEffect,
-  type SkillNode,
-  type SummonAbilityId,
-  type SummonStatKind,
-  type ToolId,
-  type UnlockGate,
-} from "../config/skillTree";
+import { CARDS, type CardEffect } from "../config/cards";
+import type { ToolId } from "../config/tools";
+import type { EconomyStats } from "./EconomySystem";
+import { canSelectTool, isCardUnlocked } from "./CardProgressionSystem";
+import { normalizeSave, type SaveData } from "./SaveSystem";
 
-export type { SummonAbilityId, SummonStatKind } from "../config/skillTree";
+export type SummonAbilityId =
+  | "shadowClone"
+  | "flyingScythe"
+  | "tractorSummon"
+  | "boomerang"
+  | "lightning"
+  | "drone"
+  | "tornado";
 
-/** Resolved per-ability stats after folding base values + skill deltas. */
+export type SummonStatKind =
+  | "count"
+  | "damage"
+  | "interval"
+  | "radius"
+  | "spins"
+  | "duration"
+  | "width"
+  | "size"
+  | "range";
+
+/** Resolved per-ability stats after folding base values + card deltas. */
 export interface SummonRuntime {
   count: number;
   damageFactor: number;
@@ -40,8 +53,18 @@ const SUMMON_ABILITY_IDS: SummonAbilityId[] = [
   "drone",
   "tornado",
 ];
-import type { EconomyStats } from "./EconomySystem";
-import { normalizeSave, type SaveData } from "./SaveSystem";
+
+const SUMMON_STAT_KINDS: SummonStatKind[] = [
+  "count",
+  "damage",
+  "interval",
+  "radius",
+  "spins",
+  "duration",
+  "width",
+  "size",
+  "range",
+];
 
 export interface RuntimeStats extends BaseRuntimeStats {
   fireIgniteChance: number;
@@ -145,14 +168,6 @@ interface RuntimeTotals {
   obstacleSize: number;
 }
 
-function emptySummonDeltas(): Record<SummonAbilityId, Record<SummonStatKind, number>> {
-  const out = {} as Record<SummonAbilityId, Record<SummonStatKind, number>>;
-  for (const ability of SUMMON_ABILITY_IDS) {
-    out[ability] = { count: 0, damage: 0, interval: 0, radius: 0, spins: 0, duration: 0, width: 0, size: 0, range: 0 };
-  }
-  return out;
-}
-
 const DEFAULT_ECONOMY_STATS: EconomyStats = {
   goldDivisor: 4,
   goldMultiplier: 1,
@@ -167,73 +182,24 @@ const DEFAULT_ECONOMY_STATS: EconomyStats = {
   largeMapBonusCap: 1,
 };
 
-const TOOL_TO_NODE: Record<Exclude<ToolId, "default">, string> = {
-  wide_sickle: "wide_sickle",
-  fast_sickle: "fast_sickle",
-  bomb_sickle: "bomb_sickle",
-  tractor: "tractor_license",
-};
-
-export function isNodeUnlocked(save: SaveData, nodeId: string): boolean {
-  return (normalizeSave(save).levels[nodeId] ?? 0) > 0;
+function amount(effect: CardEffect): number {
+  return Number.isFinite(effect.amount) ? effect.amount! : 0;
 }
 
-export function isNodeRevealed(save: SaveData, nodeId: string): boolean {
-  const node = SKILL_NODE_BY_ID[nodeId];
-  if (!node) {
-    return false;
+function isSummonAbilityId(value: unknown): value is SummonAbilityId {
+  return typeof value === "string" && (SUMMON_ABILITY_IDS as string[]).includes(value);
+}
+
+function isSummonStatKind(value: unknown): value is SummonStatKind {
+  return typeof value === "string" && (SUMMON_STAT_KINDS as string[]).includes(value);
+}
+
+function emptySummonDeltas(): Record<SummonAbilityId, Record<SummonStatKind, number>> {
+  const out = {} as Record<SummonAbilityId, Record<SummonStatKind, number>>;
+  for (const ability of SUMMON_ABILITY_IDS) {
+    out[ability] = { count: 0, damage: 0, interval: 0, radius: 0, spins: 0, duration: 0, width: 0, size: 0, range: 0 };
   }
-  return node.prereq.length === 0 || node.prereq.every((prereq) => isNodeUnlocked(save, prereq));
-}
-
-function isGateSatisfied(save: SaveData, gate: UnlockGate): boolean {
-  const normalized = normalizeSave(save);
-  switch (gate.kind) {
-    case "bestClearPercent":
-      return (normalized.lifetimeStats.bestClearPercentByMap[String(gate.mapSize)] ?? 0) >= gate.percent;
-    case "lifetimeGrass":
-      return normalized.lifetimeStats.grassCut >= gate.count;
-    case "bestBombChain":
-      return normalized.lifetimeStats.bestBombChain >= gate.length;
-  }
-}
-
-function areGatesSatisfied(save: SaveData, node: SkillNode): boolean {
-  return node.gates.length === 0 || node.gates.some((gate) => isGateSatisfied(save, gate));
-}
-
-export function canUnlockNode(save: SaveData, nodeId: string): boolean {
-  const normalized = normalizeSave(save);
-  const node = SKILL_NODE_BY_ID[nodeId];
-  if (!node) {
-    return false;
-  }
-  return (
-    isNodeRevealed(normalized, nodeId) &&
-    areGatesSatisfied(normalized, node) &&
-    !isNodeUnlocked(normalized, nodeId) &&
-    normalized.gold >= node.cost
-  );
-}
-
-export function unlockNode(save: SaveData, nodeId: string): SaveData {
-  const normalized = normalizeSave(save);
-  if (!canUnlockNode(normalized, nodeId)) {
-    return normalized;
-  }
-
-  return normalizeSave({
-    ...normalized,
-    gold: normalized.gold - getNodeCost(nodeId),
-    levels: {
-      ...normalized.levels,
-      [nodeId]: 1,
-    },
-  });
-}
-
-export function getNodeCost(nodeId: string): number {
-  return SKILL_NODE_BY_ID[nodeId]?.cost ?? Number.POSITIVE_INFINITY;
+  return out;
 }
 
 function newRuntimeTotals(): RuntimeTotals {
@@ -275,43 +241,43 @@ function newRuntimeTotals(): RuntimeTotals {
   };
 }
 
-function applyRuntimeEffect(total: RuntimeTotals, effect: SkillEffect): void {
+function applyRuntimeEffect(total: RuntimeTotals, effect: CardEffect): void {
   switch (effect.kind) {
     case "attackDamage":
-      total.attackDamage += effect.amount;
+      total.attackDamage += amount(effect);
       break;
     case "attackRange":
-      total.attackRange += effect.amount;
+      total.attackRange += amount(effect);
       break;
     case "attackInterval":
-      total.attackInterval += effect.amount;
+      total.attackInterval += amount(effect);
       break;
     case "moveSpeed":
-      total.moveSpeed += effect.amount;
+      total.moveSpeed += amount(effect);
       break;
     case "roundDurationPercent":
-      total.roundDurationPercent += effect.amount;
+      total.roundDurationPercent += amount(effect);
       break;
     case "initialGrassCount":
-      total.initialGrassCount += effect.amount;
+      total.initialGrassCount += amount(effect);
       break;
     case "obstacleDamage":
-      total.obstacleDamage += effect.amount;
+      total.obstacleDamage += amount(effect);
       break;
     case "failedChopStunPercent":
-      total.obstacleStunPercent += effect.amount;
+      total.obstacleStunPercent += amount(effect);
       break;
     case "stumpNoCollision":
       total.stumpNoCollision = true;
       break;
     case "bombCount10m":
-      total.bombCount10m += effect.amount;
+      total.bombCount10m += amount(effect);
       break;
     case "bombBlastRadius":
-      total.bombBlastRadius += effect.amount;
+      total.bombBlastRadius += amount(effect);
       break;
     case "bombChainRadius":
-      total.bombChainRadius += effect.amount;
+      total.bombChainRadius += amount(effect);
       break;
     case "special":
       total.hasCycloneCut ||= effect.id === "cyclone_cut";
@@ -322,47 +288,49 @@ function applyRuntimeEffect(total: RuntimeTotals, effect: SkillEffect): void {
       total.hasMowerLaser ||= effect.id === "mower_laser";
       break;
     case "fireIgniteChance":
-      total.fireIgniteChance += effect.amount;
+      total.fireIgniteChance += amount(effect);
       break;
     case "fireDamagePerSecond":
-      total.fireDamagePerSecond += effect.amount;
+      total.fireDamagePerSecond += amount(effect);
       break;
     case "fireSpreadRadiusMeters":
-      total.fireSpreadRadiusMeters += effect.amount;
+      total.fireSpreadRadiusMeters += amount(effect);
       break;
     case "fireSpreadChancePerSecond":
-      total.fireSpreadChancePerSecond += effect.amount;
+      total.fireSpreadChancePerSecond += amount(effect);
       break;
     case "blueGrassSlow":
-      total.blueGrassSlow += effect.amount;
+      total.blueGrassSlow += amount(effect);
       break;
     case "timerGrassBonus":
-      total.timerGrassBonus += effect.amount;
+      total.timerGrassBonus += amount(effect);
       break;
     case "tallGrassGold":
-      total.tallGrassGold += effect.amount;
+      total.tallGrassGold += amount(effect);
       break;
     case "grassRegrowDelay":
-      total.grassRegrowDelay += effect.amount;
+      total.grassRegrowDelay += amount(effect);
       break;
     case "grassGrowSpeed":
-      total.grassRegrowSpeed += effect.amount;
+      total.grassRegrowSpeed += amount(effect);
       break;
     case "summon":
-      total.summonDeltas[effect.ability][effect.stat] += effect.amount;
+      if (isSummonAbilityId(effect.ability) && isSummonStatKind(effect.stat)) {
+        total.summonDeltas[effect.ability][effect.stat] += amount(effect);
+      }
       break;
     case "mapExpandCap":
-      total.mapExpandCap += effect.amount;
+      total.mapExpandCap += amount(effect);
       break;
     case "obstacleSurvey":
       total.rockSurvey ||= effect.obstacle === "rock";
       total.treeSurvey ||= effect.obstacle === "tree";
       break;
     case "obstacleSpawnRate":
-      total.obstacleSpawnRate += effect.amount;
+      total.obstacleSpawnRate += amount(effect);
       break;
     case "obstacleSize":
-      total.obstacleSize += effect.amount;
+      total.obstacleSize += amount(effect);
       break;
     case "toolUnlock":
     case "unlockMap":
@@ -382,30 +350,15 @@ function applyRuntimeEffect(total: RuntimeTotals, effect: SkillEffect): void {
 
 function runtimeTotals(save: SaveData): RuntimeTotals {
   const total = newRuntimeTotals();
-  for (const node of SKILL_NODES) {
-    if (!isNodeUnlocked(save, node.id)) {
+  for (const card of CARDS) {
+    if (!isCardUnlocked(save, card.id)) {
       continue;
     }
-    for (const effect of node.effects) {
+    for (const effect of card.effects) {
       applyRuntimeEffect(total, effect);
     }
   }
   return total;
-}
-
-export function canSelectTool(save: SaveData, tool: ToolId): boolean {
-  if (tool === "default") {
-    return true;
-  }
-  return isNodeUnlocked(save, TOOL_TO_NODE[tool]);
-}
-
-export function selectTool(save: SaveData, tool: ToolId): SaveData {
-  const normalized = normalizeSave(save);
-  if (!canSelectTool(normalized, tool)) {
-    return normalized;
-  }
-  return normalizeSave({ ...normalized, selectedTool: tool });
 }
 
 export function getRuntimeStats(save: SaveData): RuntimeStats {
@@ -479,9 +432,8 @@ export function getRuntimeStats(save: SaveData): RuntimeStats {
   };
 }
 
-/** Map widens with the number of unlocked skills, capped by Wide-Lands skills. */
 function computeAutoMapSize(save: SaveData, capBonus: number): number {
-  const unlocked = Object.values(normalizeSave(save).levels).filter((level) => level > 0).length;
+  const unlocked = Object.values(normalizeSave(save).unlockedCards).filter((level) => level > 0).length;
   const grown = MAP_GROWTH.baseMeters + Math.floor(unlocked / MAP_GROWTH.stepSkills) * MAP_GROWTH.stepMeters;
   const cap = Math.min(MAP_GROWTH.hardMaxMeters, MAP_GROWTH.baseCapMeters + capBonus);
   return Math.max(MAP_GROWTH.baseMeters, Math.min(grown, cap));
@@ -510,34 +462,34 @@ function foldSummons(
   return out;
 }
 
-function applyEconomyEffect(stats: EconomyStats, effect: SkillEffect): void {
+function applyEconomyEffect(stats: EconomyStats, effect: CardEffect): void {
   switch (effect.kind) {
     case "goldDivisor":
-      stats.goldDivisor += effect.amount;
+      stats.goldDivisor += amount(effect);
       break;
     case "cleanPatchScore":
-      stats.cleanPatchScore += effect.amount;
+      stats.cleanPatchScore += amount(effect);
       break;
     case "clearBonusPercent":
-      stats.clearBonusPercent += effect.amount;
+      stats.clearBonusPercent += amount(effect);
       break;
     case "rockScore":
-      stats.rockScore += effect.amount;
+      stats.rockScore += amount(effect);
       break;
     case "treeScore":
-      stats.treeScore += effect.amount;
+      stats.treeScore += amount(effect);
       break;
     case "obstacleScorePercent":
-      stats.obstacleScoreMultiplier += effect.amount / 100;
+      stats.obstacleScoreMultiplier += amount(effect) / 100;
       break;
     case "bombChainScore":
-      stats.bombChainScore += effect.amount;
+      stats.bombChainScore += amount(effect);
       break;
     case "firstBombScorePercent":
-      stats.firstBombScoreMultiplier += effect.amount / 100;
+      stats.firstBombScoreMultiplier += amount(effect) / 100;
       break;
     case "grassScorePercent":
-      stats.grassScoreMultiplier += effect.amount / 100;
+      stats.grassScoreMultiplier += amount(effect) / 100;
       break;
   }
 }
@@ -546,11 +498,11 @@ export function getEconomyStats(save: SaveData): EconomyStats {
   const normalized = normalizeSave(save);
   const stats = { ...DEFAULT_ECONOMY_STATS };
 
-  for (const node of SKILL_NODES) {
-    if (!isNodeUnlocked(normalized, node.id)) {
+  for (const card of CARDS) {
+    if (!isCardUnlocked(normalized, card.id)) {
       continue;
     }
-    for (const effect of node.effects) {
+    for (const effect of card.effects) {
       applyEconomyEffect(stats, effect);
     }
   }
@@ -561,18 +513,6 @@ export function getEconomyStats(save: SaveData): EconomyStats {
 
   stats.goldDivisor = Math.max(1, stats.goldDivisor);
   return stats;
-}
-
-export function isMapUnlocked(save: SaveData, mapSize: number): boolean {
-  return mapSize === 10 || (mapSize === 30 && isNodeUnlocked(save, "open_acre"));
-}
-
-export function nextAffordableGoals(save: SaveData, limit = 3): SkillNode[] {
-  const normalized = normalizeSave(save);
-  return SKILL_NODES
-    .filter((node) => canUnlockNode(normalized, node.id))
-    .sort((a, b) => a.cost - b.cost)
-    .slice(0, limit);
 }
 
 function normalize2(v: { x: number; z: number }): { x: number; z: number } {

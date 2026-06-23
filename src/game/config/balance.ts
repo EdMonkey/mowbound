@@ -51,8 +51,8 @@ export const BALANCE = {
 } as const;
 
 /**
- * Base values for each summoned auto-ability. Skill nodes add deltas on top of
- * these (see SkillSystem.getRuntimeStats). `damageFactor` is multiplied by the
+ * Base values for each summoned auto-ability. Cards add deltas on top of
+ * these (see CardEffectSystem.getRuntimeStats). `damageFactor` is multiplied by the
  * player's attack damage; `intervalSec` is the spawn cooldown.
  */
 export interface SummonBase {
@@ -97,9 +97,9 @@ export const OBSTACLE_TUNING = {
 } as const;
 
 /**
- * Map auto-growth: the field widens as the player unlocks more skills. Every
+ * Map auto-growth: the field widens as the player unlocks more cards. Every
  * `stepSkills` unlocked adds `stepMeters`, clamped to a cap that "Survey"-line
- * skills raise (see SkillSystem.getRuntimeStats -> autoMapSizeMeters).
+ * cards raise (see CardEffectSystem.getRuntimeStats -> autoMapSizeMeters).
  */
 export const MAP_GROWTH = {
   baseMeters: 10,
@@ -142,14 +142,6 @@ export interface RuntimeStats {
   grassSpawnPerTick: number;
   roundDurationMs: number;
 }
-
-export {
-  SKILL_NODES,
-  SKILL_NODE_BY_ID,
-  SKILL_ROOT,
-  type SkillEffect,
-  type SkillNode,
-} from "./skillTree";
 
 export function defaultSave(): SaveData {
   return {

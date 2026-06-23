@@ -1,15 +1,14 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
+import { CARD_BY_ID, CARD_ROOT_ID, CARDS, type CardCategory, type CardGate, type CardNode } from "../config/cards";
+import { cardDescription, cardName, gateLabel } from "../i18n";
 import {
-  canUnlockPrototypeNode,
-  getAllPrototypeNodeIds,
-  getPrototypeNode,
-  getRevealedPrototypeNodes,
-  UPGRADE_PROTOTYPE_NODES,
-  UPGRADE_PROTOTYPE_ROOT_ID,
-  type UpgradePrototypeBranch,
-  type UpgradePrototypeNode,
-} from "../config/upgradePrototypeTree";
+  canUnlockCard,
+  getRevealedCards,
+  isCardUnlocked,
+  unlockCard,
+} from "../systems/CardProgressionSystem";
+import { loadSave, saveGame, unlockAllCardsForTest, type SaveData } from "../systems/SaveSystem";
 import { createButton } from "../ui/Menu";
 import {
   getUpgradePrototypeEditedNodePosition,
@@ -41,7 +40,7 @@ interface Point {
   y: number;
 }
 
-interface UpgradePrototypePress {
+interface UpgradeTreePress {
   pointerId: number;
   nodeId: string;
   anchor: HTMLElement;
@@ -52,7 +51,7 @@ interface UpgradePrototypePress {
   timer: number;
 }
 
-interface UpgradePrototypeEditDrag {
+interface UpgradeTreeEditDrag {
   pointerId: number;
   nodeId: string;
   startPointerX: number;
@@ -62,18 +61,38 @@ interface UpgradePrototypeEditDrag {
   moved: boolean;
 }
 
-const BRANCH_LABEL: Record<UpgradePrototypeBranch, string> = {
-  root: "시작",
+const CATEGORY_LABEL_KO: Record<CardCategory, string> = {
   equipment: "장비",
   harvest: "수확",
   environment: "환경",
+  ability: "능력",
 };
 
-export class UpgradePrototypeScene implements GameSceneController {
+const CATEGORY_LABEL_EN: Record<CardCategory, string> = {
+  equipment: "Equipment",
+  harvest: "Harvest",
+  environment: "Environment",
+  ability: "Ability",
+};
+
+export function getUpgradeTreeEdgeClass(card: CardNode, grown: boolean): string {
+  return [
+    "upgrade-graph-edge",
+    `category-${card.category}`,
+    `branch-${card.branch}`,
+    grown ? "is-grown" : "is-visible",
+  ].join(" ");
+}
+
+export function shouldDrawUpgradeTreeEdge(card: CardNode, prereq: string, revealedIds: ReadonlySet<string>): boolean {
+  return revealedIds.has(card.id) && revealedIds.has(prereq);
+}
+
+export class UpgradeTreeScene implements GameSceneController {
   readonly scene = new THREE.Scene();
   private readonly layer = document.createElement("div");
-  private readonly unlocked = new Set<string>();
-  private selectedId = UPGRADE_PROTOTYPE_ROOT_ID;
+  private save: SaveData = loadSave();
+  private selectedId = CARD_ROOT_ID;
 
   private readonly positions: Record<string, Point> = {};
   private worldW = 0;
@@ -92,9 +111,9 @@ export class UpgradePrototypeScene implements GameSceneController {
   private lastPan: Point = { x: 0, y: 0 };
   private touchGestureMid: Point | null = null;
   private touchPinchDist = 0;
-  private press: UpgradePrototypePress | null = null;
+  private press: UpgradeTreePress | null = null;
   private editMode = false;
-  private editDrag: UpgradePrototypeEditDrag | null = null;
+  private editDrag: UpgradeTreeEditDrag | null = null;
   private layoutOverrides: UpgradePrototypePositionOverrides = {};
   private suppressNextClick = false;
 
@@ -117,6 +136,10 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.layer.remove();
   }
 
+  private get language() {
+    return this.app.language;
+  }
+
   private addWorld(): void {
     this.scene.add(new THREE.AmbientLight("#ffffff", 0.9));
     const sun = new THREE.DirectionalLight("#fff1c5", 1.7);
@@ -132,8 +155,8 @@ export class UpgradePrototypeScene implements GameSceneController {
   }
 
   private computeBounds(): void {
-    const xs = UPGRADE_PROTOTYPE_NODES.map((node) => node.x);
-    const ys = UPGRADE_PROTOTYPE_NODES.map((node) => node.y);
+    const xs = CARDS.map((card) => card.layout.x);
+    const ys = CARDS.map((card) => card.layout.y);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
@@ -142,12 +165,12 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.worldW = maxX - minX + WORLD_MARGIN * 2;
     this.worldH = maxY - minY + WORLD_MARGIN * 2;
 
-    for (const node of UPGRADE_PROTOTYPE_NODES) {
+    for (const card of CARDS) {
       const basePosition = {
-        x: node.x - minX + WORLD_MARGIN,
-        y: node.y - minY + WORLD_MARGIN,
+        x: card.layout.x - minX + WORLD_MARGIN,
+        y: card.layout.y - minY + WORLD_MARGIN,
       };
-      this.positions[node.id] = this.layoutOverrides[node.id] ? this.clampWorldPosition(this.layoutOverrides[node.id]) : basePosition;
+      this.positions[card.id] = this.layoutOverrides[card.id] ? this.clampWorldPosition(this.layoutOverrides[card.id]) : basePosition;
     }
   }
 
@@ -161,9 +184,11 @@ export class UpgradePrototypeScene implements GameSceneController {
 
     const header = document.createElement("header");
     header.className = "upgrade-prototype-header";
+    const owned = Object.keys(this.save.unlockedCards).length;
     header.innerHTML = `
       <div>
         <h2 class="panel-title">업그레이드 트리</h2>
+        <p class="upgrade-prototype-subtitle">${owned} / ${CARDS.length} · ${this.save.gold}g</p>
       </div>
       <div class="upgrade-prototype-toolbar"></div>
     `;
@@ -198,8 +223,8 @@ export class UpgradePrototypeScene implements GameSceneController {
     this.world.style.height = `${this.worldH}px`;
     this.world.appendChild(this.buildBranches());
 
-    for (const node of getRevealedPrototypeNodes(this.unlocked)) {
-      this.world.appendChild(this.buildNode(node));
+    for (const card of getRevealedCards(this.save)) {
+      this.world.appendChild(this.buildNode(card));
     }
 
     this.detail = document.createElement("aside");
@@ -227,21 +252,24 @@ export class UpgradePrototypeScene implements GameSceneController {
     svg.setAttribute("width", `${this.worldW}`);
     svg.setAttribute("height", `${this.worldH}`);
 
-    const revealed = new Set(getRevealedPrototypeNodes(this.unlocked).map((node) => node.id));
-    for (const node of UPGRADE_PROTOTYPE_NODES) {
-      if (!revealed.has(node.id)) {
+    const revealed = new Set(getRevealedCards(this.save).map((card) => card.id));
+    for (const card of CARDS) {
+      if (!revealed.has(card.id)) {
         continue;
       }
-      for (const prereq of node.prereq) {
-        const parent = getPrototypeNode(prereq);
+      for (const prereq of card.prereq) {
+        if (!shouldDrawUpgradeTreeEdge(card, prereq, revealed)) {
+          continue;
+        }
+        const parent = CARD_BY_ID[prereq];
         const from = this.positions[prereq];
-        const to = this.positions[node.id];
+        const to = this.positions[card.id];
         if (!parent || !from || !to) {
           continue;
         }
         const dx = to.x - from.x;
         const dy = to.y - from.y;
-        const branchBias = node.branch === "equipment" ? -1 : node.branch === "environment" ? 1 : node.tier % 2 === 0 ? 1 : -1;
+        const branchBias = card.category === "equipment" ? -1 : card.category === "environment" || card.category === "ability" ? 1 : card.tier % 2 === 0 ? 1 : -1;
         const bendSign = dx === 0 ? branchBias : Math.sign(dx);
         const bend = Math.max(22, Math.min(88, Math.abs(dx) * 0.16 + Math.abs(dy) * 0.08));
         const path = document.createElementNS(SVG_NS, "path");
@@ -254,11 +282,7 @@ export class UpgradePrototypeScene implements GameSceneController {
             `${to.x} ${to.y}`,
           ].join(" "),
         );
-        path.setAttribute("class", [
-          "upgrade-graph-edge",
-          `branch-${node.branch}`,
-          this.unlocked.has(parent.id) && this.unlocked.has(node.id) ? "is-grown" : "is-visible",
-        ].join(" "));
+        path.setAttribute("class", getUpgradeTreeEdgeClass(card, isCardUnlocked(this.save, parent.id) && isCardUnlocked(this.save, card.id)));
         svg.appendChild(path);
       }
     }
@@ -267,9 +291,8 @@ export class UpgradePrototypeScene implements GameSceneController {
   }
 
   private unlockAllNodes(): void {
-    for (const id of getAllPrototypeNodeIds()) {
-      this.unlocked.add(id);
-    }
+    this.save = unlockAllCardsForTest(loadSave());
+    saveGame(this.save);
     this.hideDetail();
     this.resetGestures();
     this.render();
@@ -285,7 +308,7 @@ export class UpgradePrototypeScene implements GameSceneController {
 
   private readSavedLayoutOverrides(): UpgradePrototypePositionOverrides {
     try {
-      return readUpgradePrototypeLayoutOverrides(window.localStorage, getAllPrototypeNodeIds());
+      return readUpgradePrototypeLayoutOverrides(window.localStorage, CARDS.map((card) => card.id));
     } catch {
       return {};
     }
@@ -293,12 +316,12 @@ export class UpgradePrototypeScene implements GameSceneController {
 
   private collectCurrentLayoutOverrides(): UpgradePrototypePositionOverrides {
     const overrides: UpgradePrototypePositionOverrides = {};
-    for (const node of UPGRADE_PROTOTYPE_NODES) {
-      const position = this.positions[node.id];
+    for (const card of CARDS) {
+      const position = this.positions[card.id];
       if (!position) {
         continue;
       }
-      overrides[node.id] = {
+      overrides[card.id] = {
         x: Math.round(position.x * 100) / 100,
         y: Math.round(position.y * 100) / 100,
       };
@@ -372,36 +395,37 @@ export class UpgradePrototypeScene implements GameSceneController {
     branches?.replaceWith(this.buildBranches());
   }
 
-  private buildNode(node: UpgradePrototypeNode): HTMLDivElement {
-    const unlocked = this.unlocked.has(node.id);
-    const canUnlock = canUnlockPrototypeNode(node, this.unlocked);
-    const selected = this.selectedId === node.id;
-    const pos = this.positions[node.id];
+  private buildNode(card: CardNode): HTMLDivElement {
+    const unlocked = isCardUnlocked(this.save, card.id);
+    const canUnlock = canUnlockCard(this.save, card.id);
+    const selected = this.selectedId === card.id;
+    const pos = this.positions[card.id];
     const button = document.createElement("div");
     button.role = "button";
     button.tabIndex = -1;
     button.className = [
       "upgrade-graph-node",
-      `branch-${node.branch}`,
-      node.major ? "is-major" : "",
+      `category-${card.category}`,
+      `branch-${card.branch}`,
+      card.tier === 0 || card.effects.some((effect) => effect.kind === "special" || effect.kind === "toolUnlock" || effect.kind === "unlockMap") ? "is-major" : "",
       unlocked ? "is-unlocked" : "is-locked",
       canUnlock ? "can-unlock" : "",
       selected ? "is-selected" : "",
     ].join(" ");
-    button.dataset.node = node.id;
+    button.dataset.node = card.id;
     button.style.left = `${pos.x}px`;
     button.style.top = `${pos.y}px`;
     button.innerHTML = `
-      <span class="upgrade-node-label">${node.shortTitle}</span>
-      <span class="upgrade-node-cost">${unlocked ? "완료" : `${node.cost}g`}</span>
+      <span class="upgrade-node-label">${this.shortTitle(card)}</span>
+      <span class="upgrade-node-cost">${unlocked ? "완료" : `${card.cost}g`}</span>
     `;
 
     button.addEventListener("pointerenter", (event) => {
       if (!shouldShowUpgradeHoverDetail(event.pointerType)) {
         return;
       }
-      this.selectedId = node.id;
-      this.showDetail(node.id, button, { x: event.clientX, y: event.clientY });
+      this.selectedId = card.id;
+      this.showDetail(card.id, button, { x: event.clientX, y: event.clientY });
     });
     button.addEventListener("pointerleave", (event) => {
       if (shouldShowUpgradeHoverDetail(event.pointerType)) {
@@ -415,49 +439,57 @@ export class UpgradePrototypeScene implements GameSceneController {
         event.preventDefault();
         return;
       }
-      this.selectedId = node.id;
+      this.selectedId = card.id;
       if (this.editMode) {
         this.hideDetail();
         return;
       }
-      if (canUnlockPrototypeNode(node, this.unlocked)) {
-        this.unlocked.add(node.id);
+      if (canUnlockCard(this.save, card.id)) {
+        this.save = unlockCard(this.save, card.id);
+        saveGame(this.save);
         this.hideDetail();
         this.resetGestures();
         this.render();
       } else {
-        this.hideDetail();
+        this.showDetail(card.id, button);
       }
     });
 
     return button;
   }
 
+  private shortTitle(card: CardNode): string {
+    const title = cardName(card, this.language).replace(/\s+/g, "");
+    return this.language === "ko" ? [...title].slice(0, 4).join("") : title.slice(0, 8);
+  }
+
   private showDetail(nodeId: string, anchor: HTMLElement, point?: Point): void {
     if (!this.detail) {
       return;
     }
-    const node = getPrototypeNode(nodeId) ?? getPrototypeNode(UPGRADE_PROTOTYPE_ROOT_ID);
-    if (!node) {
+    const card = CARD_BY_ID[nodeId] ?? CARD_BY_ID[CARD_ROOT_ID];
+    if (!card) {
       this.detail.replaceChildren();
       return;
     }
 
-    const unlocked = this.unlocked.has(node.id);
-    const available = canUnlockPrototypeNode(node, this.unlocked);
-    const prereqNames = node.prereq
-      .map((id) => getPrototypeNode(id)?.title)
-      .filter(Boolean)
+    const unlocked = isCardUnlocked(this.save, card.id);
+    const available = canUnlockCard(this.save, card.id);
+    const prereqNames = card.prereq
+      .map((id) => CARD_BY_ID[id] ? cardName(CARD_BY_ID[id], this.language) : id)
       .join(", ");
+    const gateRows = this.gateRows(card.gates);
+    const categoryLabel = this.language === "ko" ? CATEGORY_LABEL_KO[card.category] : CATEGORY_LABEL_EN[card.category];
 
     this.detail.innerHTML = `
-      <span class="upgrade-detail-branch branch-${node.branch}">${BRANCH_LABEL[node.branch]}</span>
-      <h3>${node.title}</h3>
-      <p>${node.description}</p>
+      <span class="upgrade-detail-branch category-${card.category} branch-${card.branch}">${categoryLabel}</span>
+      <h3>${cardName(card, this.language)}</h3>
+      <p>${cardDescription(card, this.language)}</p>
       <dl>
-        <div><dt>비용</dt><dd>${node.cost}g</dd></div>
+        <div><dt>비용</dt><dd>${card.cost}g</dd></div>
         <div><dt>상태</dt><dd>${unlocked ? "해금됨" : available ? "해금 가능" : "잠김"}</dd></div>
         <div><dt>선행</dt><dd>${prereqNames || "없음"}</dd></div>
+        ${gateRows}
       </dl>
     `;
     this.detail.style.display = "block";
@@ -483,6 +515,26 @@ export class UpgradePrototypeScene implements GameSceneController {
     });
     this.detail.style.left = `${position.left}px`;
     this.detail.style.top = `${position.top}px`;
+  }
+
+  private gateRows(gates: CardGate[]): string {
+    return gates.map((gate) => {
+      const current = this.gateProgress(gate);
+      return `<div><dt>조건</dt><dd>${gateLabel(gate, this.language)}${current ? ` · ${current}` : ""}</dd></div>`;
+    }).join("");
+  }
+
+  private gateProgress(gate: CardGate): string {
+    switch (gate.kind) {
+      case "bestClearPercent":
+        return `${this.save.lifetimeStats.bestClearPercentByMap[String(gate.mapSize)] ?? 0}%`;
+      case "lifetimeGrass":
+        return `${this.save.lifetimeStats.grassCut}`;
+      case "bestBombChain":
+        return `${this.save.lifetimeStats.bestBombChain}`;
+      default:
+        return "";
+    }
   }
 
   private hideDetail(): void {
@@ -757,8 +809,8 @@ export class UpgradePrototypeScene implements GameSceneController {
       return;
     }
     const rect = this.viewport.getBoundingClientRect();
-    const nodes = fitAll ? UPGRADE_PROTOTYPE_NODES : getRevealedPrototypeNodes(this.unlocked);
-    const points = nodes.map((node) => this.positions[node.id]).filter(Boolean);
+    const nodes = fitAll ? CARDS : getRevealedCards(this.save);
+    const points = nodes.map((card) => this.positions[card.id]).filter(Boolean);
     const xs = points.map((point) => point.x);
     const ys = points.map((point) => point.y);
     const minX = Math.min(...xs) - 160;

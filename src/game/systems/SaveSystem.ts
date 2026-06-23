@@ -1,10 +1,5 @@
-import { BALANCE, type RuntimeStats } from "../config/balance";
-import {
-  SKILL_NODE_BY_ID,
-  SKILL_NODES,
-  type SkillEffect,
-  type ToolId,
-} from "../config/skillTree";
+import { CARD_BY_ID, CARDS } from "../config/cards";
+import { TOOL_IDS, type ToolId } from "../config/tools";
 
 export const STORAGE_KEY = "mowbound-save-v2";
 export const OLD_STORAGE_KEY = "mowbound-save-v1";
@@ -19,8 +14,10 @@ export interface LifetimeStats {
 }
 
 export interface SaveData {
-  schemaVersion: 2;
+  schemaVersion: 3;
   gold: number;
+  unlockedCards: Record<string, number>;
+  /** @deprecated Compatibility mirror for legacy skill-tree reads. Use unlockedCards. */
   levels: Record<string, number>;
   selectedTool: ToolId;
   lifetimeStats: LifetimeStats;
@@ -37,8 +34,8 @@ export interface RunSaveResult {
   clearPercent: number;
 }
 
-const VALID_IDS = new Set(SKILL_NODES.map((node) => node.id));
-const TOOL_IDS = new Set<ToolId>(["default", "wide_sickle", "fast_sickle", "bomb_sickle", "tractor"]);
+const VALID_CARD_IDS = new Set(Object.keys(CARD_BY_ID));
+const VALID_TOOL_IDS = new Set<ToolId>(TOOL_IDS);
 
 const LEGACY_UNLOCK_MAP: Record<string, string> = {
   dmg1: "root_sharpen",
@@ -58,8 +55,9 @@ const LEGACY_UNLOCK_MAP: Record<string, string> = {
 
 export function defaultSave(): SaveData {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     gold: 0,
+    unlockedCards: {},
     levels: {},
     selectedTool: "default",
     lifetimeStats: {
@@ -78,14 +76,14 @@ function positiveInt(value: unknown): number {
   return Number.isFinite(numberValue) && numberValue > 0 ? Math.floor(numberValue) : 0;
 }
 
-function normalizeLevels(value: unknown): Record<string, number> {
+function normalizeCardUnlocks(value: unknown): Record<string, number> {
   if (!value || typeof value !== "object") {
     return {};
   }
 
   const result: Record<string, number> = {};
   for (const [id, level] of Object.entries(value as Record<string, unknown>)) {
-    if (VALID_IDS.has(id) && positiveInt(level) > 0) {
+    if (VALID_CARD_IDS.has(id) && positiveInt(level) > 0) {
       result[id] = 1;
     }
   }
@@ -126,7 +124,8 @@ function normalizeLegacySave(candidate: Record<string, unknown>): SaveData {
         continue;
       }
       const mapped = LEGACY_UNLOCK_MAP[oldId] ?? oldId;
-      if (VALID_IDS.has(mapped)) {
+      if (VALID_CARD_IDS.has(mapped)) {
+        save.unlockedCards[mapped] = 1;
         save.levels[mapped] = 1;
       }
     }
@@ -141,18 +140,23 @@ export function normalizeSave(value: unknown): SaveData {
   }
 
   const candidate = value as Record<string, unknown>;
-  if (candidate.schemaVersion !== 2) {
+  if (candidate.schemaVersion !== 2 && candidate.schemaVersion !== 3) {
     return normalizeLegacySave(candidate);
   }
 
-  const selectedTool = typeof candidate.selectedTool === "string" && TOOL_IDS.has(candidate.selectedTool as ToolId)
+  const selectedTool = typeof candidate.selectedTool === "string" && VALID_TOOL_IDS.has(candidate.selectedTool as ToolId)
     ? candidate.selectedTool as ToolId
     : "default";
+  const unlockedCards = {
+    ...normalizeCardUnlocks(candidate.schemaVersion === 3 ? candidate.unlockedCards : null),
+    ...normalizeCardUnlocks(candidate.levels),
+  };
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     gold: positiveInt(candidate.gold),
-    levels: normalizeLevels(candidate.levels),
+    unlockedCards,
+    levels: { ...unlockedCards },
     selectedTool,
     lifetimeStats: normalizeLifetimeStats(candidate.lifetimeStats),
   };
@@ -182,13 +186,18 @@ export function resetSave(): SaveData {
   return fresh;
 }
 
-export function unlockAllSkillsForTest(save: SaveData): SaveData {
+export function unlockAllCardsForTest(save: SaveData): SaveData {
   const normalized = normalizeSave(save);
+  const unlockedCards = Object.fromEntries(CARDS.map((card) => [card.id, 1]));
   return normalizeSave({
     ...normalized,
-    levels: Object.fromEntries(SKILL_NODES.map((node) => [node.id, 1])),
+    unlockedCards,
+    levels: unlockedCards,
   });
 }
+
+/** @deprecated Use unlockAllCardsForTest. */
+export const unlockAllSkillsForTest = unlockAllCardsForTest;
 
 export function applyRunResultToSave(save: SaveData, result: RunSaveResult): SaveData {
   const normalized = normalizeSave(save);
@@ -212,114 +221,10 @@ export function applyRunResultToSave(save: SaveData, result: RunSaveResult): Sav
   });
 }
 
-export function isNodeUnlocked(save: SaveData, nodeId: string): boolean {
-  return (normalizeSave(save).levels[nodeId] ?? 0) > 0;
-}
-
-export function isNodeRevealed(save: SaveData, nodeId: string): boolean {
-  const node = SKILL_NODE_BY_ID[nodeId];
-  if (!node) {
-    return false;
-  }
-  return node.prereq.length === 0 || node.prereq.every((prereq) => isNodeUnlocked(save, prereq));
-}
-
-export function getNodeCost(nodeId: string): number {
-  return SKILL_NODE_BY_ID[nodeId]?.cost ?? Number.POSITIVE_INFINITY;
-}
-
-export function canUnlockNode(save: SaveData, nodeId: string): boolean {
-  const normalized = normalizeSave(save);
-  return (
-    isNodeRevealed(normalized, nodeId) &&
-    !isNodeUnlocked(normalized, nodeId) &&
-    normalized.gold >= getNodeCost(nodeId)
-  );
-}
-
-export function unlockNode(save: SaveData, nodeId: string): SaveData {
-  const normalized = normalizeSave(save);
-  if (!canUnlockNode(normalized, nodeId)) {
-    return normalized;
-  }
-
-  return normalizeSave({
-    ...normalized,
-    gold: normalized.gold - getNodeCost(nodeId),
-    levels: {
-      ...normalized.levels,
-      [nodeId]: 1,
-    },
-  });
-}
-
 export function addGold(save: SaveData, amount: number): SaveData {
   const normalized = normalizeSave(save);
   return normalizeSave({
     ...normalized,
     gold: normalized.gold + Math.max(0, Math.floor(amount)),
   });
-}
-
-function applyRuntimeEffect(total: Record<string, number>, effect: SkillEffect): void {
-  switch (effect.kind) {
-    case "attackDamage":
-      total.damage += effect.amount;
-      break;
-    case "attackRange":
-      total.range += effect.amount;
-      break;
-    case "attackInterval":
-      total.attackInterval += effect.amount;
-      break;
-    case "moveSpeed":
-      total.moveSpeed += effect.amount;
-      break;
-    case "initialGrassCount":
-      total.grassCount += effect.amount;
-      break;
-    case "roundDurationPercent":
-      total.roundDurationPercent += effect.amount;
-      break;
-  }
-}
-
-export function getRuntimeStats(save: SaveData): RuntimeStats {
-  const normalized = normalizeSave(save);
-  const total: Record<string, number> = {
-    damage: 0,
-    range: 0,
-    attackInterval: 0,
-    moveSpeed: 0,
-    grassCount: 0,
-    roundDurationPercent: 0,
-  };
-
-  for (const node of SKILL_NODES) {
-    if (isNodeUnlocked(normalized, node.id)) {
-      for (const effect of node.effects) {
-        applyRuntimeEffect(total, effect);
-      }
-    }
-  }
-
-  const attackIntervalMs = Math.max(
-    BALANCE.minAttackIntervalMs,
-    BALANCE.baseAttackIntervalMs + total.attackInterval,
-  );
-  const roundDurationMs = Math.round(BALANCE.roundDurationMs * (1 + total.roundDurationPercent / 100));
-
-  return {
-    attackDamage: BALANCE.baseAttackDamage + total.damage,
-    attackRangeMeters: BALANCE.baseAttackRangeMeters + total.range,
-    attackArcDegrees: BALANCE.baseAttackArcDegrees,
-    attackChargeDurationMs: attackIntervalMs,
-    attackIntervalMs,
-    moveSpeed: BALANCE.playerMoveSpeed + total.moveSpeed,
-    goldPerGrass: BALANCE.baseGoldPerGrass,
-    initialGrassCount: BALANCE.initialGrassCount + total.grassCount,
-    grassSpawnIntervalMs: BALANCE.grassSpawnIntervalMs,
-    grassSpawnPerTick: BALANCE.grassSpawnPerTick,
-    roundDurationMs,
-  };
 }
