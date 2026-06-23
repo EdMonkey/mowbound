@@ -62,6 +62,7 @@ import { nextAffordableCardGoals } from "../systems/CardProgressionSystem";
 import { FireParticles } from "../entities/FireParticles";
 import { SummonSystem, type SummonCut } from "../entities/SummonedAbilities";
 import { summarizeRun } from "../systems/RunSummarySystem";
+import { visibleTotalGold } from "../systems/RunGoldDisplaySystem";
 import { SoundSystem } from "../systems/SoundSystem";
 import { prepareResultSnapshotShadows } from "../render/ResultSnapshotShadows";
 import { Hud } from "../ui/Hud";
@@ -262,7 +263,11 @@ export class GameScene implements GameSceneController {
     this.hud.updateGame({
       timeMs: this.roundDurationMs - this.elapsedMs,
       roundGold: this.roundGold,
-      totalGold: this.save.gold + this.roundGold,
+      totalGold: visibleTotalGold({
+        savedGold: this.save.gold,
+        roundGold: this.roundGold,
+        roundBanked: this.ended,
+      }),
       damage: this.stats.attackDamage,
       attackIntervalMs: this.stats.attackChargeDurationMs,
       range: this.stats.attackRangeMeters,
