@@ -866,6 +866,33 @@ button:disabled {
   gap: 16px;
 }
 
+.upgrade-gold-badge {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  min-width: 132px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 224, 138, 0.38);
+  border-radius: 8px;
+  background: rgba(58, 42, 10, 0.72);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28), inset 0 0 18px rgba(255, 210, 63, 0.08);
+}
+
+.upgrade-gold-badge span {
+  color: #fff7d5;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.upgrade-gold-badge strong {
+  color: #ffd23f;
+  font-size: clamp(28px, 3.1vw, 44px);
+  font-weight: 950;
+  line-height: 0.95;
+  text-shadow: 0 2px 0 rgba(46, 30, 0, 0.72), 0 8px 24px rgba(255, 210, 63, 0.28);
+}
+
 .upgrade-prototype-toolbar {
   display: flex;
   gap: 8px;
@@ -1837,6 +1864,17 @@ button:disabled {
   .upgrade-prototype-header {
     display: grid;
     gap: 8px;
+  }
+
+  .upgrade-gold-badge {
+    justify-items: start;
+    width: fit-content;
+    min-width: 0;
+    padding: 7px 12px;
+  }
+
+  .upgrade-gold-badge strong {
+    font-size: 28px;
   }
 
   .upgrade-prototype-toolbar {

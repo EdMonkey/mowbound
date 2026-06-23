@@ -3,6 +3,7 @@ import {
   getEconomyStats,
   getRuntimeStats,
 } from "../src/game/systems/CardEffectSystem";
+import { goldFromScore } from "../src/game/systems/EconomySystem";
 import { defaultSave, normalizeSave } from "../src/game/systems/SaveSystem";
 
 function saveWithCards(unlockedCards: Record<string, number>, selectedTool = "default") {
@@ -14,6 +15,14 @@ function saveWithCards(unlockedCards: Record<string, number>, selectedTool = "de
 }
 
 describe("card effect runtime folding", () => {
+  it("uses a faster opening gold conversion before economy cards", () => {
+    const stats = getEconomyStats(defaultSave());
+
+    expect(stats.goldDivisor).toBe(2);
+    expect(goldFromScore(14, stats)).toBe(7);
+    expect(goldFromScore(28, stats)).toBe(14);
+  });
+
   it("folds attack damage and range from unlocked cards", () => {
     const stats = getRuntimeStats(saveWithCards({ root_sharpen: 1, clean_sweep_1: 1 }));
 
@@ -24,7 +33,7 @@ describe("card effect runtime folding", () => {
   it("folds economy effects from unlocked cards", () => {
     const stats = getEconomyStats(saveWithCards({ market_cart_1: 1, clean_rows_1: 1 }));
 
-    expect(stats.goldDivisor).toBeCloseTo(3.7);
+    expect(stats.goldDivisor).toBeCloseTo(1.7);
     expect(stats.cleanPatchScore).toBe(8);
   });
 

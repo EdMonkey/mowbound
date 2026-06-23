@@ -188,7 +188,11 @@ export class UpgradeTreeScene implements GameSceneController {
     header.innerHTML = `
       <div>
         <h2 class="panel-title">업그레이드 트리</h2>
-        <p class="upgrade-prototype-subtitle">${owned} / ${CARDS.length} · ${this.save.gold}g</p>
+        <p class="upgrade-prototype-subtitle">${owned} / ${CARDS.length}</p>
+      </div>
+      <div class="upgrade-gold-badge" aria-label="보유 골드">
+        <span>보유 골드</span>
+        <strong>${this.save.gold}g</strong>
       </div>
       <div class="upgrade-prototype-toolbar"></div>
     `;

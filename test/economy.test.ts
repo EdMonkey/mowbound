@@ -9,7 +9,7 @@ import {
 import { summarizeRun } from "../src/game/systems/RunSummarySystem";
 
 const baseStats: EconomyStats = {
-  goldDivisor: 4,
+  goldDivisor: 2,
   goldMultiplier: 1,
   grassScoreMultiplier: 1,
   cleanPatchScore: 0,
@@ -26,7 +26,7 @@ describe("event economy", () => {
   it("converts grass score to gold", () => {
     const result = scoreRun([{ kind: "grassCut", count: 40 }], baseStats);
     expect(result.totalScore).toBe(40);
-    expect(goldFromScore(result.totalScore, baseStats)).toBe(10);
+    expect(goldFromScore(result.totalScore, baseStats)).toBe(20);
   });
 
   it("uses 5/10/20/35/50 clear milestones", () => {

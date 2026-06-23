@@ -169,7 +169,7 @@ interface RuntimeTotals {
 }
 
 const DEFAULT_ECONOMY_STATS: EconomyStats = {
-  goldDivisor: 4,
+  goldDivisor: 2,
   goldMultiplier: 1,
   grassScoreMultiplier: 1,
   cleanPatchScore: 0,
