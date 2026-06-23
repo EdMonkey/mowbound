@@ -371,14 +371,17 @@ export class GameScene implements GameSceneController {
     // Scale the base count (tuned for 10x10) by map area so density is constant.
     const areaScale = (this.mapSize / BALANCE.mapSizeMeters) ** 2;
     const count = Math.round(this.stats.initialGrassCount * areaScale);
-    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize, this.rockGrassExclusions());
+    const batch = createGrassBatch(count, this.nextGrassId, this.mapSize, this.rockGrassExclusions(), {
+      blueRate: this.stats.blueGrassRate,
+      tallRate: this.stats.tallGrassRate,
+    });
     this.initialGrassTotal = batch.length;
     this.nextGrassId += batch.length;
     for (const state of batch) {
       this.addGrassState(state);
     }
 
-    const timerCount = BALANCE.timerGrassCount;
+    const timerCount = this.stats.timerGrassCount;
     for (let index = 0; index < timerCount; index += 1) {
       const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
       this.addGrassState(createGrassState(`grass-timer-${index + 1}`, position, "timer"));

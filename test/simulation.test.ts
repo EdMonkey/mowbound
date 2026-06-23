@@ -227,6 +227,21 @@ describe("grass and coins", () => {
     expect(quadrants.size).toBe(4);
   });
 
+  it("keeps initial grass normal unless special grass spawn rates are enabled", () => {
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+
+    try {
+      expect(createGrassBatch(4, 1, 10).every((grass) => grass.kind === "normal")).toBe(true);
+      Math.random = () => 0.01;
+      expect(createGrassBatch(4, 1, 10, [], { blueRate: 0.03 })[0].kind).toBe("blue");
+      Math.random = () => 0.05;
+      expect(createGrassBatch(4, 1, 10, [], { tallRate: 0.1 })[0].kind).toBe("tall");
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
   it("keeps initial grass outside rock exclusion circles", () => {
     const exclusion = { x: 0, z: 0, radius: 1.8 };
     const states = createGrassBatch(400, 1, 10, [exclusion]);

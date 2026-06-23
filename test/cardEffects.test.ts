@@ -3,6 +3,7 @@ import {
   getEconomyStats,
   getRuntimeStats,
 } from "../src/game/systems/CardEffectSystem";
+import { BALANCE } from "../src/game/config/balance";
 import { goldFromScore } from "../src/game/systems/EconomySystem";
 import { defaultSave, normalizeSave } from "../src/game/systems/SaveSystem";
 
@@ -61,5 +62,17 @@ describe("card effect runtime folding", () => {
     expect(stats.hasCycloneCut).toBe(true);
     expect(stats.summons.shadowClone.count).toBe(1);
     expect(stats.summons.shadowClone.damageFactor).toBeCloseTo(0.5);
+  });
+
+  it("gates special grass spawns behind their cards", () => {
+    const base = getRuntimeStats(saveWithCards({}));
+    const unlocked = getRuntimeStats(saveWithCards({ bluefoot: 1, timerboon: 1, tallbounty: 1 }));
+
+    expect(base.blueGrassRate).toBe(0);
+    expect(base.tallGrassRate).toBe(0);
+    expect(base.timerGrassCount).toBe(0);
+    expect(unlocked.blueGrassRate).toBeCloseTo(BALANCE.blueGrassSpawnRate);
+    expect(unlocked.tallGrassRate).toBeCloseTo(BALANCE.tallGrassSpawnRate);
+    expect(unlocked.timerGrassCount).toBe(BALANCE.timerGrassCount);
   });
 });

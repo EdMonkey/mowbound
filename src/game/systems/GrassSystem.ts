@@ -7,6 +7,11 @@ export interface GrassExclusionCircle {
   radius: number;
 }
 
+export interface GrassBatchOptions {
+  blueRate?: number;
+  tallRate?: number;
+}
+
 function isOutsideExclusions(position: VectorXZ, exclusions: readonly GrassExclusionCircle[]): boolean {
   return exclusions.every((circle) => Math.hypot(position.x - circle.x, position.z - circle.z) > circle.radius);
 }
@@ -82,6 +87,27 @@ export function createGrassState(
 const GRASS_BOUNDARY_MARGIN = 0.1; // no grass within 10cm of the map edge
 const GRASS_JITTER = 0.1; // +/-10cm random offset per grid point
 
+function clampSpawnRate(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, value));
+}
+
+function chooseGrassKind(options: GrassBatchOptions): GrassKind {
+  const blueRate = clampSpawnRate(options.blueRate);
+  const tallRate = Math.min(1 - blueRate, clampSpawnRate(options.tallRate));
+  const roll = Math.random();
+
+  if (roll < blueRate) {
+    return "blue";
+  }
+  if (roll < blueRate + tallRate) {
+    return "tall";
+  }
+  return "normal";
+}
+
 /**
  * Grid placement: a square grid of `round(sqrt(count))` nodes per side (e.g.
  * 1600 -> 40x40), each offset by a random +/-10cm, kept at least 10cm inside
@@ -92,6 +118,7 @@ export function createGrassBatch(
   startId: number,
   mapSize: number = BALANCE.mapSizeMeters,
   exclusions: readonly GrassExclusionCircle[] = [],
+  options: GrassBatchOptions = {},
 ): GrassState[] {
   const cells = Math.max(1, Math.round(Math.sqrt(count)));
   const limit = mapSize / 2 - GRASS_BOUNDARY_MARGIN - GRASS_JITTER;
@@ -109,14 +136,7 @@ export function createGrassBatch(
       if (!isOutsideExclusions(position, exclusions)) {
         continue;
       }
-      const roll = Math.random();
-      let kind: GrassKind = "normal";
-      if (roll >= 0.97) {
-        kind = "blue";
-      } else if (roll >= 0.91) {
-        kind = "tall";
-      }
-      states.push(createGrassState(`grass-${id}`, position, kind));
+      states.push(createGrassState(`grass-${id}`, position, chooseGrassKind(options)));
       id += 1;
     }
   }

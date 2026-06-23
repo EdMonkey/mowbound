@@ -89,6 +89,9 @@ export interface RuntimeStats extends BaseRuntimeStats {
   blueGrassSlow: number;
   timerGrassBonus: number;
   tallGrassGold: number;
+  blueGrassRate: number;
+  tallGrassRate: number;
+  timerGrassCount: number;
   grassRegrowDelay: number;
   grassRegrowSpeed: number;
   summons: Record<SummonAbilityId, SummonRuntime>;
@@ -158,6 +161,9 @@ interface RuntimeTotals {
   blueGrassSlow: number;
   timerGrassBonus: number;
   tallGrassGold: number;
+  blueGrassUnlocked: boolean;
+  timerGrassUnlocked: boolean;
+  tallGrassUnlocked: boolean;
   grassRegrowDelay: number;
   grassRegrowSpeed: number;
   summonDeltas: Record<SummonAbilityId, Record<SummonStatKind, number>>;
@@ -230,6 +236,9 @@ function newRuntimeTotals(): RuntimeTotals {
     blueGrassSlow: 0,
     timerGrassBonus: 0,
     tallGrassGold: 0,
+    blueGrassUnlocked: false,
+    timerGrassUnlocked: false,
+    tallGrassUnlocked: false,
     grassRegrowDelay: 0,
     grassRegrowSpeed: 0,
     summonDeltas: emptySummonDeltas(),
@@ -300,12 +309,15 @@ function applyRuntimeEffect(total: RuntimeTotals, effect: CardEffect): void {
       total.fireSpreadChancePerSecond += amount(effect);
       break;
     case "blueGrassSlow":
+      total.blueGrassUnlocked = true;
       total.blueGrassSlow += amount(effect);
       break;
     case "timerGrassBonus":
+      total.timerGrassUnlocked = true;
       total.timerGrassBonus += amount(effect);
       break;
     case "tallGrassGold":
+      total.tallGrassUnlocked = true;
       total.tallGrassGold += amount(effect);
       break;
     case "grassRegrowDelay":
@@ -417,6 +429,9 @@ export function getRuntimeStats(save: SaveData): RuntimeStats {
     blueGrassSlow: total.blueGrassSlow,
     timerGrassBonus: total.timerGrassBonus,
     tallGrassGold: total.tallGrassGold,
+    blueGrassRate: total.blueGrassUnlocked ? BALANCE.blueGrassSpawnRate : 0,
+    tallGrassRate: total.tallGrassUnlocked ? BALANCE.tallGrassSpawnRate : 0,
+    timerGrassCount: total.timerGrassUnlocked ? BALANCE.timerGrassCount : 0,
     grassRegrowDelay: total.grassRegrowDelay,
     grassRegrowSpeed: total.grassRegrowSpeed,
     summons: foldSummons(total.summonDeltas),

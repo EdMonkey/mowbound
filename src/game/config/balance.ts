@@ -43,6 +43,8 @@ export const BALANCE = {
   fireSpreadMinDurationSeconds: 0.6,
   tallGrassHpMultiplier: 2,
   tallGrassYScale: 1.5,
+  tallGrassSpawnRate: 0.06,
+  blueGrassSpawnRate: 0.03,
   blueGrassSlowFactor: 0.33,
   timerGrassRestoreSeconds: 4,
   timerGrassCount: 7,
@@ -138,6 +140,9 @@ export interface RuntimeStats {
   moveSpeed: number;
   goldPerGrass: number;
   initialGrassCount: number;
+  blueGrassRate: number;
+  tallGrassRate: number;
+  timerGrassCount: number;
   grassSpawnIntervalMs: number;
   grassSpawnPerTick: number;
   roundDurationMs: number;
