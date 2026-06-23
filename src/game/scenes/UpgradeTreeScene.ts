@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import { CARD_BY_ID, CARD_ROOT_ID, CARDS, type CardCategory, type CardGate, type CardNode } from "../config/cards";
-import { cardDescription, cardName, gateLabel } from "../i18n";
+import { cardDescription, cardName, gateLabel, type Language } from "../i18n";
 import {
   canUnlockCard,
   getRevealedCards,
@@ -9,6 +9,7 @@ import {
   unlockCard,
 } from "../systems/CardProgressionSystem";
 import { loadSave, saveGame, unlockAllCardsForTest, type SaveData } from "../systems/SaveSystem";
+import type { SceneName } from "../types";
 import { createButton } from "../ui/Menu";
 import {
   getUpgradePrototypeEditedNodePosition,
@@ -86,6 +87,19 @@ export function getUpgradeTreeEdgeClass(card: CardNode, grown: boolean): string 
 
 export function shouldDrawUpgradeTreeEdge(card: CardNode, prereq: string, revealedIds: ReadonlySet<string>): boolean {
   return revealedIds.has(card.id) && revealedIds.has(prereq);
+}
+
+export interface UpgradeTreeNavigationAction {
+  id: "play" | "menu";
+  label: string;
+  scene: Extract<SceneName, "game" | "menu">;
+}
+
+export function getUpgradeTreeNavigationActions(language: Language): UpgradeTreeNavigationAction[] {
+  return [
+    { id: "play", label: language === "ko" ? "게임하기" : "Play", scene: "game" },
+    { id: "menu", label: language === "ko" ? "메인 메뉴" : "Main Menu", scene: "menu" },
+  ];
 }
 
 export class UpgradeTreeScene implements GameSceneController {
@@ -213,7 +227,9 @@ export class UpgradeTreeScene implements GameSceneController {
             }, "secondary-button"),
           ]
         : []),
-      createButton("메인 메뉴", () => this.app.show("menu"), "secondary-button"),
+      ...getUpgradeTreeNavigationActions(this.language).map((action) =>
+        createButton(action.label, () => this.app.show(action.scene), action.id === "play" ? "" : "secondary-button"),
+      ),
     );
     panel.appendChild(header);
 

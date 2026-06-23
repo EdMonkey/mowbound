@@ -6,7 +6,11 @@ import {
   isCardUnlocked,
   unlockCard,
 } from "../src/game/systems/CardProgressionSystem";
-import { getUpgradeTreeEdgeClass, shouldDrawUpgradeTreeEdge } from "../src/game/scenes/UpgradeTreeScene";
+import {
+  getUpgradeTreeEdgeClass,
+  getUpgradeTreeNavigationActions,
+  shouldDrawUpgradeTreeEdge,
+} from "../src/game/scenes/UpgradeTreeScene";
 import { defaultSave } from "../src/game/systems/SaveSystem";
 
 describe("upgrade tree card data", () => {
@@ -109,5 +113,16 @@ describe("upgrade tree card data", () => {
 
     expect(shouldDrawUpgradeTreeEdge(card, "clean_sweep_2", revealed)).toBe(true);
     expect(shouldDrawUpgradeTreeEdge(card, "quick_recovery_2", revealed)).toBe(false);
+  });
+
+  it("offers play and main menu navigation from the upgrade tree", () => {
+    expect(getUpgradeTreeNavigationActions("ko")).toEqual([
+      { id: "play", label: "게임하기", scene: "game" },
+      { id: "menu", label: "메인 메뉴", scene: "menu" },
+    ]);
+    expect(getUpgradeTreeNavigationActions("en")).toEqual([
+      { id: "play", label: "Play", scene: "game" },
+      { id: "menu", label: "Main Menu", scene: "menu" },
+    ]);
   });
 });
