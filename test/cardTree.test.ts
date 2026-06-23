@@ -1,25 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { SKILL_NODE_BY_ID, SKILL_NODES, SKILL_ROOT } from "../src/game/config/skillTree";
+import { CARD_BY_ID, CARDS, CARD_ROOT_ID } from "../src/game/config/cards";
 import {
-  canUnlockNode,
   canSelectTool,
-  getRuntimeStats,
   isMapUnlocked,
-  nextAffordableGoals,
+  canUnlockCard,
+  nextAffordableCardGoals,
   selectTool,
-  unlockNode,
-} from "../src/game/systems/SkillSystem";
+  unlockCard,
+} from "../src/game/systems/CardProgressionSystem";
+import { getRuntimeStats } from "../src/game/systems/CardEffectSystem";
 import { defaultSave } from "../src/game/systems/SaveSystem";
 
-describe("v2 skill tree data", () => {
-  it("contains the expected node count and total cost", () => {
-    expect(SKILL_NODES).toHaveLength(138);
-    expect(SKILL_NODES.reduce((sum, node) => sum + node.cost, 0)).toBe(45855);
-    expect(SKILL_ROOT).toBe("root_sharpen");
+describe("card tree data", () => {
+  it("contains the expected card count and total cost", () => {
+    expect(CARDS).toHaveLength(138);
+    expect(CARDS.reduce((sum, card) => sum + card.cost, 0)).toBe(45855);
+    expect(CARD_ROOT_ID).toBe("root_sharpen");
   });
 
   it("uses the revised expert-reviewed unlock costs", () => {
-    const costs = Object.fromEntries(SKILL_NODES.map((node) => [node.id, node.cost]));
+    const costs = Object.fromEntries(CARDS.map((card) => [card.id, card.cost]));
     expect(costs).toMatchObject({
       root_sharpen: 10,
       sharp_edge_1: 18,
@@ -71,54 +71,54 @@ describe("v2 skill tree data", () => {
   });
 
   it("keeps all prereq ids valid", () => {
-    for (const node of SKILL_NODES) {
-      for (const prereq of node.prereq) {
-        expect(SKILL_NODE_BY_ID[prereq], `${node.id} prereq ${prereq}`).toBeDefined();
+    for (const card of CARDS) {
+      for (const prereq of card.prereq) {
+        expect(CARD_BY_ID[prereq], `${card.id} prereq ${prereq}`).toBeDefined();
       }
     }
   });
 });
 
-describe("v2 skill runtime", () => {
+describe("card runtime", () => {
   it("applies root and blade damage", () => {
     let save = { ...defaultSave(), gold: 999 };
-    save = unlockNode(save, "root_sharpen");
-    save = unlockNode(save, "sharp_edge_1");
+    save = unlockCard(save, "root_sharpen");
+    save = unlockCard(save, "sharp_edge_1");
     expect(getRuntimeStats(save).attackDamage).toBe(5);
   });
 
   it("uses softened seed_bombs gate", () => {
-    const save = { ...defaultSave(), gold: 999, levels: { root_sharpen: 1 } };
-    expect(canUnlockNode(save, "seed_bombs")).toBe(false);
+    const save = { ...defaultSave(), gold: 999, unlockedCards: { root_sharpen: 1 } };
+    expect(canUnlockCard(save, "seed_bombs")).toBe(false);
     const cleared = {
       ...save,
       lifetimeStats: { ...save.lifetimeStats, bestClearPercentByMap: { "10": 15 } },
     };
-    expect(canUnlockNode(cleared, "seed_bombs")).toBe(true);
+    expect(canUnlockCard(cleared, "seed_bombs")).toBe(true);
   });
 
   it("locks 30m until open_acre is unlocked", () => {
     const save = defaultSave();
     expect(isMapUnlocked(save, 10)).toBe(true);
     expect(isMapUnlocked(save, 30)).toBe(false);
-    expect(isMapUnlocked({ ...save, levels: { open_acre: 1 } }, 30)).toBe(true);
+    expect(isMapUnlocked({ ...save, unlockedCards: { open_acre: 1 } }, 30)).toBe(true);
   });
 
   it("requires all prereqs before unlocking multi-prereq nodes", () => {
-    const partial = { ...defaultSave(), gold: 2000, levels: { clean_sweep_2: 1 } };
-    expect(canUnlockNode(partial, "cyclone_cut")).toBe(false);
+    const partial = { ...defaultSave(), gold: 2000, unlockedCards: { clean_sweep_2: 1 } };
+    expect(canUnlockCard(partial, "cyclone_cut")).toBe(false);
 
     const complete = {
       ...defaultSave(),
       gold: 2000,
-      levels: { clean_sweep_2: 1, quick_recovery_2: 1 },
+      unlockedCards: { clean_sweep_2: 1, quick_recovery_2: 1 },
     };
-    expect(canUnlockNode(complete, "cyclone_cut")).toBe(true);
+    expect(canUnlockCard(complete, "cyclone_cut")).toBe(true);
   });
 
   it("returns next goals sorted by affordable cost", () => {
-    const save = { ...defaultSave(), gold: 25, levels: { root_sharpen: 1 } };
-    expect(nextAffordableGoals(save, 3).map((node) => node.id)).toEqual([
+    const save = { ...defaultSave(), gold: 25, unlockedCards: { root_sharpen: 1 } };
+    expect(nextAffordableCardGoals(save, 3).map((card) => card.id)).toEqual([
       "light_boots_1",
       "sharp_edge_1",
       "market_cart_1",
@@ -129,10 +129,10 @@ describe("v2 skill runtime", () => {
     const save = defaultSave();
     expect(canSelectTool(save, "wide_sickle")).toBe(false);
     expect(canSelectTool(save, "tractor")).toBe(false);
-    const unlocked = { ...save, levels: { wide_sickle: 1 } };
+    const unlocked = { ...save, unlockedCards: { wide_sickle: 1 } };
     expect(canSelectTool(unlocked, "wide_sickle")).toBe(true);
     expect(selectTool(unlocked, "wide_sickle").selectedTool).toBe("wide_sickle");
-    const tractorUnlocked = { ...save, levels: { tractor_license: 1 } };
+    const tractorUnlocked = { ...save, unlockedCards: { tractor_license: 1 } };
     expect(canSelectTool(tractorUnlocked, "tractor")).toBe(true);
     expect(selectTool(tractorUnlocked, "tractor").selectedTool).toBe("tractor");
   });

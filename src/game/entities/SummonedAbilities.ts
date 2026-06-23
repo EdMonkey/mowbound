@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { VectorXZ } from "../types";
-import type { RuntimeStats, SummonAbilityId } from "../systems/SkillSystem";
+import type { RuntimeStats, SummonAbilityId } from "../systems/CardEffectSystem";
 
 /** A grass-cutting footprint produced by an ability during a single frame. */
 export interface SummonCut {

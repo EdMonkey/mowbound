@@ -1,5 +1,4 @@
-import { CARD_BY_ID, type CardEffect, type CardGate, type CardNode } from "./config/cards";
-import type { SkillEffect, SkillNode, UnlockGate } from "./config/skillTree";
+import { type CardEffect, type CardGate, type CardNode } from "./config/cards";
 import type { ToolId } from "./config/tools";
 
 export type Language = "ko" | "en";
@@ -254,7 +253,7 @@ export function cardEffectLabel(card: CardNode, language: Language): string {
       : "Opens a branch";
 }
 
-export function gateLabel(gate: CardGate | UnlockGate, language: Language): string {
+export function gateLabel(gate: CardGate, language: Language): string {
   if (language === "en") {
     switch (gate.kind) {
       case "bestClearPercent": return `${gate.mapSize}m clear ${gate.percent}%`;
@@ -272,33 +271,9 @@ export function gateLabel(gate: CardGate | UnlockGate, language: Language): stri
   }
 }
 
-function cardForSkill(node: SkillNode): CardNode | undefined {
-  return CARD_BY_ID[node.id];
-}
-
-function skillEffectToCardEffect(effect: SkillEffect): CardEffect {
-  return effect as CardEffect;
-}
-
-export function skillName(node: SkillNode, language: Language): string {
-  const card = cardForSkill(node);
-  if (card) {
-    return cardName(card, language);
-  }
-  return node.name;
-}
-
-export function skillDescription(node: SkillNode, language: Language): string {
-  const card = cardForSkill(node);
-  if (card) {
-    return cardDescription(card, language);
-  }
-  return node.description;
-}
-
-export function effectLabel(node: SkillNode | CardNode, language: Language): string {
+export function effectLabel(node: CardNode, language: Language): string {
   return node.effects.length > 0
-    ? node.effects.map((effect) => effectText(skillEffectToCardEffect(effect as SkillEffect), language)).join(" / ")
+    ? node.effects.map((effect) => effectText(effect, language)).join(" / ")
     : language === "ko"
       ? "새 가지 열림"
       : "Opens a branch";

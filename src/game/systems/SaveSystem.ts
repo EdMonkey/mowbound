@@ -1,11 +1,5 @@
-import { BALANCE, type RuntimeStats } from "../config/balance";
 import { CARD_BY_ID, CARDS } from "../config/cards";
 import { TOOL_IDS, type ToolId } from "../config/tools";
-import {
-  SKILL_NODE_BY_ID,
-  SKILL_NODES,
-  type SkillEffect,
-} from "../config/skillTree";
 
 export const STORAGE_KEY = "mowbound-save-v2";
 export const OLD_STORAGE_KEY = "mowbound-save-v1";
@@ -227,51 +221,6 @@ export function applyRunResultToSave(save: SaveData, result: RunSaveResult): Sav
   });
 }
 
-export function isNodeUnlocked(save: SaveData, nodeId: string): boolean {
-  return (normalizeSave(save).levels[nodeId] ?? 0) > 0;
-}
-
-export function isNodeRevealed(save: SaveData, nodeId: string): boolean {
-  const node = SKILL_NODE_BY_ID[nodeId];
-  if (!node) {
-    return false;
-  }
-  return node.prereq.length === 0 || node.prereq.every((prereq) => isNodeUnlocked(save, prereq));
-}
-
-export function getNodeCost(nodeId: string): number {
-  return SKILL_NODE_BY_ID[nodeId]?.cost ?? Number.POSITIVE_INFINITY;
-}
-
-export function canUnlockNode(save: SaveData, nodeId: string): boolean {
-  const normalized = normalizeSave(save);
-  return (
-    isNodeRevealed(normalized, nodeId) &&
-    !isNodeUnlocked(normalized, nodeId) &&
-    normalized.gold >= getNodeCost(nodeId)
-  );
-}
-
-export function unlockNode(save: SaveData, nodeId: string): SaveData {
-  const normalized = normalizeSave(save);
-  if (!canUnlockNode(normalized, nodeId)) {
-    return normalized;
-  }
-
-  return normalizeSave({
-    ...normalized,
-    gold: normalized.gold - getNodeCost(nodeId),
-    unlockedCards: {
-      ...normalized.unlockedCards,
-      [nodeId]: 1,
-    },
-    levels: {
-      ...normalized.levels,
-      [nodeId]: 1,
-    },
-  });
-}
-
 export function addGold(save: SaveData, amount: number): SaveData {
   const normalized = normalizeSave(save);
   return normalizeSave({
@@ -280,65 +229,3 @@ export function addGold(save: SaveData, amount: number): SaveData {
   });
 }
 
-function applyRuntimeEffect(total: Record<string, number>, effect: SkillEffect): void {
-  switch (effect.kind) {
-    case "attackDamage":
-      total.damage += effect.amount;
-      break;
-    case "attackRange":
-      total.range += effect.amount;
-      break;
-    case "attackInterval":
-      total.attackInterval += effect.amount;
-      break;
-    case "moveSpeed":
-      total.moveSpeed += effect.amount;
-      break;
-    case "initialGrassCount":
-      total.grassCount += effect.amount;
-      break;
-    case "roundDurationPercent":
-      total.roundDurationPercent += effect.amount;
-      break;
-  }
-}
-
-export function getRuntimeStats(save: SaveData): RuntimeStats {
-  const normalized = normalizeSave(save);
-  const total: Record<string, number> = {
-    damage: 0,
-    range: 0,
-    attackInterval: 0,
-    moveSpeed: 0,
-    grassCount: 0,
-    roundDurationPercent: 0,
-  };
-
-  for (const node of SKILL_NODES) {
-    if (isNodeUnlocked(normalized, node.id)) {
-      for (const effect of node.effects) {
-        applyRuntimeEffect(total, effect);
-      }
-    }
-  }
-
-  const attackIntervalMs = Math.max(
-    BALANCE.minAttackIntervalMs,
-    BALANCE.baseAttackIntervalMs + total.attackInterval,
-  );
-  const roundDurationMs = Math.round(BALANCE.roundDurationMs * (1 + total.roundDurationPercent / 100));
-
-  return {
-    attackDamage: BALANCE.baseAttackDamage + total.damage,
-    attackRangeMeters: BALANCE.baseAttackRangeMeters + total.range,
-    attackArcDegrees: BALANCE.baseAttackArcDegrees,
-    attackChargeDurationMs: attackIntervalMs,
-    attackIntervalMs,
-    moveSpeed: BALANCE.playerMoveSpeed + total.moveSpeed,
-    goldPerGrass: BALANCE.baseGoldPerGrass,
-    initialGrassCount: BALANCE.initialGrassCount + total.grassCount,
-    grassSpawnIntervalMs: BALANCE.grassSpawnIntervalMs,
-    grassSpawnPerTick: BALANCE.grassSpawnPerTick,
-    roundDurationMs,
-  };
-}
