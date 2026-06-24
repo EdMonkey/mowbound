@@ -389,9 +389,10 @@ describe("card tree unlocks", () => {
     expect(isCardUnlocked(afterRoot, "root_sharpen")).toBe(true);
     expect(afterRoot.gold).toBeLessThan(9999);
     expect(isCardRevealed(afterRoot, "sharp_edge_1")).toBe(true);
-    expect(isCardRevealed(afterRoot, "clean_sweep_1")).toBe(true);
+    expect(isCardRevealed(afterRoot, "market_cart_1")).toBe(true);
     expect(canUnlockCard(afterRoot, "sharp_edge_1")).toBe(true);
     // deeper tier stays hidden until its own prerequisite is unlocked
+    expect(isCardRevealed(afterRoot, "clean_sweep_1")).toBe(false);
     expect(isCardRevealed(afterRoot, "sharp_edge_2")).toBe(false);
   });
 

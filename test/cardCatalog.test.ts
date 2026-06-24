@@ -16,7 +16,7 @@ describe("card catalog data", () => {
     expect(CARD_BY_ID.root_sharpen.category).toBe("equipment");
     expect(CARD_BY_ID.root_sharpen.tier).toBe(0);
     expect(CARD_BY_ID.sharp_edge_2.tier).toBe(2);
-    expect(CARD_BY_ID.cyclone_cut.tier).toBe(3);
+    expect(CARD_BY_ID.cyclone_cut.tier).toBe(5);
 
     expect(CARD_BY_ID.market_cart_1.category).toBe("harvest");
     expect(CARD_BY_ID.open_acre.category).toBe("environment");
@@ -44,7 +44,7 @@ describe("card catalog filters", () => {
   it("filters by category, tier, effect kind, and search text", () => {
     expect(filterCards({ category: "ability" }).map((card) => card.id)).toContain("seed_bombs");
     expect(filterCards({ category: "harvest" }).map((card) => card.id)).toContain("market_cart_1");
-    expect(filterCards({ tier: 1 }).map((card) => card.id)).toContain("clean_sweep_1");
+    expect(filterCards({ tier: 1 }).map((card) => card.id)).toContain("sharp_edge_1");
     expect(filterCards({ effectKind: "summon" }).map((card) => card.id)).toContain("summon_drone");
     expect(filterCards({ search: "laser" }).map((card) => card.id)).toEqual(["mower_laser"]);
   });
@@ -53,8 +53,8 @@ describe("card catalog filters", () => {
     const grouped = groupCardsByCategoryAndTier(CARDS);
     expect(grouped.equipment[0].map((card) => card.id)).toEqual(["root_sharpen"]);
     expect(grouped.harvest[1].map((card) => card.id)).toContain("market_cart_1");
-    expect(grouped.ability[1].map((card) => card.id)).toContain("seed_bombs");
-    expect(grouped.environment[1].map((card) => card.id)).toContain("survey_rock");
+    expect(grouped.ability[3].map((card) => card.id)).toContain("seed_bombs");
+    expect(grouped.environment[2].map((card) => card.id)).toContain("survey_rock");
   });
 
   it("sorts cards in the intended catalog category order", () => {

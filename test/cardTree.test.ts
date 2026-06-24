@@ -93,7 +93,7 @@ describe("card runtime", () => {
     const save = {
       ...defaultSave(),
       gold: 999,
-      unlockedCards: { root_sharpen: 1, sharp_edge_1: 1, light_boots_1: 1, market_cart_1: 1 },
+      unlockedCards: { root_sharpen: 1, sharp_edge_1: 1, sharp_edge_2: 1 },
     };
     expect(canUnlockCard(save, "seed_bombs")).toBe(false);
     const cleared = {
@@ -124,10 +124,11 @@ describe("card runtime", () => {
 
   it("returns next goals sorted by affordable cost", () => {
     const save = { ...defaultSave(), gold: 25, unlockedCards: { root_sharpen: 1 } };
-    // Only sharp_edge_1 (18g) is both revealed and affordable at 25g now that
-    // the early branches are staged behind it.
+    // root reveals one entry per category; all three are affordable at 25g.
     expect(nextAffordableCardGoals(save, 3).map((card) => card.id)).toEqual([
       "sharp_edge_1",
+      "market_cart_1",
+      "grasslore",
     ]);
   });
 
