@@ -6,7 +6,7 @@ export const BALANCE = {
   mapSizeMeters: 10,
   playerMoveSpeed: 0.7,
   baseAttackDamage: 3,
-  baseGrassHp: 5,
+  baseGrassHp: 2,
   baseAttackIntervalMs: 1000,
   baseAttackRangeMeters: 0.5,
   baseAttackArcDegrees: 360,

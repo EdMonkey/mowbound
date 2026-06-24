@@ -9,7 +9,7 @@ import {
   grassInRadius,
   resolveChainDetonation,
 } from "../src/game/systems/BombSystem";
-import { createGrassBatch } from "../src/game/systems/GrassSystem";
+import { createGrassBatch, createGrassState } from "../src/game/systems/GrassSystem";
 import {
   createObstacleState,
   resolveCollision,
@@ -208,6 +208,11 @@ describe("grass and coins", () => {
     expect(chunkMeshes.every((mesh) => mesh.visible)).toBe(true);
     expect(chunkMeshes.every((mesh) => mesh.frustumCulled)).toBe(true);
     field.dispose();
+  });
+
+  it("uses 2 HP for base grass and doubles it for tall grass", () => {
+    expect(createGrassState("normal", { x: 0, z: 0 }).hp).toBe(2);
+    expect(createGrassState("tall", { x: 0, z: 0 }, "tall").hp).toBe(4);
   });
 
   it("places grass on a 40x40 jittered grid inside a 10cm edge margin", () => {
