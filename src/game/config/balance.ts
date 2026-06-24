@@ -4,7 +4,7 @@ export const BALANCE = {
   // MAP_SIZE_OPTIONS / App.mapSizeMeters). Grass count scales with area so
   // density stays at 16/m^2 regardless of the chosen size.
   mapSizeMeters: 10,
-  playerMoveSpeed: 0.7,
+  playerMoveSpeed: 1.4,
   baseAttackDamage: 3,
   baseGrassHp: 2,
   baseAttackIntervalMs: 1000,

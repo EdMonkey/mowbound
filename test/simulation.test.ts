@@ -138,7 +138,7 @@ describe("runtime stats from skill nodes", () => {
     const stats = getRuntimeStats(defaultSave());
 
     expect(stats.attackDamage).toBe(3);
-    expect(stats.moveSpeed).toBe(0.7);
+    expect(stats.moveSpeed).toBe(1.4);
     expect(stats.attackIntervalMs).toBe(1000);
     expect(stats.attackChargeDurationMs).toBe(1000);
     expect(stats.attackRangeMeters).toBe(0.5);
