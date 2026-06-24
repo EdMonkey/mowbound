@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mowbound — 카드 목록 (main)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    background: #14161a; color: #e6e8ea; padding: 0 0 80px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px);
+    background: rgba(20,22,26,.85); border-bottom: 1px solid #2a2e35; padding: 16px 20px 12px;
+  }
+  h1 { margin: 0 0 4px; font-size: 20px; }
+  .sub { color: #9aa0a6; font-size: 13px; margin-bottom: 12px; }
+  #search {
+    width: 100%; max-width: 420px; padding: 9px 12px; border-radius: 8px;
+    border: 1px solid #2a2e35; background: #1c1f25; color: #e6e8ea; font-size: 14px; margin-bottom: 10px;
+  }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .nav-pill {
+    text-decoration: none; color: #cfd2d6; font-size: 12px; padding: 4px 10px; border-radius: 99px;
+    border: 1px solid color-mix(in srgb, var(--c) 50%, #2a2e35); background: color-mix(in srgb, var(--c) 12%, #1c1f25);
+  }
+  .nav-pill span { opacity: .7; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 0; }
+  section { margin-bottom: 36px; scroll-margin-top: 150px; }
+  h2 {
+    font-size: 16px; border-left: 4px solid var(--c); padding-left: 10px; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  h2 .count { font-size: 12px; color: #9aa0a6; font-weight: 400; }
+  .tier-group { margin: 0 0 18px; }
+  .tier-label { font-size: 12px; color: #8a8f98; margin: 0 0 8px; font-weight: 700; letter-spacing: .03em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .card {
+    border: 1px solid #2a2e35; border-left: 3px solid var(--c); border-radius: 10px;
+    background: #1c1f25; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .tier-badge { font-size: 10px; font-weight: 800; color: #14161a; background: var(--c); border-radius: 5px; padding: 1px 6px; }
+  .cost { font-size: 12px; color: #e0b84a; font-weight: 700; white-space: nowrap; }
+  .title { font-weight: 600; font-size: 15px; }
+  .title .en { font-weight: 400; font-size: 12px; color: #8a8f98; }
+  .id { font-size: 11px; color: #6a6f78; font-family: ui-monospace, monospace; }
+  .desc { font-size: 12.5px; color: #c2c6cc; line-height: 1.4; }
+  .prereq { font-size: 11px; color: #8a8f98; }
+  .root-tag { color: var(--c); }
+  .effects { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+  .effects code {
+    font-size: 10px; background: #14161a; border: 1px solid #2a2e35; border-radius: 5px;
+    padding: 2px 5px; color: #9ac8d4; font-family: ui-monospace, monospace; word-break: break-all;
+  }
+  .gates { font-size: 11px; color: #d48b6a; }
+  .hidden { display: none !important; }
+  footer { text-align: center; color: #6a6f78; font-size: 12px; margin-top: 40px; }
+  #status { color: #9aa0a6; padding: 40px 20px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌱 Mowbound — 카드 목록</h1>
+  <div class="sub" id="meta">불러오는 중…</div>
+  <input id="search" type="search" placeholder="🔍 한/영 이름 · ID · 설명 · 효과 검색…" autocomplete="off">
+  <nav class="nav" id="nav"></nav>
+</header>
+<main>
+  <div id="status">cards.json 불러오는 중…</div>
+  <div id="sections"></div>
+  <footer>Mowbound 카드 목록 · main:src/game/config/cards.json 스냅샷 기준 자동 생성</footer>
+</main>
+<script>
+const CAT_LABEL = {
+  equipment: "Equipment 장비", harvest: "Harvest 수확", environment: "Environment 환경", ability: "Ability 능력",
+};
+const CAT_COLOR = {
+  equipment: "#5aa0e0", harvest: "#e0b84a", environment: "#5ab06a", ability: "#c496ff",
+};
+const CAT_ORDER = ["equipment", "harvest", "environment", "ability"];
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+async function load() {
+  let data;
+  try {
+    const res = await fetch("./cards.json?t=" + Date.now());
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    data = await res.json();
+  } catch (e) {
+    document.getElementById("status").textContent = "cards.json 로드 실패: " + e.message;
+    return;
+  }
+  render(data);
+}
+
+function render(data) {
+  const nodes = data.nodes || [];
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const cats = [...new Set(nodes.map((n) => n.category))]
+    .sort((a, b) => CAT_ORDER.indexOf(a) - CAT_ORDER.indexOf(b));
+
+  document.getElementById("meta").textContent =
+    `총 ${nodes.length}개 카드 · ${cats.length}개 분류 · 생성 ${(data.generatedAt || "").slice(0, 16).replace("T", " ")}`;
+
+  document.getElementById("nav").innerHTML = cats.map((c) => {
+    const col = CAT_COLOR[c] || "#888";
+    const n = nodes.filter((x) => x.category === c).length;
+    return `<a class="nav-pill" style="--c:${col}" href="#${c}">${esc(CAT_LABEL[c] || c)} <span>${n}</span></a>`;
+  }).join("");
+
+  const cardHtml = (n, col) => {
+    const prereq = (n.prereq || []).map((p) => byId[p]?.nameKo ?? p).join(", ");
+    const effects = (n.effects || []).map((e) => `<code>${esc(JSON.stringify(e))}</code>`).join("");
+    const gates = (n.gates || []).length
+      ? `<div class="gates">🔒 ${n.gates.map((g) => esc(JSON.stringify(g))).join(" · ")}</div>` : "";
+    const search = `${n.nameKo} ${n.nameEn} ${n.id} ${n.descriptionKo} ${(n.tags || []).join(" ")}`.toLowerCase();
+    return `<div class="card" style="--c:${col}" data-s="${esc(search)}">
+      <div class="card-head"><span class="tier-badge">T${n.tier}</span><span class="cost">💰 ${n.cost}</span></div>
+      <div class="title">${esc(n.nameKo)} <span class="en">${esc(n.nameEn)}</span></div>
+      <div class="id">${esc(n.id)}</div>
+      <div class="desc">${esc(n.descriptionKo || n.descriptionEn || "")}</div>
+      ${prereq ? `<div class="prereq">← ${esc(prereq)}</div>` : `<div class="prereq root-tag">시작 노드</div>`}
+      ${effects ? `<div class="effects">${effects}</div>` : ""}
+      ${gates}
+    </div>`;
+  };
+
+  document.getElementById("sections").innerHTML = cats.map((c) => {
+    const col = CAT_COLOR[c] || "#888";
+    const list = nodes.filter((x) => x.category === c);
+    const tiers = [...new Set(list.map((n) => n.tier))].sort((a, b) => a - b);
+    const groups = tiers.map((t) => {
+      const tn = list.filter((n) => n.tier === t).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+      const cards = tn.map((n) => cardHtml(n, col)).join("");
+      return tiers.length > 1
+        ? `<div class="tier-group"><div class="tier-label">Tier ${t}</div><div class="grid">${cards}</div></div>`
+        : `<div class="grid">${cards}</div>`;
+    }).join("");
+    return `<section id="${c}">
+      <h2 style="--c:${col}">${esc(CAT_LABEL[c] || c)} <span class="count">${list.length}</span></h2>
+      ${groups}
+    </section>`;
+  }).join("");
+
+  document.getElementById("status").remove();
+
+  const input = document.getElementById("search");
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    document.querySelectorAll(".card").forEach((c) =>
+      c.classList.toggle("hidden", q && !c.dataset.s.includes(q)));
+    document.querySelectorAll(".tier-group").forEach((g) => {
+      const any = [...g.querySelectorAll(".card")].some((c) => !c.classList.contains("hidden"));
+      g.classList.toggle("hidden", !any);
+    });
+    document.querySelectorAll("section").forEach((s) => {
+      const any = [...s.querySelectorAll(".card")].some((c) => !c.classList.contains("hidden"));
+      s.classList.toggle("hidden", !any);
+    });
+  });
+}
+
+load();
+</script>
+</body>
+</html>

@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "build:cards": "tsx scripts/gen-cards-json.mts"
   },
   "dependencies": {
     "three": "^0.165.0"
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@types/node": "^20.14.8",
     "@types/three": "^0.165.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.5.2",
     "vite": "^8.0.16",
     "vitest": "^4.1.9"
