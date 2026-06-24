@@ -99,7 +99,9 @@ describe("card progression", () => {
     const save = normalizeSave({
       ...defaultSave(),
       gold: 9999,
-      unlockedCards: { root_sharpen: 1 },
+      // seed_bombs sits behind a staged prereq chain; unlock it so this test
+      // isolates gate behaviour rather than prereq reachability.
+      unlockedCards: { root_sharpen: 1, sharp_edge_1: 1, light_boots_1: 1, market_cart_1: 1 },
       lifetimeStats: {
         ...defaultSave().lifetimeStats,
         grassCut: 9999,
@@ -136,9 +138,9 @@ describe("card progression", () => {
 
     expect(getRevealedCards(defaultSave()).map((card) => card.id)).toContain("root_sharpen");
     expect(nextAffordableCardGoals(save).map((card) => card.id)).toEqual([
-      "light_boots_1",
       "sharp_edge_1",
-      "market_cart_1",
+      "clean_sweep_1",
+      "quick_recovery_1",
     ]);
   });
 

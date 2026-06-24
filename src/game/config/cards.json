@@ -414,7 +414,7 @@
     "tier": 1,
     "cost": 36,
     "prereq": [
-      "root_sharpen"
+      "clean_sweep_1"
     ],
     "gates": [],
     "tags": [
@@ -757,7 +757,7 @@
     "tier": 1,
     "cost": 14,
     "prereq": [
-      "root_sharpen"
+      "sharp_edge_1"
     ],
     "gates": [],
     "tags": [
@@ -819,7 +819,7 @@
     "tier": 1,
     "cost": 32,
     "prereq": [
-      "root_sharpen"
+      "light_boots_1"
     ],
     "gates": [],
     "tags": [
@@ -945,7 +945,7 @@
     "tier": 1,
     "cost": 20,
     "prereq": [
-      "root_sharpen"
+      "light_boots_1"
     ],
     "gates": [],
     "tags": [
@@ -1005,7 +1005,7 @@
     "tier": 1,
     "cost": 26,
     "prereq": [
-      "root_sharpen"
+      "market_cart_1"
     ],
     "gates": [],
     "tags": [
@@ -1405,7 +1405,7 @@
     "tier": 1,
     "cost": 160,
     "prereq": [
-      "root_sharpen"
+      "market_cart_1"
     ],
     "gates": [
       {
@@ -1634,7 +1634,7 @@
     "tier": 1,
     "cost": 600,
     "prereq": [
-      "root_sharpen"
+      "survey_rock"
     ],
     "gates": [
       {
@@ -1936,7 +1936,7 @@
     "tier": 1,
     "cost": 20,
     "prereq": [
-      "root_sharpen"
+      "market_cart_1"
     ],
     "gates": [],
     "tags": [
@@ -2240,7 +2240,7 @@
     "tier": 1,
     "cost": 120,
     "prereq": [
-      "root_sharpen"
+      "survey_tree"
     ],
     "gates": [],
     "tags": [
@@ -4113,7 +4113,7 @@
     "tier": 1,
     "cost": 180,
     "prereq": [
-      "root_sharpen"
+      "open_acre"
     ],
     "gates": [],
     "tags": [
@@ -4237,7 +4237,7 @@
     "tier": 1,
     "cost": 160,
     "prereq": [
-      "root_sharpen"
+      "seed_bombs"
     ],
     "gates": [],
     "tags": [
@@ -4269,7 +4269,7 @@
     "tier": 1,
     "cost": 190,
     "prereq": [
-      "root_sharpen"
+      "survey_rock"
     ],
     "gates": [],
     "tags": [

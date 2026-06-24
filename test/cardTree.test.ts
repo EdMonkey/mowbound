@@ -88,7 +88,13 @@ describe("card runtime", () => {
   });
 
   it("uses softened seed_bombs gate", () => {
-    const save = { ...defaultSave(), gold: 999, unlockedCards: { root_sharpen: 1 } };
+    // seed_bombs is revealed only after its staged prereq chain; unlock it so
+    // this test exercises the gate, not prereq reachability.
+    const save = {
+      ...defaultSave(),
+      gold: 999,
+      unlockedCards: { root_sharpen: 1, sharp_edge_1: 1, light_boots_1: 1, market_cart_1: 1 },
+    };
     expect(canUnlockCard(save, "seed_bombs")).toBe(false);
     const cleared = {
       ...save,
@@ -118,10 +124,10 @@ describe("card runtime", () => {
 
   it("returns next goals sorted by affordable cost", () => {
     const save = { ...defaultSave(), gold: 25, unlockedCards: { root_sharpen: 1 } };
+    // Only sharp_edge_1 (18g) is both revealed and affordable at 25g now that
+    // the early branches are staged behind it.
     expect(nextAffordableCardGoals(save, 3).map((card) => card.id)).toEqual([
-      "light_boots_1",
       "sharp_edge_1",
-      "market_cart_1",
     ]);
   });
 
