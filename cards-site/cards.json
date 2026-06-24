@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-24T22:20:46.592Z",
+  "generatedAt": "2026-06-24T22:27:38.571Z",
   "source": "src/game/config/cards.json",
   "count": 138,
   "nodes": [
@@ -27,7 +27,7 @@
       "descriptionKo": "공격력 +1",
       "descriptionEn": "Damage +1.",
       "layout": {
-        "x": 3308,
+        "x": 0,
         "y": 0
       },
       "sort": 0
@@ -58,8 +58,8 @@
       "descriptionKo": "공격력 +1",
       "descriptionEn": "Damage +1. Reaches one-hit grass with root.",
       "layout": {
-        "x": 700,
-        "y": -170
+        "x": -321,
+        "y": -185
       },
       "sort": 1
     },
@@ -89,8 +89,8 @@
       "descriptionKo": "공격력 +1",
       "descriptionEn": "Damage +1. Reaches obstacle break threshold.",
       "layout": {
-        "x": 613,
-        "y": -340
+        "x": -993,
+        "y": -370
       },
       "sort": 2
     },
@@ -120,8 +120,8 @@
       "descriptionKo": "공격범위 +0.1m",
       "descriptionEn": "Attack range +0.10m.",
       "layout": {
-        "x": 788,
-        "y": -340
+        "x": -825,
+        "y": -370
       },
       "sort": 3
     },
@@ -151,8 +151,8 @@
       "descriptionKo": "공격범위 +0.12m",
       "descriptionEn": "Attack range +0.12m.",
       "layout": {
-        "x": 350,
-        "y": -510
+        "x": -1917,
+        "y": -555
       },
       "sort": 4
     },
@@ -182,8 +182,8 @@
       "descriptionKo": "공격범위 +0.12m",
       "descriptionEn": "Attack range +0.12m.",
       "layout": {
-        "x": 88,
-        "y": -680
+        "x": -3597,
+        "y": -740
       },
       "sort": 5
     },
@@ -213,8 +213,8 @@
       "descriptionKo": "공격범위 +0.14m",
       "descriptionEn": "Attack range +0.14m.",
       "layout": {
-        "x": 0,
-        "y": -850
+        "x": -3070,
+        "y": -925
       },
       "sort": 6
     },
@@ -244,8 +244,8 @@
       "descriptionKo": "공격범위 +0.16m",
       "descriptionEn": "Attack range +0.16m.",
       "layout": {
-        "x": 350,
-        "y": -1020
+        "x": -970,
+        "y": -1110
       },
       "sort": 7
     },
@@ -275,8 +275,8 @@
       "descriptionKo": "공격범위 +0.15m",
       "descriptionEn": "Attack range +0.15m.",
       "layout": {
-        "x": 700,
-        "y": -1190
+        "x": -298,
+        "y": -1295
       },
       "sort": 8
     },
@@ -306,8 +306,8 @@
       "descriptionKo": "공격범위 +0.15m",
       "descriptionEn": "Attack range +0.15m.",
       "layout": {
-        "x": 700,
-        "y": -1360
+        "x": -107,
+        "y": -1480
       },
       "sort": 9
     },
@@ -337,8 +337,8 @@
       "descriptionKo": "공격간격 -100ms",
       "descriptionEn": "Attack interval -100ms.",
       "layout": {
-        "x": 525,
-        "y": -510
+        "x": -1749,
+        "y": -555
       },
       "sort": 10
     },
@@ -368,8 +368,8 @@
       "descriptionKo": "공격간격 -100ms",
       "descriptionEn": "Attack interval -100ms.",
       "layout": {
-        "x": 263,
-        "y": -680
+        "x": -3429,
+        "y": -740
       },
       "sort": 11
     },
@@ -404,8 +404,8 @@
       "descriptionKo": "공격력 +1, 장애물 피해 +1",
       "descriptionEn": "Damage +1 and obstacle damage +1.",
       "layout": {
-        "x": 700,
-        "y": -510
+        "x": -1581,
+        "y": -555
       },
       "sort": 12
     },
@@ -435,8 +435,8 @@
       "descriptionKo": "불붙임 확률 +5%",
       "descriptionEn": "Hits have a 5% chance to ignite grass.",
       "layout": {
-        "x": 875,
-        "y": -510
+        "x": -1413,
+        "y": -555
       },
       "sort": 13
     },
@@ -466,8 +466,8 @@
       "descriptionKo": "화상 피해 +0.35/초",
       "descriptionEn": "Fire damage +0.35/s.",
       "layout": {
-        "x": 438,
-        "y": -680
+        "x": -3261,
+        "y": -740
       },
       "sort": 14
     },
@@ -497,8 +497,8 @@
       "descriptionKo": "화상 피해 +0.35/초",
       "descriptionEn": "Fire damage +0.35/s.",
       "layout": {
-        "x": 175,
-        "y": -850
+        "x": -2902,
+        "y": -925
       },
       "sort": 15
     },
@@ -528,8 +528,8 @@
       "descriptionKo": "화상 피해 +0.35/초",
       "descriptionEn": "Fire damage +0.35/s.",
       "layout": {
-        "x": 525,
-        "y": -1020
+        "x": -802,
+        "y": -1110
       },
       "sort": 16
     },
@@ -559,8 +559,8 @@
       "descriptionKo": "불 확산 반경 +0.05m",
       "descriptionEn": "Fire spread radius +0.05m.",
       "layout": {
-        "x": 613,
-        "y": -680
+        "x": -3093,
+        "y": -740
       },
       "sort": 17
     },
@@ -590,8 +590,8 @@
       "descriptionKo": "불 확산 반경 +0.05m",
       "descriptionEn": "Fire spread radius +0.05m.",
       "layout": {
-        "x": 350,
-        "y": -850
+        "x": -2734,
+        "y": -925
       },
       "sort": 18
     },
@@ -621,8 +621,8 @@
       "descriptionKo": "불 확산 반경 +0.05m",
       "descriptionEn": "Fire spread radius +0.05m.",
       "layout": {
-        "x": 700,
-        "y": -1020
+        "x": -634,
+        "y": -1110
       },
       "sort": 19
     },
@@ -652,8 +652,8 @@
       "descriptionKo": "불 확산 속도 +0.06/초",
       "descriptionEn": "Fire spread speed +0.06/s.",
       "layout": {
-        "x": 788,
-        "y": -680
+        "x": -2925,
+        "y": -740
       },
       "sort": 20
     },
@@ -683,8 +683,8 @@
       "descriptionKo": "불 확산 속도 +0.06/초",
       "descriptionEn": "Fire spread speed +0.06/s.",
       "layout": {
-        "x": 525,
-        "y": -850
+        "x": -2566,
+        "y": -925
       },
       "sort": 21
     },
@@ -714,8 +714,8 @@
       "descriptionKo": "불 확산 속도 +0.06/초",
       "descriptionEn": "Fire spread speed +0.06/s.",
       "layout": {
-        "x": 875,
-        "y": -1020
+        "x": -466,
+        "y": -1110
       },
       "sort": 22
     },
@@ -747,8 +747,8 @@
       "descriptionKo": "6번째 공격마다 원형 베기",
       "descriptionEn": "Every 6th attack performs a 0.85m circle cut.",
       "layout": {
-        "x": 700,
-        "y": -850
+        "x": -2398,
+        "y": -925
       },
       "sort": 23
     },
@@ -778,8 +778,8 @@
       "descriptionKo": "이동속도 +0.12",
       "descriptionEn": "Move speed +0.12.",
       "layout": {
-        "x": 1050,
-        "y": -510
+        "x": -1245,
+        "y": -555
       },
       "sort": 24
     },
@@ -809,8 +809,8 @@
       "descriptionKo": "이동속도 +0.14",
       "descriptionEn": "Move speed +0.14.",
       "layout": {
-        "x": 963,
-        "y": -680
+        "x": -2757,
+        "y": -740
       },
       "sort": 25
     },
@@ -840,8 +840,8 @@
       "descriptionKo": "라운드 시간 +8%",
       "descriptionEn": "Round duration +8%.",
       "layout": {
-        "x": 1138,
-        "y": -680
+        "x": -2589,
+        "y": -740
       },
       "sort": 26
     },
@@ -871,8 +871,8 @@
       "descriptionKo": "라운드 시간 +8%",
       "descriptionEn": "Round duration +8%.",
       "layout": {
-        "x": 875,
-        "y": -850
+        "x": -2230,
+        "y": -925
       },
       "sort": 27
     },
@@ -903,8 +903,8 @@
       "descriptionKo": "깔끔한 잔디 후 2초간 이동속도 증가",
       "descriptionEn": "After a clean patch, move speed +20% for 2s.",
       "layout": {
-        "x": 1050,
-        "y": -850
+        "x": -2062,
+        "y": -925
       },
       "sort": 28
     },
@@ -934,8 +934,8 @@
       "descriptionKo": "라운드 시간 +12%",
       "descriptionEn": "Round duration +12%.",
       "layout": {
-        "x": 1050,
-        "y": -1020
+        "x": -298,
+        "y": -1110
       },
       "sort": 29
     },
@@ -964,8 +964,8 @@
       "descriptionKo": "골드 환산 효율 +0.3",
       "descriptionEn": "Gold divisor 4.0 -> 3.7.",
       "layout": {
-        "x": 1855,
-        "y": -170
+        "x": -107,
+        "y": -185
       },
       "sort": 30
     },
@@ -994,8 +994,8 @@
       "descriptionKo": "골드 환산 효율 +0.3",
       "descriptionEn": "Gold divisor 3.7 -> 3.4.",
       "layout": {
-        "x": 1680,
-        "y": -340
+        "x": -611,
+        "y": -370
       },
       "sort": 31
     },
@@ -1024,8 +1024,8 @@
       "descriptionKo": "깔끔한 잔디 점수 +8",
       "descriptionEn": "Driving-skill clean mow bonus +8 score.",
       "layout": {
-        "x": 1855,
-        "y": -340
+        "x": -443,
+        "y": -370
       },
       "sort": 32
     },
@@ -1054,8 +1054,8 @@
       "descriptionKo": "깔끔한 잔디 점수 +14",
       "descriptionEn": "Driving-skill clean mow bonus +14 score.",
       "layout": {
-        "x": 1768,
-        "y": -510
+        "x": -1031,
+        "y": -555
       },
       "sort": 33
     },
@@ -1084,8 +1084,8 @@
       "descriptionKo": "클리어 보너스 +10%",
       "descriptionEn": "Clear percent bonus +10%.",
       "layout": {
-        "x": 2030,
-        "y": -340
+        "x": -275,
+        "y": -370
       },
       "sort": 34
     },
@@ -1114,8 +1114,8 @@
       "descriptionKo": "클리어 보너스 +15%",
       "descriptionEn": "Clear percent bonus +15%.",
       "layout": {
-        "x": 1943,
-        "y": -510
+        "x": -863,
+        "y": -555
       },
       "sort": 35
     },
@@ -1146,8 +1146,8 @@
       "descriptionKo": "초반 10초 수확 점수 증가",
       "descriptionEn": "First 10s harvest score +25%.",
       "layout": {
-        "x": 1768,
-        "y": -680
+        "x": -2207,
+        "y": -740
       },
       "sort": 36
     },
@@ -1176,8 +1176,8 @@
       "descriptionKo": "클리어 보너스 +10%",
       "descriptionEn": "Final gold +10%.",
       "layout": {
-        "x": 1943,
-        "y": -680
+        "x": -2039,
+        "y": -740
       },
       "sort": 37
     },
@@ -1207,8 +1207,8 @@
       "descriptionKo": "돌 파괴 점수 +25",
       "descriptionEn": "Rock break +25 score.",
       "layout": {
-        "x": 2485,
-        "y": -510
+        "x": -649,
+        "y": -555
       },
       "sort": 38
     },
@@ -1238,8 +1238,8 @@
       "descriptionKo": "나무 파괴 점수 +40",
       "descriptionEn": "Tree break +40 score.",
       "layout": {
-        "x": 2310,
-        "y": -680
+        "x": -1825,
+        "y": -740
       },
       "sort": 39
     },
@@ -1268,8 +1268,8 @@
       "descriptionKo": "부서진 그루터기 충돌 제거",
       "descriptionEn": "Tree stumps stop blocking after break.",
       "layout": {
-        "x": 2485,
-        "y": -850
+        "x": -1512,
+        "y": -925
       },
       "sort": 40
     },
@@ -1299,8 +1299,8 @@
       "descriptionKo": "실패 타격 스턴 -25%",
       "descriptionEn": "Failed chop stun -25%.",
       "layout": {
-        "x": 2485,
-        "y": -680
+        "x": -1657,
+        "y": -740
       },
       "sort": 41
     },
@@ -1330,8 +1330,8 @@
       "descriptionKo": "장애물 피해 +2",
       "descriptionEn": "Obstacle damage +2.",
       "layout": {
-        "x": 2660,
-        "y": -680
+        "x": -1489,
+        "y": -740
       },
       "sort": 42
     },
@@ -1362,8 +1362,8 @@
       "descriptionKo": "장애물 파괴 시 주변 풀 제거",
       "descriptionEn": "Obstacle breaks also cut nearby grass.",
       "layout": {
-        "x": 2660,
-        "y": -850
+        "x": -1344,
+        "y": -925
       },
       "sort": 43
     },
@@ -1393,8 +1393,8 @@
       "descriptionKo": "장애물 점수 +50%",
       "descriptionEn": "Obstacle score +50%.",
       "layout": {
-        "x": 2748,
-        "y": -1020
+        "x": -84,
+        "y": -1110
       },
       "sort": 44
     },
@@ -1434,8 +1434,8 @@
       "descriptionKo": "10m 맵 폭탄 +3개",
       "descriptionEn": "Spawn 3 bombs on the 10m map.",
       "layout": {
-        "x": 5915,
-        "y": -170
+        "x": 321,
+        "y": -185
       },
       "sort": 45
     },
@@ -1465,8 +1465,8 @@
       "descriptionKo": "폭탄 연쇄 반경 +0.35m",
       "descriptionEn": "Bomb chain radius +0.35m.",
       "layout": {
-        "x": 5653,
-        "y": -340
+        "x": 489,
+        "y": -370
       },
       "sort": 46
     },
@@ -1496,8 +1496,8 @@
       "descriptionKo": "폭발 반경 +0.2m",
       "descriptionEn": "Bomb blast radius +0.20m.",
       "layout": {
-        "x": 5828,
-        "y": -340
+        "x": 657,
+        "y": -370
       },
       "sort": 47
     },
@@ -1527,8 +1527,8 @@
       "descriptionKo": "연쇄 폭탄 점수 +30",
       "descriptionEn": "Each extra chained bomb gives +30 score.",
       "layout": {
-        "x": 6003,
-        "y": -340
+        "x": 825,
+        "y": -370
       },
       "sort": 48
     },
@@ -1558,8 +1558,8 @@
       "descriptionKo": "폭탄 연쇄 반경 +0.35m",
       "descriptionEn": "Bomb chain radius +0.35m.",
       "layout": {
-        "x": 5128,
-        "y": -510
+        "x": 405,
+        "y": -555
       },
       "sort": 49
     },
@@ -1589,8 +1589,8 @@
       "descriptionKo": "폭발 반경 +0.25m",
       "descriptionEn": "Bomb blast radius +0.25m.",
       "layout": {
-        "x": 5303,
-        "y": -510
+        "x": 573,
+        "y": -555
       },
       "sort": 50
     },
@@ -1622,8 +1622,8 @@
       "descriptionKo": "첫 폭탄 점수 +50%",
       "descriptionEn": "First bomb each run scores +50%.",
       "layout": {
-        "x": 3815,
-        "y": -680
+        "x": -435,
+        "y": -740
       },
       "sort": 51
     },
@@ -1663,8 +1663,8 @@
       "descriptionKo": "30m 맵 해금",
       "descriptionEn": "Unlock the 30m map.",
       "layout": {
-        "x": 2835,
-        "y": -680
+        "x": -1321,
+        "y": -740
       },
       "sort": 52
     },
@@ -1694,8 +1694,8 @@
       "descriptionKo": "기본 풀 +120",
       "descriptionEn": "Base grass +120.",
       "layout": {
-        "x": 2835,
-        "y": -850
+        "x": -1176,
+        "y": -925
       },
       "sort": 53
     },
@@ -1725,8 +1725,8 @@
       "descriptionKo": "풀 점수 +10%",
       "descriptionEn": "Grass score +10%.",
       "layout": {
-        "x": 3010,
-        "y": -850
+        "x": -1008,
+        "y": -925
       },
       "sort": 54
     },
@@ -1757,8 +1757,8 @@
       "descriptionKo": "넓은 낫 해금",
       "descriptionEn": "Tool: range +0.25m, interval +150ms.",
       "layout": {
-        "x": 1313,
-        "y": -680
+        "x": -2421,
+        "y": -740
       },
       "sort": 55
     },
@@ -1789,8 +1789,8 @@
       "descriptionKo": "빠른 낫 해금",
       "descriptionEn": "Tool: interval -150ms, range -0.05m.",
       "layout": {
-        "x": 1225,
-        "y": -850
+        "x": -1894,
+        "y": -925
       },
       "sort": 56
     },
@@ -1821,8 +1821,8 @@
       "descriptionKo": "폭탄 낫 해금",
       "descriptionEn": "Tool: bombs +2, chain payout +20%.",
       "layout": {
-        "x": 1400,
-        "y": -850
+        "x": -1726,
+        "y": -925
       },
       "sort": 57
     },
@@ -1853,8 +1853,8 @@
       "descriptionKo": "하늘에서 외계 문양 잔디깎기",
       "descriptionEn": "Every 12s, stamps a 2.4m crop mark after a 0.4s warning.",
       "layout": {
-        "x": 5478,
-        "y": -510
+        "x": 741,
+        "y": -555
       },
       "sort": 58
     },
@@ -1885,8 +1885,8 @@
       "descriptionKo": "전방으로 잔디깎이 레이저 발사",
       "descriptionEn": "Every 8th attack fires a 6m beam that can trigger bombs.",
       "layout": {
-        "x": 3990,
-        "y": -680
+        "x": -267,
+        "y": -740
       },
       "sort": 59
     },
@@ -1917,8 +1917,8 @@
       "descriptionKo": "트랙터 해금",
       "descriptionEn": "Tool: moving continuously mows a 1.2m front strip, turn response -15%.",
       "layout": {
-        "x": 4078,
-        "y": -850
+        "x": -458,
+        "y": -925
       },
       "sort": 60
     },
@@ -1942,8 +1942,8 @@
       "descriptionKo": "환경 계열 카드가 열립니다.",
       "descriptionEn": "Reveals special grass types.",
       "layout": {
-        "x": 2923,
-        "y": -170
+        "x": 107,
+        "y": -185
       },
       "sort": 61
     },
@@ -1973,8 +1973,8 @@
       "descriptionKo": "파란 풀 감속 -0.17",
       "descriptionEn": "Blue grass slows only 1/6 instead of 1/3.",
       "layout": {
-        "x": 2748,
-        "y": -340
+        "x": -61,
+        "y": -370
       },
       "sort": 62
     },
@@ -2004,8 +2004,8 @@
       "descriptionKo": "시간 풀 보너스 +1",
       "descriptionEn": "Timer grass restores +1s extra.",
       "layout": {
-        "x": 2660,
-        "y": -510
+        "x": -481,
+        "y": -555
       },
       "sort": 63
     },
@@ -2035,8 +2035,8 @@
       "descriptionKo": "풀 재성장 지연 -6초",
       "descriptionEn": "Grass regrows 6s faster.",
       "layout": {
-        "x": 2923,
-        "y": -340
+        "x": 107,
+        "y": -370
       },
       "sort": 64
     },
@@ -2066,8 +2066,8 @@
       "descriptionKo": "키 큰 풀 골드 +2",
       "descriptionEn": "Tall grass gives +2 bonus gold.",
       "layout": {
-        "x": 3010,
-        "y": -680
+        "x": -1153,
+        "y": -740
       },
       "sort": 65
     },
@@ -2097,8 +2097,8 @@
       "descriptionKo": "풀 성장속도 +1",
       "descriptionEn": "Grass grows 1s faster.",
       "layout": {
-        "x": 2835,
-        "y": -510
+        "x": -313,
+        "y": -555
       },
       "sort": 66
     },
@@ -2128,8 +2128,8 @@
       "descriptionKo": "풀 성장속도 +1",
       "descriptionEn": "Grass grows 1s faster.",
       "layout": {
-        "x": 3185,
-        "y": -680
+        "x": -985,
+        "y": -740
       },
       "sort": 67
     },
@@ -2159,8 +2159,8 @@
       "descriptionKo": "풀 성장속도 +1.2",
       "descriptionEn": "Grass grows 1.2s faster.",
       "layout": {
-        "x": 3185,
-        "y": -850
+        "x": -840,
+        "y": -925
       },
       "sort": 68
     },
@@ -2190,8 +2190,8 @@
       "descriptionKo": "풀 성장속도 +1.2",
       "descriptionEn": "Grass grows 1.2s faster.",
       "layout": {
-        "x": 2923,
-        "y": -1020
+        "x": 84,
+        "y": -1110
       },
       "sort": 69
     },
@@ -2221,8 +2221,8 @@
       "descriptionKo": "풀 성장속도 +1.6",
       "descriptionEn": "Grass grows 1.6s faster.",
       "layout": {
-        "x": 2835,
-        "y": -1190
+        "x": -84,
+        "y": -1295
       },
       "sort": 70
     },
@@ -2246,8 +2246,8 @@
       "descriptionKo": "능력 계열 카드가 열립니다.",
       "descriptionEn": "Opens the summon branch of auto-fighting abilities.",
       "layout": {
-        "x": 6178,
-        "y": -340
+        "x": 993,
+        "y": -370
       },
       "sort": 71
     },
@@ -2279,8 +2279,8 @@
       "descriptionKo": "그림자 분신 개수 +1",
       "descriptionEn": "Summon a shadow clone that mows grass at random spots (half your damage).",
       "layout": {
-        "x": 5653,
-        "y": -510
+        "x": 909,
+        "y": -555
       },
       "sort": 72
     },
@@ -2312,8 +2312,8 @@
       "descriptionKo": "그림자 분신 개수 +1",
       "descriptionEn": "Up to 2 shadow clones at once.",
       "layout": {
-        "x": 4165,
-        "y": -680
+        "x": -99,
+        "y": -740
       },
       "sort": 73
     },
@@ -2345,8 +2345,8 @@
       "descriptionKo": "그림자 분신 개수 +1",
       "descriptionEn": "Up to 3 shadow clones at once.",
       "layout": {
-        "x": 4253,
-        "y": -850
+        "x": -290,
+        "y": -925
       },
       "sort": 74
     },
@@ -2378,8 +2378,8 @@
       "descriptionKo": "그림자 분신 피해량 +0.17",
       "descriptionEn": "Shadow clone damage +17% of player.",
       "layout": {
-        "x": 4340,
-        "y": -680
+        "x": 69,
+        "y": -740
       },
       "sort": 75
     },
@@ -2411,8 +2411,8 @@
       "descriptionKo": "그림자 분신 피해량 +0.17",
       "descriptionEn": "Shadow clone damage +17% of player.",
       "layout": {
-        "x": 4428,
-        "y": -850
+        "x": -122,
+        "y": -925
       },
       "sort": 76
     },
@@ -2444,8 +2444,8 @@
       "descriptionKo": "그림자 분신 피해량 +0.16",
       "descriptionEn": "Shadow clone reaches full player damage.",
       "layout": {
-        "x": 5653,
-        "y": -1020
+        "x": 466,
+        "y": -1110
       },
       "sort": 77
     },
@@ -2477,8 +2477,8 @@
       "descriptionKo": "그림자 분신 간격 -0.5",
       "descriptionEn": "Shadow clones appear 0.5s sooner.",
       "layout": {
-        "x": 4515,
-        "y": -680
+        "x": 237,
+        "y": -740
       },
       "sort": 78
     },
@@ -2510,8 +2510,8 @@
       "descriptionKo": "그림자 분신 간격 -0.5",
       "descriptionEn": "Shadow clones appear 0.5s sooner.",
       "layout": {
-        "x": 4603,
-        "y": -850
+        "x": 46,
+        "y": -925
       },
       "sort": 79
     },
@@ -2543,8 +2543,8 @@
       "descriptionKo": "그림자 분신 간격 -0.5",
       "descriptionEn": "Shadow clones appear 0.5s sooner.",
       "layout": {
-        "x": 5828,
-        "y": -1020
+        "x": 634,
+        "y": -1110
       },
       "sort": 80
     },
@@ -2576,8 +2576,8 @@
       "descriptionKo": "날아다니는 낫 개수 +1",
       "descriptionEn": "Launch a scythe forward that stops and spins, mowing grass.",
       "layout": {
-        "x": 5828,
-        "y": -510
+        "x": 1077,
+        "y": -555
       },
       "sort": 81
     },
@@ -2609,8 +2609,8 @@
       "descriptionKo": "날아다니는 낫 개수 +1",
       "descriptionEn": "Throw 2 scythes spread in a fan.",
       "layout": {
-        "x": 4690,
-        "y": -680
+        "x": 405,
+        "y": -740
       },
       "sort": 82
     },
@@ -2642,8 +2642,8 @@
       "descriptionKo": "날아다니는 낫 개수 +1",
       "descriptionEn": "Throw 3 scythes spread in a fan.",
       "layout": {
-        "x": 4778,
-        "y": -850
+        "x": 214,
+        "y": -925
       },
       "sort": 83
     },
@@ -2675,8 +2675,8 @@
       "descriptionKo": "날아다니는 낫 개수 +1",
       "descriptionEn": "Throw 4 scythes spread in a fan.",
       "layout": {
-        "x": 6003,
-        "y": -1020
+        "x": 802,
+        "y": -1110
       },
       "sort": 84
     },
@@ -2708,8 +2708,8 @@
       "descriptionKo": "날아다니는 낫 개수 +1",
       "descriptionEn": "Throw 5 scythes spread in a fan.",
       "layout": {
-        "x": 5915,
-        "y": -1190
+        "x": 298,
+        "y": -1295
       },
       "sort": 85
     },
@@ -2741,8 +2741,8 @@
       "descriptionKo": "날아다니는 낫 피해량 +0.13",
       "descriptionEn": "Scythe damage +13% of player.",
       "layout": {
-        "x": 4865,
-        "y": -680
+        "x": 573,
+        "y": -740
       },
       "sort": 86
     },
@@ -2774,8 +2774,8 @@
       "descriptionKo": "날아다니는 낫 피해량 +0.13",
       "descriptionEn": "Scythe damage +13% of player.",
       "layout": {
-        "x": 4953,
-        "y": -850
+        "x": 382,
+        "y": -925
       },
       "sort": 87
     },
@@ -2807,8 +2807,8 @@
       "descriptionKo": "날아다니는 낫 피해량 +0.14",
       "descriptionEn": "Scythe reaches full player damage.",
       "layout": {
-        "x": 6178,
-        "y": -1020
+        "x": 970,
+        "y": -1110
       },
       "sort": 88
     },
@@ -2840,8 +2840,8 @@
       "descriptionKo": "날아다니는 낫 반경 +0.15",
       "descriptionEn": "Scythe spin radius +0.15m.",
       "layout": {
-        "x": 5040,
-        "y": -680
+        "x": 741,
+        "y": -740
       },
       "sort": 89
     },
@@ -2873,8 +2873,8 @@
       "descriptionKo": "날아다니는 낫 반경 +0.15",
       "descriptionEn": "Scythe spin radius +0.15m.",
       "layout": {
-        "x": 5128,
-        "y": -850
+        "x": 550,
+        "y": -925
       },
       "sort": 90
     },
@@ -2906,8 +2906,8 @@
       "descriptionKo": "날아다니는 낫 회전 수 +2",
       "descriptionEn": "Scythe spins 2 more times before fading.",
       "layout": {
-        "x": 5215,
-        "y": -680
+        "x": 909,
+        "y": -740
       },
       "sort": 91
     },
@@ -2939,8 +2939,8 @@
       "descriptionKo": "날아다니는 낫 회전 수 +2",
       "descriptionEn": "Scythe spins 2 more times before fading.",
       "layout": {
-        "x": 5303,
-        "y": -850
+        "x": 718,
+        "y": -925
       },
       "sort": 92
     },
@@ -2972,8 +2972,8 @@
       "descriptionKo": "소환 트랙터 개수 +1",
       "descriptionEn": "Summon a tractor that drives across the map mowing a wide strip.",
       "layout": {
-        "x": 6003,
-        "y": -510
+        "x": 1245,
+        "y": -555
       },
       "sort": 93
     },
@@ -3005,8 +3005,8 @@
       "descriptionKo": "소환 트랙터 폭 +0.4",
       "descriptionEn": "Tractor strip width +0.4m.",
       "layout": {
-        "x": 5390,
-        "y": -680
+        "x": 1077,
+        "y": -740
       },
       "sort": 94
     },
@@ -3038,8 +3038,8 @@
       "descriptionKo": "소환 트랙터 폭 +0.4",
       "descriptionEn": "Tractor strip width +0.4m.",
       "layout": {
-        "x": 5478,
-        "y": -850
+        "x": 886,
+        "y": -925
       },
       "sort": 95
     },
@@ -3071,8 +3071,8 @@
       "descriptionKo": "소환 트랙터 피해량 +0.2",
       "descriptionEn": "Tractor damage +20% of player.",
       "layout": {
-        "x": 5565,
-        "y": -680
+        "x": 1245,
+        "y": -740
       },
       "sort": 96
     },
@@ -3104,8 +3104,8 @@
       "descriptionKo": "소환 트랙터 피해량 +0.2",
       "descriptionEn": "Tractor damage +20% of player.",
       "layout": {
-        "x": 5653,
-        "y": -850
+        "x": 1054,
+        "y": -925
       },
       "sort": 97
     },
@@ -3137,8 +3137,8 @@
       "descriptionKo": "소환 트랙터 간격 -1",
       "descriptionEn": "Tractor arrives 1s sooner.",
       "layout": {
-        "x": 5740,
-        "y": -680
+        "x": 1413,
+        "y": -740
       },
       "sort": 98
     },
@@ -3170,8 +3170,8 @@
       "descriptionKo": "소환 트랙터 간격 -1",
       "descriptionEn": "Tractor arrives 1s sooner.",
       "layout": {
-        "x": 5828,
-        "y": -850
+        "x": 1222,
+        "y": -925
       },
       "sort": 99
     },
@@ -3203,8 +3203,8 @@
       "descriptionKo": "부메랑 개수 +1",
       "descriptionEn": "Throw a scythe that flies out and returns, cutting both ways.",
       "layout": {
-        "x": 6178,
-        "y": -510
+        "x": 1413,
+        "y": -555
       },
       "sort": 100
     },
@@ -3236,8 +3236,8 @@
       "descriptionKo": "부메랑 개수 +1",
       "descriptionEn": "Throw 2 boomerangs in a fan.",
       "layout": {
-        "x": 5915,
-        "y": -680
+        "x": 1581,
+        "y": -740
       },
       "sort": 101
     },
@@ -3269,8 +3269,8 @@
       "descriptionKo": "부메랑 개수 +1",
       "descriptionEn": "Throw 3 boomerangs in a fan.",
       "layout": {
-        "x": 6003,
-        "y": -850
+        "x": 1390,
+        "y": -925
       },
       "sort": 102
     },
@@ -3302,8 +3302,8 @@
       "descriptionKo": "부메랑 피해량 +0.2",
       "descriptionEn": "Boomerang damage +20% of player.",
       "layout": {
-        "x": 6090,
-        "y": -680
+        "x": 1749,
+        "y": -740
       },
       "sort": 103
     },
@@ -3335,8 +3335,8 @@
       "descriptionKo": "부메랑 피해량 +0.2",
       "descriptionEn": "Boomerang damage +20% of player.",
       "layout": {
-        "x": 6178,
-        "y": -850
+        "x": 1558,
+        "y": -925
       },
       "sort": 104
     },
@@ -3368,8 +3368,8 @@
       "descriptionKo": "부메랑 거리 +0.6",
       "descriptionEn": "Boomerang flies 0.6m farther.",
       "layout": {
-        "x": 6265,
-        "y": -680
+        "x": 1917,
+        "y": -740
       },
       "sort": 105
     },
@@ -3401,8 +3401,8 @@
       "descriptionKo": "부메랑 거리 +0.6",
       "descriptionEn": "Boomerang flies 0.6m farther.",
       "layout": {
-        "x": 6353,
-        "y": -850
+        "x": 1726,
+        "y": -925
       },
       "sort": 106
     },
@@ -3434,8 +3434,8 @@
       "descriptionKo": "번개 개수 +1",
       "descriptionEn": "Strike a random spot with lightning that burns grass.",
       "layout": {
-        "x": 6353,
-        "y": -510
+        "x": 1581,
+        "y": -555
       },
       "sort": 107
     },
@@ -3467,8 +3467,8 @@
       "descriptionKo": "번개 개수 +1",
       "descriptionEn": "2 lightning strikes per cast.",
       "layout": {
-        "x": 6440,
-        "y": -680
+        "x": 2085,
+        "y": -740
       },
       "sort": 108
     },
@@ -3500,8 +3500,8 @@
       "descriptionKo": "번개 개수 +1",
       "descriptionEn": "3 lightning strikes per cast.",
       "layout": {
-        "x": 6528,
-        "y": -850
+        "x": 1894,
+        "y": -925
       },
       "sort": 109
     },
@@ -3533,8 +3533,8 @@
       "descriptionKo": "번개 반경 +0.2",
       "descriptionEn": "Lightning radius +0.2m.",
       "layout": {
-        "x": 6615,
-        "y": -680
+        "x": 2253,
+        "y": -740
       },
       "sort": 110
     },
@@ -3566,8 +3566,8 @@
       "descriptionKo": "번개 반경 +0.2",
       "descriptionEn": "Lightning radius +0.2m.",
       "layout": {
-        "x": 6703,
-        "y": -850
+        "x": 2062,
+        "y": -925
       },
       "sort": 111
     },
@@ -3599,8 +3599,8 @@
       "descriptionKo": "번개 간격 -1",
       "descriptionEn": "Lightning strikes 1s sooner.",
       "layout": {
-        "x": 6790,
-        "y": -680
+        "x": 2421,
+        "y": -740
       },
       "sort": 112
     },
@@ -3632,8 +3632,8 @@
       "descriptionKo": "번개 간격 -1",
       "descriptionEn": "Lightning strikes 1s sooner.",
       "layout": {
-        "x": 6878,
-        "y": -850
+        "x": 2230,
+        "y": -925
       },
       "sort": 113
     },
@@ -3665,8 +3665,8 @@
       "descriptionKo": "드론 개수 +1",
       "descriptionEn": "Deploy a drone that roams the map mowing grass below it.",
       "layout": {
-        "x": 6528,
-        "y": -510
+        "x": 1749,
+        "y": -555
       },
       "sort": 114
     },
@@ -3698,8 +3698,8 @@
       "descriptionKo": "드론 개수 +1",
       "descriptionEn": "Up to 2 drones at once.",
       "layout": {
-        "x": 6965,
-        "y": -680
+        "x": 2589,
+        "y": -740
       },
       "sort": 115
     },
@@ -3731,8 +3731,8 @@
       "descriptionKo": "드론 반경 +0.2",
       "descriptionEn": "Drone mow radius +0.2m.",
       "layout": {
-        "x": 7140,
-        "y": -680
+        "x": 2757,
+        "y": -740
       },
       "sort": 116
     },
@@ -3764,8 +3764,8 @@
       "descriptionKo": "드론 반경 +0.2",
       "descriptionEn": "Drone mow radius +0.2m.",
       "layout": {
-        "x": 7053,
-        "y": -850
+        "x": 2398,
+        "y": -925
       },
       "sort": 117
     },
@@ -3797,8 +3797,8 @@
       "descriptionKo": "드론 지속시간 +2",
       "descriptionEn": "Drone stays 2s longer.",
       "layout": {
-        "x": 7315,
-        "y": -680
+        "x": 2925,
+        "y": -740
       },
       "sort": 118
     },
@@ -3830,8 +3830,8 @@
       "descriptionKo": "드론 지속시간 +2",
       "descriptionEn": "Drone stays 2s longer.",
       "layout": {
-        "x": 7228,
-        "y": -850
+        "x": 2566,
+        "y": -925
       },
       "sort": 119
     },
@@ -3863,8 +3863,8 @@
       "descriptionKo": "드론 피해량 +0.2",
       "descriptionEn": "Drone damage +20% of player.",
       "layout": {
-        "x": 7490,
-        "y": -680
+        "x": 3093,
+        "y": -740
       },
       "sort": 120
     },
@@ -3896,8 +3896,8 @@
       "descriptionKo": "토네이도 개수 +1",
       "descriptionEn": "Conjure a tornado that weaves across the map sweeping grass.",
       "layout": {
-        "x": 6703,
-        "y": -510
+        "x": 1917,
+        "y": -555
       },
       "sort": 121
     },
@@ -3929,8 +3929,8 @@
       "descriptionKo": "토네이도 크기 +0.3",
       "descriptionEn": "Tornado radius +0.3m.",
       "layout": {
-        "x": 7665,
-        "y": -680
+        "x": 3261,
+        "y": -740
       },
       "sort": 122
     },
@@ -3962,8 +3962,8 @@
       "descriptionKo": "토네이도 크기 +0.3",
       "descriptionEn": "Tornado radius +0.3m.",
       "layout": {
-        "x": 7403,
-        "y": -850
+        "x": 2734,
+        "y": -925
       },
       "sort": 123
     },
@@ -3995,8 +3995,8 @@
       "descriptionKo": "토네이도 지속시간 +1.5",
       "descriptionEn": "Tornado lasts 1.5s longer.",
       "layout": {
-        "x": 7840,
-        "y": -680
+        "x": 3429,
+        "y": -740
       },
       "sort": 124
     },
@@ -4028,8 +4028,8 @@
       "descriptionKo": "토네이도 지속시간 +1.5",
       "descriptionEn": "Tornado lasts 1.5s longer.",
       "layout": {
-        "x": 7578,
-        "y": -850
+        "x": 2902,
+        "y": -925
       },
       "sort": 125
     },
@@ -4061,8 +4061,8 @@
       "descriptionKo": "토네이도 피해량 +0.2",
       "descriptionEn": "Tornado damage +20% of player.",
       "layout": {
-        "x": 8015,
-        "y": -680
+        "x": 3597,
+        "y": -740
       },
       "sort": 126
     },
@@ -4094,8 +4094,8 @@
       "descriptionKo": "토네이도 피해량 +0.2",
       "descriptionEn": "Tornado damage +20% of player.",
       "layout": {
-        "x": 7753,
-        "y": -850
+        "x": 3070,
+        "y": -925
       },
       "sort": 127
     },
@@ -4125,8 +4125,8 @@
       "descriptionKo": "자동 맵 확장 한도 +6m",
       "descriptionEn": "Map can auto-grow up to +6m larger.",
       "layout": {
-        "x": 3360,
-        "y": -850
+        "x": -672,
+        "y": -925
       },
       "sort": 128
     },
@@ -4156,8 +4156,8 @@
       "descriptionKo": "자동 맵 확장 한도 +8m",
       "descriptionEn": "Map can auto-grow up to +8m more.",
       "layout": {
-        "x": 3098,
-        "y": -1020
+        "x": 252,
+        "y": -1110
       },
       "sort": 129
     },
@@ -4187,8 +4187,8 @@
       "descriptionKo": "자동 맵 확장 한도 +10m",
       "descriptionEn": "Map can auto-grow up to +10m more.",
       "layout": {
-        "x": 3010,
-        "y": -1190
+        "x": 84,
+        "y": -1295
       },
       "sort": 130
     },
@@ -4218,8 +4218,8 @@
       "descriptionKo": "자동 맵 확장 한도 +12m",
       "descriptionEn": "Map can auto-grow up to +12m more.",
       "layout": {
-        "x": 2923,
-        "y": -1360
+        "x": 107,
+        "y": -1480
       },
       "sort": 131
     },
@@ -4250,8 +4250,8 @@
       "descriptionKo": "돌 등장 해금",
       "descriptionEn": "Rocks start appearing (1 every 10s). They block grass nearby.",
       "layout": {
-        "x": 3098,
-        "y": -340
+        "x": 275,
+        "y": -370
       },
       "sort": 132
     },
@@ -4282,8 +4282,8 @@
       "descriptionKo": "나무 등장 해금",
       "descriptionEn": "Trees start appearing. Grass grows faster around them.",
       "layout": {
-        "x": 3010,
-        "y": -510
+        "x": -145,
+        "y": -555
       },
       "sort": 133
     },
@@ -4313,8 +4313,8 @@
       "descriptionKo": "장애물 등장 간격 -2초",
       "descriptionEn": "Obstacles appear 2s sooner.",
       "layout": {
-        "x": 3185,
-        "y": -510
+        "x": 23,
+        "y": -555
       },
       "sort": 134
     },
@@ -4344,8 +4344,8 @@
       "descriptionKo": "장애물 등장 간격 -2초",
       "descriptionEn": "Obstacles appear 2s sooner.",
       "layout": {
-        "x": 3360,
-        "y": -680
+        "x": -817,
+        "y": -740
       },
       "sort": 135
     },
@@ -4375,8 +4375,8 @@
       "descriptionKo": "장애물 크기 +0.3",
       "descriptionEn": "Obstacles spawn larger (tougher, worth more).",
       "layout": {
-        "x": 3360,
-        "y": -510
+        "x": 191,
+        "y": -555
       },
       "sort": 136
     },
@@ -4406,8 +4406,8 @@
       "descriptionKo": "장애물 크기 +0.4",
       "descriptionEn": "Obstacles spawn even larger.",
       "layout": {
-        "x": 3535,
-        "y": -680
+        "x": -649,
+        "y": -740
       },
       "sort": 137
     }
