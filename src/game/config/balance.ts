@@ -81,9 +81,9 @@ export const SUMMON_BASE: Record<string, SummonBase> = {
 };
 
 /**
- * Obstacles (rocks/trees) are skill-gated and spawn over time. Sizes vary; HP
- * and reward scale with size. Rocks suppress grass growth in an aura around
- * them; trees speed it up.
+ * Obstacles (rocks/trees) can start on the field, then later cards can expand
+ * the system. Sizes vary; HP and reward scale with size. Rocks suppress grass
+ * growth in an aura around them; trees speed it up.
  */
 export const OBSTACLE_TUNING = {
   spawnBaseIntervalSec: 10,
@@ -114,10 +114,10 @@ export const MAP_GROWTH = {
 /** Test bombs scattered at run start, per selected map size (meters/side). */
 export const TEST_BOMB_COUNTS: Record<number, number> = { 10: 0, 30: 30 };
 
-/** Test rocks/trees scattered per map size: how many of each to spread around. */
-export const OBSTACLE_COUNTS_BY_MAP: Record<number, { rocks: number; trees: number }> = {
-  10: { rocks: 5, trees: 4 },
-  30: { rocks: 22, trees: 18 },
+/** Small starting rocks/trees scattered per map size. */
+export const INITIAL_OBSTACLE_COUNTS_BY_MAP: Record<number, { rocks: number; trees: number }> = {
+  10: { rocks: 2, trees: 1 },
+  30: { rocks: 8, trees: 5 },
 };
 
 /** Base round duration per map size (ms); skill bonuses add on top. */

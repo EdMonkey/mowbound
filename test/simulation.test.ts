@@ -32,7 +32,7 @@ import {
   mapScreenInputToWorldMovement,
   normalizeInputVector,
 } from "../src/game/systems/InputSystem";
-import { BALANCE, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
+import { BALANCE, INITIAL_OBSTACLE_COUNTS_BY_MAP, ROUND_DURATION_BY_MAP, TEST_BOMB_COUNTS } from "../src/game/config/balance";
 import { defaultSave } from "../src/game/systems/SaveSystem";
 
 class FakeInputTarget {
@@ -327,6 +327,11 @@ describe("bomb chain detonation", () => {
     // small mow radius, with a wider chain radius so neighbors still detonate
     expect(BALANCE.bombBlastRadiusMeters).toBe(1.25);
     expect(BALANCE.bombChainRadiusMeters).toBe(2.5);
+  });
+
+  it("starts runs with a small set of rocks and trees", () => {
+    expect(INITIAL_OBSTACLE_COUNTS_BY_MAP[10]).toEqual({ rocks: 2, trees: 1 });
+    expect(INITIAL_OBSTACLE_COUNTS_BY_MAP[30]).toEqual({ rocks: 8, trees: 5 });
   });
 });
 

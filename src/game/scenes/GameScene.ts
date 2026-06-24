@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { App, GameSceneController } from "../App";
 import {
   BALANCE,
-  OBSTACLE_COUNTS_BY_MAP,
+  INITIAL_OBSTACLE_COUNTS_BY_MAP,
   TEST_BOMB_COUNTS,
 } from "../config/balance";
 import { Bomb } from "../entities/Bomb";
@@ -192,8 +192,7 @@ export class GameScene implements GameSceneController {
     this.scene.add(this.explosions.group);
     this.scene.add(this.rockChips.mesh);
     this.scene.add(this.woodChips.mesh);
-    // Obstacles are skill-gated and spawn over time (see updateObstacleSpawns),
-    // so none are pre-placed.
+    this.spawnInitialObstacles();
     this.spawnInitialGrass();
     this.spawnTestBombs();
     this.buildCollisionDebug();
@@ -419,9 +418,10 @@ export class GameScene implements GameSceneController {
     }
   }
 
-  private spawnObstacles(): void {
-    // Scatter rocks and trees randomly across the map (away from the start).
-    const counts = OBSTACLE_COUNTS_BY_MAP[this.mapSize] ?? { rocks: 0, trees: 0 };
+  private spawnInitialObstacles(): void {
+    // Scatter a small number of rocks and trees before grass so rocks can
+    // suppress nearby grass from the first frame.
+    const counts = INITIAL_OBSTACLE_COUNTS_BY_MAP[this.mapSize] ?? { rocks: 0, trees: 0 };
     const spawn = (kind: ObstacleKind, count: number): void => {
       for (let index = 0; index < count; index += 1) {
         const position = randomGrassPosition(this.mapSize, { x: 0, z: 0 });
