@@ -53,7 +53,7 @@ describe("card catalog filters", () => {
     const grouped = groupCardsByCategoryAndTier(CARDS);
     expect(grouped.equipment[0].map((card) => card.id)).toEqual(["root_sharpen"]);
     expect(grouped.harvest[1].map((card) => card.id)).toContain("market_cart_1");
-    expect(grouped.ability[3].map((card) => card.id)).toContain("seed_bombs");
+    expect(grouped.ability[1].map((card) => card.id)).toContain("seed_bombs");
     expect(grouped.environment[2].map((card) => card.id)).toContain("survey_rock");
   });
 
