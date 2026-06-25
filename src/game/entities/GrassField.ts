@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { cloneModel } from "../assets/models";
 import { BALANCE } from "../config/balance";
-import type { GrassKind, GrassState } from "../types";
+import type { GrassKind, GrassState, VectorXZ } from "../types";
 
 const SHAKE_TIME = 0.24;
 const CHUNK_SIZE = 5; // world metres per chunk
@@ -55,6 +55,9 @@ export class GrassField {
   private readonly chunks = new Map<string, Chunk>();
   private readonly instances = new Map<string, Instance>();
   private readonly shaking = new Set<string>();
+  // Ids currently on fire — lets per-frame work skip the full grass set when
+  // nothing is burning (huge win on large maps with tens of thousands of patches).
+  private readonly burning = new Set<string>();
 
   private readonly tmpMatrix = new THREE.Matrix4();
   private readonly tmpQuat = new THREE.Quaternion();
@@ -154,6 +157,35 @@ export class GrassField {
     return out;
   }
 
+  /** True if any grass is currently on fire (cheap — no allocation). */
+  hasBurning(): boolean {
+    return this.burning.size > 0;
+  }
+
+  /** Positions of currently-burning grass, for fire VFX. Empty when none burn. */
+  getBurningPositions(): VectorXZ[] {
+    const out: VectorXZ[] = [];
+    for (const id of this.burning) {
+      const instance = this.instances.get(id);
+      if (instance && instance.burningSeconds > 0) {
+        out.push({ x: instance.x, z: instance.z });
+      }
+    }
+    return out;
+  }
+
+  /** Whether grown blue grass sits within `radius` of a point — no allocation, early-exits. */
+  isOnBlueGrass(px: number, pz: number, radius: number): boolean {
+    const r2 = radius * radius;
+    for (const instance of this.instances.values()) {
+      if (instance.kind !== "blue" || instance.growthRatio <= 0.5) continue;
+      const dx = instance.x - px;
+      const dz = instance.z - pz;
+      if (dx * dx + dz * dz < r2) return true;
+    }
+    return false;
+  }
+
   setHp(id: string, hp: number, options: { shake?: boolean; burningSeconds?: number } = {}): void {
     const instance = this.instances.get(id);
     if (!instance) return;
@@ -162,6 +194,8 @@ export class GrassField {
     // the colour/fire buffers — only a burning-state change does.
     if (options.burningSeconds !== undefined) {
       instance.burningSeconds = options.burningSeconds;
+      if (options.burningSeconds > 0) this.burning.add(id);
+      else this.burning.delete(id);
       this.writeMeshColor(instance);
       this.writeFire(instance);
       instance.chunk.dirty = true;
@@ -178,6 +212,7 @@ export class GrassField {
     if (!instance) return;
     if (instance.growthRatio < 0.5) return;
     instance.burningSeconds = BALANCE.fireDurationSeconds;
+    this.burning.add(id);
     this.writeMeshColor(instance);
     this.writeFire(instance);
     instance.chunk.dirty = true;
@@ -188,6 +223,7 @@ export class GrassField {
     const instance = this.instances.get(id);
     if (!instance) return;
     this.shaking.delete(id);
+    this.burning.delete(id);
     instance.growthRatio = 0;
     instance.regrowDelay = this.regrowDelaySeconds;
     instance.hp = instance.baseHp;
@@ -235,16 +271,20 @@ export class GrassField {
   }
 
   update(deltaSeconds: number): void {
-    for (const instance of this.instances.values()) {
-      if (instance.burningSeconds > 0) {
-        instance.burningSeconds = Math.max(0, instance.burningSeconds - deltaSeconds);
-        this.writeFire(instance);
-        instance.chunk.fireDirty = true;
-        // Colour only needs rewriting when the fire goes out (ember tint -> kind).
-        if (instance.burningSeconds === 0) {
-          this.writeMeshColor(instance);
-          instance.chunk.dirty = true;
-        }
+    for (const id of this.burning) {
+      const instance = this.instances.get(id);
+      if (!instance || instance.burningSeconds <= 0) {
+        this.burning.delete(id);
+        continue;
+      }
+      instance.burningSeconds = Math.max(0, instance.burningSeconds - deltaSeconds);
+      this.writeFire(instance);
+      instance.chunk.fireDirty = true;
+      // Colour only needs rewriting when the fire goes out (ember tint -> kind).
+      if (instance.burningSeconds === 0) {
+        this.burning.delete(id);
+        this.writeMeshColor(instance);
+        instance.chunk.dirty = true;
       }
     }
 

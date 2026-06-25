@@ -96,6 +96,12 @@ export function tickFire(
 
   const burning = grass.filter((patch) => (patch.burningSeconds ?? 0) > 0 && patch.hp > 0);
 
+  // No active fire → no spread or damage; skip the full grass rebuild entirely.
+  // Safe to return the input as-is: callers treat an empty result as "no change".
+  if (burning.length === 0) {
+    return { grass: grass as GrassState[], damagedIds: [], destroyedIds: [], ignitedIds: [] };
+  }
+
   // id → how many seconds the child patch will burn (generation-decayed)
   const ignitedMap = new Map<string, number>();
 

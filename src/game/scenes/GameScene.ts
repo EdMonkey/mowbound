@@ -230,11 +230,7 @@ export class GameScene implements GameSceneController {
       }
 
       const movement = mapScreenInputToWorldMovement(this.input.getMovementVector());
-      const grassStatesForSlowCheck = this.grassField.getStates();
-      const onBlue = grassStatesForSlowCheck.some(
-        (s) => s.kind === "blue" && s.growthRatio > 0.5 &&
-          Math.hypot(s.position.x - this.player.position.x, s.position.z - this.player.position.z) < 0.35,
-      );
+      const onBlue = this.grassField.isOnBlueGrass(this.player.position.x, this.player.position.z, 0.35);
       const slowFactor = Math.max(0, BALANCE.blueGrassSlowFactor + this.stats.blueGrassSlow);
       const effectiveSpeed = onBlue
         ? this.stats.moveSpeed * (1 - slowFactor)
@@ -1032,14 +1028,17 @@ export class GameScene implements GameSceneController {
     }
     this.grassField.update(deltaSeconds);
 
-    const burningPositions = this.grassField.getStates()
-      .filter((s) => (s.burningSeconds ?? 0) > 0)
-      .map((s) => s.position);
-    this.fireParticles.setBurning(burningPositions);
+    this.fireParticles.setBurning(
+      this.grassField.hasBurning() ? this.grassField.getBurningPositions() : [],
+    );
     this.fireParticles.update(deltaSeconds);
   }
 
   private updateBurningGrass(deltaSeconds: number): void {
+    // Nothing on fire → skip the whole grass scan/copy (the common case).
+    if (!this.grassField.hasBurning()) {
+      return;
+    }
     const grassStates = this.grassField.getStates();
     const result = tickFire(grassStates, deltaSeconds, {
       damagePerSecond: this.stats.fireDamagePerSecond,
