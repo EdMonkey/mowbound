@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-24T22:32:17.766Z",
+  "generatedAt": "2026-06-25T13:01:12.751Z",
   "source": "src/game/config/cards.json",
   "count": 138,
   "nodes": [
@@ -460,11 +460,11 @@
       "effects": [
         {
           "kind": "fireDamagePerSecond",
-          "amount": 0.35
+          "amount": 0.7
         }
       ],
-      "descriptionKo": "화상 피해 +0.35/초",
-      "descriptionEn": "Fire damage +0.35/s.",
+      "descriptionKo": "화상 피해 +0.7/초",
+      "descriptionEn": "Fire damage +0.7/s.",
       "layout": {
         "x": -3261,
         "y": -740
@@ -491,11 +491,11 @@
       "effects": [
         {
           "kind": "fireDamagePerSecond",
-          "amount": 0.35
+          "amount": 0.7
         }
       ],
-      "descriptionKo": "화상 피해 +0.35/초",
-      "descriptionEn": "Fire damage +0.35/s.",
+      "descriptionKo": "화상 피해 +0.7/초",
+      "descriptionEn": "Fire damage +0.7/s.",
       "layout": {
         "x": -2902,
         "y": -925
@@ -522,11 +522,11 @@
       "effects": [
         {
           "kind": "fireDamagePerSecond",
-          "amount": 0.35
+          "amount": 0.7
         }
       ],
-      "descriptionKo": "화상 피해 +0.35/초",
-      "descriptionEn": "Fire damage +0.35/s.",
+      "descriptionKo": "화상 피해 +0.7/초",
+      "descriptionEn": "Fire damage +0.7/s.",
       "layout": {
         "x": -802,
         "y": -1110

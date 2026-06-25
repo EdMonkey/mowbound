@@ -35,7 +35,7 @@ export const BALANCE = {
   obstacleStunSeconds: 2,
   obstacleKnockbackSpeed: 4.2,
   fireIgniteChance: 0.05,
-  fireDamagePerSecond: 1,
+  fireDamagePerSecond: 2.5,
   fireDurationSeconds: 5,
   fireSpreadRadiusMeters: 0.48,
   fireSpreadChancePerSecond: 0.22,
