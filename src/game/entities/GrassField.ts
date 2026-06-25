@@ -279,6 +279,36 @@ export class GrassField {
     return { destroyedIds, ignitedIds };
   }
 
+  /**
+   * Grass relevant to a fire tick: every burning patch plus its potential spread
+   * targets (neighbours within `spreadRadius`). Lets fire scale with the size of
+   * the blaze instead of the whole field.
+   */
+  getFireTickStates(spreadRadius: number): GrassState[] {
+    const seen = new Set<string>();
+    const out: GrassState[] = [];
+    const push = (inst: Instance) => {
+      if (seen.has(inst.id)) return;
+      seen.add(inst.id);
+      out.push({
+        id: inst.id,
+        position: { x: inst.x, z: inst.z },
+        hp: inst.hp,
+        kind: inst.kind,
+        growthRatio: inst.growthRatio,
+        regrowDelay: inst.regrowDelay,
+        ...(inst.burningSeconds > 0 ? { burningSeconds: inst.burningSeconds } : {}),
+      });
+    };
+    for (const id of this.burning) {
+      const inst = this.instances.get(id);
+      if (!inst || inst.burningSeconds <= 0) continue;
+      push(inst);
+      this.forEachInRadius(inst.x, inst.z, spreadRadius, push);
+    }
+    return out;
+  }
+
   /** Single grass state by id, O(1). Used when only specific patches matter. */
   getState(id: string): GrassState | undefined {
     const inst = this.instances.get(id);

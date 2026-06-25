@@ -1013,7 +1013,9 @@ export class GameScene implements GameSceneController {
     if (!this.grassField.hasBurning()) {
       return;
     }
-    const grassStates = this.grassField.getStates();
+    // Only burning grass and their spread neighbours matter — keeps big fires
+    // on large maps from scanning the entire field every frame.
+    const grassStates = this.grassField.getFireTickStates(this.stats.fireSpreadRadiusMeters);
     const result = tickFire(grassStates, deltaSeconds, {
       damagePerSecond: this.stats.fireDamagePerSecond,
       spreadRadiusMeters: this.stats.fireSpreadRadiusMeters,
