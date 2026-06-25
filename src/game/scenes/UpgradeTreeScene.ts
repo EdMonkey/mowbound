@@ -194,6 +194,7 @@ export class UpgradeTreeScene implements GameSceneController {
     `;
     const toolbar = header.querySelector(".upgrade-prototype-toolbar");
     toolbar?.append(
+      createButton("▶ 게임 시작", () => this.app.show("game"), "upgrade-start-button"),
       createButton("-", () => this.zoomBy(0.86), "secondary-button upgrade-zoom-button"),
       createButton("+", () => this.zoomBy(1.16), "secondary-button upgrade-zoom-button"),
       createButton("맞춤", () => this.fitView(false), "secondary-button"),

@@ -1048,6 +1048,52 @@ button:disabled {
   border-color: rgba(199, 156, 255, 0.9);
 }
 
+/* ── 해금 가능 = 활성: 밝게 + 금빛 글로우 + 은은한 펄스 ── */
+.upgrade-graph-node.can-unlock:not(.is-unlocked) {
+  border-color: rgba(255, 224, 138, 1);
+  background: rgba(46, 48, 24, 0.97);
+  box-shadow:
+    0 0 0 3px rgba(255, 224, 138, 0.6),
+    0 0 20px rgba(255, 214, 90, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.4);
+  animation: upgrade-affordable-pulse 1.7s ease-in-out infinite;
+}
+.upgrade-graph-node.can-unlock:not(.is-unlocked) .upgrade-node-cost {
+  color: #fff0b8;
+}
+@keyframes upgrade-affordable-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 224, 138, 0.6), 0 0 20px rgba(255, 214, 90, 0.5), 0 10px 28px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(255, 224, 138, 0.9), 0 0 30px rgba(255, 214, 90, 0.8), 0 10px 28px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ── 재화 부족 등으로 지금 못 사는 카드 = 비활성: 어둡게 ── */
+.upgrade-graph-node.is-locked:not(.can-unlock) {
+  opacity: 0.45;
+  filter: saturate(0.55);
+}
+.upgrade-graph-node.is-locked:not(.can-unlock) .upgrade-node-cost {
+  color: #e89090;
+}
+
+/* 업그레이드 창의 게임 시작 버튼 (눈에 띄게 초록) */
+.upgrade-start-button {
+  background: linear-gradient(180deg, #4cae5e, #2f8a45);
+  color: #ffffff;
+  font-weight: 900;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(47, 138, 69, 0.5);
+}
+.upgrade-start-button:hover {
+  filter: brightness(1.09);
+}
+
 .upgrade-node-label {
   font-size: 13px;
   font-weight: 950;
