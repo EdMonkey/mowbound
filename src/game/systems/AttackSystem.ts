@@ -81,11 +81,11 @@ export function resolveAttack(request: AttackRequest): AttackResult {
     if (isInAttackFan(request.origin, request.direction, patch.position, request.range, request.arcDegrees)) {
       hitIds.push(patch.id);
 
-      // 중앙(플레이어)에 가까울수록 강한 데미지, 범위 끝에서는 30%
+      // 중앙(플레이어)에 가까울수록 강한 데미지, 범위 끝에서는 60%
       const dx = patch.position.x - request.origin.x;
       const dz = patch.position.z - request.origin.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
-      const damageFactor = Math.max(0.3, 1 - (dist / request.range) * 0.7);
+      const damageFactor = Math.max(0.6, 1 - (dist / request.range) * 0.4);
       const hp = patch.hp - request.damage * damageFactor;
 
       if (hp <= 0) {

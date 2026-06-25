@@ -94,10 +94,10 @@ describe("attack resolution", () => {
     });
 
     // Damage falls off with distance from the swing origin (100% at center,
-    // 30% at the range edge), so edge grass takes less and may survive.
+    // 60% at the range edge), so edge grass takes less and may survive.
     expect(result.hitIds).toEqual(["front", "side", "weak"]);
     expect(result.destroyedIds).toEqual([]);
-    expect(result.grass.find((grass) => grass.id === "front")?.hp).toBeCloseTo(4.1, 5); // edge: 3 * 0.3
+    expect(result.grass.find((grass) => grass.id === "front")?.hp).toBeCloseTo(3.2, 5); // edge: 3 * 0.6
     expect(result.grass.find((grass) => grass.id === "weak")?.hp ?? 0).toBeGreaterThan(0);
     expect(result.grass.find((grass) => grass.id === "far")?.hp).toBe(5);
     expect(result.grass.find((grass) => grass.id === "behind")?.hp).toBe(5);
