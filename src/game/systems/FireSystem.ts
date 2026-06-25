@@ -144,7 +144,9 @@ export function tickFire(
       : ignitedMap.get(patch.id)!;
     const burningSeconds = Math.max(0, initialSeconds - deltaSeconds);
 
-    const hp = patch.hp - stats.damagePerSecond * deltaSeconds;
+    // 화상 데미지에 랜덤 변동(기본의 1.0~2.0배)을 줘서 불이 풀을 더 확실히 태운다.
+    const burnMultiplier = 1 + roll();
+    const hp = patch.hp - stats.damagePerSecond * deltaSeconds * burnMultiplier;
     damagedIds.push(patch.id);
 
     if (hp <= 0) {
