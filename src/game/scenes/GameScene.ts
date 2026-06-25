@@ -26,7 +26,6 @@ import {
 import {
   bombsTriggeredBy,
   createBombState,
-  grassInRadius,
   resolveChainDetonation,
   type BombState,
 } from "../systems/BombSystem";
@@ -577,7 +576,7 @@ export class GameScene implements GameSceneController {
 
     // Mow every grass clump inside the blast. Gold is granted for all of them,
     // but coin/clipping VFX are capped so a huge blast can't spike the frame.
-    this.cutGrassIds(grassInRadius(this.grassField.getStates(), center, radius), center, {
+    this.cutGrassIds(this.grassField.idsInRadius(center.x, center.z, radius), center, {
       coinLimit: BALANCE.bombMaxCoinsPerBlast,
       clipLimit: BALANCE.bombMaxClippingsPerBlast,
     });
@@ -586,7 +585,14 @@ export class GameScene implements GameSceneController {
   private performAttack(): void {
     this.attackFlash = 1; // flash the range ring on every strike
     this.sound.play("swing");
-    const grassStates = this.grassField.getStates();
+    // Only the grass near the swing matters; query nearby cells instead of the
+    // whole field (with a margin so ignite-spread still sees neighbours).
+    const queryRadius = this.stats.attackRangeMeters + Math.max(1, this.stats.fireSpreadRadiusMeters);
+    const grassStates = this.grassField.statesInRadius(
+      this.player.position.x,
+      this.player.position.z,
+      queryRadius,
+    );
     const result = resolveAttack({
       origin: this.player.position,
       direction: this.player.direction,
@@ -647,8 +653,6 @@ export class GameScene implements GameSceneController {
 
     const uniqueIds = Array.from(new Set(ids));
     const uniqueIdSet = new Set(uniqueIds);
-    const grassStates = this.grassField.getStates();
-    const stateById = new Map(grassStates.map((grass) => [grass.id, grass]));
     let coinBudget = options.coinLimit ?? uniqueIds.length;
     let clipBudget = options.clipLimit ?? uniqueIds.length;
     let cutCount = 0;
@@ -658,7 +662,7 @@ export class GameScene implements GameSceneController {
     const relocateKinds: GrassKind[] = [];
 
     for (const id of uniqueIds) {
-      const grassState = stateById.get(id);
+      const grassState = this.grassField.getState(id);
       if (!grassState) {
         continue;
       }
@@ -753,44 +757,14 @@ export class GameScene implements GameSceneController {
     if (cuts.length === 0) {
       return;
     }
-    const grassStates = this.grassField.getStates();
-    const destroyed = new Set<string>();
-    const igniteIds = new Set<string>();
-
-    for (const grass of grassStates) {
-      if ((grass.growthRatio ?? 1) < 0.15 || destroyed.has(grass.id)) {
-        continue;
-      }
-      let remaining = grass.hp;
-      let hit = false;
-      let igniteHere = false;
-      for (const cut of cuts) {
-        const dx = grass.position.x - cut.x;
-        const dz = grass.position.z - cut.z;
-        if (dx * dx + dz * dz <= cut.radius * cut.radius) {
-          remaining -= cut.damage;
-          hit = true;
-          if (cut.ignite) igniteHere = true;
-        }
-      }
-      if (!hit) {
-        continue;
-      }
-      if (remaining <= 0) {
-        destroyed.add(grass.id);
-      } else {
-        this.grassField.setHp(grass.id, remaining, { shake: false });
-        if (igniteHere && (grass.growthRatio ?? 1) >= 0.5) {
-          igniteIds.add(grass.id);
-        }
-      }
-    }
-
-    for (const id of igniteIds) {
+    // Cuts are applied against only the grass in the affected cells (spatial
+    // query inside GrassField), so this stays cheap even with many summons.
+    const { destroyedIds, ignitedIds } = this.grassField.applyAreaCuts(cuts);
+    for (const id of ignitedIds) {
       this.grassField.ignite(id);
     }
-    if (destroyed.size > 0) {
-      this.cutGrassIds([...destroyed], this.player.position);
+    if (destroyedIds.length > 0) {
+      this.cutGrassIds(destroyedIds, this.player.position);
     }
   }
 
@@ -1107,7 +1081,7 @@ export class GameScene implements GameSceneController {
     if (this.initialGrassTotal <= 0) {
       return 0;
     }
-    const remaining = this.grassField.getStates().length;
+    const remaining = this.grassField.grassInstanceCount;
     const cut = Math.max(0, this.initialGrassTotal - remaining);
     return Math.floor((cut / this.initialGrassTotal) * 100);
   }

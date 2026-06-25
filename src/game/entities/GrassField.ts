@@ -13,6 +13,9 @@ interface Chunk {
   count: number;
   dirty: boolean;
   fireDirty: boolean;
+  // Instances living in this 5m cell — lets area queries touch only nearby grass
+  // instead of scanning the whole field (critical on large maps).
+  members: Instance[];
 }
 
 interface GrowthZone {
@@ -22,6 +25,7 @@ interface GrowthZone {
 }
 
 interface Instance {
+  id: string;
   chunk: Chunk;
   index: number;
   x: number;
@@ -116,6 +120,7 @@ export class GrassField {
       ? BALANCE.baseGrassHp * BALANCE.tallGrassHpMultiplier
       : BALANCE.baseGrassHp;
     const instance: Instance = {
+      id: state.id,
       chunk,
       index: chunk.count,
       x: state.position.x,
@@ -134,6 +139,7 @@ export class GrassField {
     chunk.mesh.count = chunk.count;
     chunk.fireMesh.count = chunk.count;
     this.instances.set(state.id, instance);
+    chunk.members.push(instance);
     this.writeMatrix(instance, 0, 0);
     this.writeMeshColor(instance);
     this.writeFire(instance);
@@ -177,13 +183,132 @@ export class GrassField {
   /** Whether grown blue grass sits within `radius` of a point — no allocation, early-exits. */
   isOnBlueGrass(px: number, pz: number, radius: number): boolean {
     const r2 = radius * radius;
-    for (const instance of this.instances.values()) {
-      if (instance.kind !== "blue" || instance.growthRatio <= 0.5) continue;
-      const dx = instance.x - px;
-      const dz = instance.z - pz;
-      if (dx * dx + dz * dz < r2) return true;
+    return this.someInRadius(px, pz, radius, (inst) =>
+      inst.kind === "blue" && inst.growthRatio > 0.5 &&
+      (inst.x - px) ** 2 + (inst.z - pz) ** 2 < r2,
+    );
+  }
+
+  /** Run `fn` on every grass instance whose cell overlaps the query disc. */
+  private forEachInRadius(px: number, pz: number, radius: number, fn: (inst: Instance) => void): void {
+    const minCx = Math.floor((px - radius) / CHUNK_SIZE);
+    const maxCx = Math.floor((px + radius) / CHUNK_SIZE);
+    const minCz = Math.floor((pz - radius) / CHUNK_SIZE);
+    const maxCz = Math.floor((pz + radius) / CHUNK_SIZE);
+    for (let cx = minCx; cx <= maxCx; cx += 1) {
+      for (let cz = minCz; cz <= maxCz; cz += 1) {
+        const chunk = this.chunks.get(`${cx},${cz}`);
+        if (!chunk) continue;
+        for (const inst of chunk.members) fn(inst);
+      }
+    }
+  }
+
+  private someInRadius(px: number, pz: number, radius: number, pred: (inst: Instance) => boolean): boolean {
+    const minCx = Math.floor((px - radius) / CHUNK_SIZE);
+    const maxCx = Math.floor((px + radius) / CHUNK_SIZE);
+    const minCz = Math.floor((pz - radius) / CHUNK_SIZE);
+    const maxCz = Math.floor((pz + radius) / CHUNK_SIZE);
+    for (let cx = minCx; cx <= maxCx; cx += 1) {
+      for (let cz = minCz; cz <= maxCz; cz += 1) {
+        const chunk = this.chunks.get(`${cx},${cz}`);
+        if (!chunk) continue;
+        for (const inst of chunk.members) if (pred(inst)) return true;
+      }
     }
     return false;
+  }
+
+  /** Grass states within `radius` of a point (for the player swing). Only scans nearby cells. */
+  statesInRadius(px: number, pz: number, radius: number): GrassState[] {
+    const out: GrassState[] = [];
+    const r2 = radius * radius;
+    this.forEachInRadius(px, pz, radius, (inst) => {
+      if ((inst.x - px) ** 2 + (inst.z - pz) ** 2 > r2) return;
+      out.push({
+        id: inst.id,
+        position: { x: inst.x, z: inst.z },
+        hp: inst.hp,
+        kind: inst.kind,
+        growthRatio: inst.growthRatio,
+        regrowDelay: inst.regrowDelay,
+        ...(inst.burningSeconds > 0 ? { burningSeconds: inst.burningSeconds } : {}),
+      });
+    });
+    return out;
+  }
+
+  /**
+   * Apply a batch of summon/ability area cuts directly against nearby grass
+   * (no full-field scan, no per-frame allocation of the whole grass set).
+   * Survivors take damage in place; returns ids to destroy and ids ignited.
+   */
+  applyAreaCuts(cuts: ReadonlyArray<{ x: number; z: number; radius: number; damage: number; ignite?: boolean }>): {
+    destroyedIds: string[];
+    ignitedIds: string[];
+  } {
+    const candidates = new Set<Instance>();
+    for (const cut of cuts) {
+      this.forEachInRadius(cut.x, cut.z, cut.radius, (inst) => {
+        if (inst.growthRatio >= 0.15) candidates.add(inst);
+      });
+    }
+    const destroyedIds: string[] = [];
+    const ignitedIds: string[] = [];
+    for (const inst of candidates) {
+      let remaining = inst.hp;
+      let hit = false;
+      let igniteHere = false;
+      for (const cut of cuts) {
+        const dx = inst.x - cut.x;
+        const dz = inst.z - cut.z;
+        if (dx * dx + dz * dz <= cut.radius * cut.radius) {
+          remaining -= cut.damage;
+          hit = true;
+          if (cut.ignite) igniteHere = true;
+        }
+      }
+      if (!hit) continue;
+      if (remaining <= 0) {
+        destroyedIds.push(inst.id);
+      } else {
+        inst.hp = remaining;
+        if (igniteHere && inst.growthRatio >= 0.5) ignitedIds.push(inst.id);
+      }
+    }
+    return { destroyedIds, ignitedIds };
+  }
+
+  /** Single grass state by id, O(1). Used when only specific patches matter. */
+  getState(id: string): GrassState | undefined {
+    const inst = this.instances.get(id);
+    if (!inst) return undefined;
+    return {
+      id,
+      position: { x: inst.x, z: inst.z },
+      hp: inst.hp,
+      kind: inst.kind,
+      growthRatio: inst.growthRatio,
+      regrowDelay: inst.regrowDelay,
+      ...(inst.burningSeconds > 0 ? { burningSeconds: inst.burningSeconds } : {}),
+    };
+  }
+
+  /** Ids of cuttable grass within `radius` of a point — scans only nearby cells. */
+  idsInRadius(px: number, pz: number, radius: number): string[] {
+    const out: string[] = [];
+    const r2 = radius * radius;
+    this.forEachInRadius(px, pz, radius, (inst) => {
+      if (inst.growthRatio >= 0.15 && (inst.x - px) ** 2 + (inst.z - pz) ** 2 <= r2) {
+        out.push(inst.id);
+      }
+    });
+    return out;
+  }
+
+  /** Total grass instances (alive or regrowing) — O(1). */
+  get grassInstanceCount(): number {
+    return this.instances.size;
   }
 
   setHp(id: string, hp: number, options: { shake?: boolean; burningSeconds?: number } = {}): void {
@@ -409,7 +534,7 @@ export class GrassField {
     mesh.boundingSphere = new THREE.Sphere(center, Math.sqrt(2 * halfXZ * halfXZ + 0.6 * 0.6));
     fireMesh.boundingSphere = mesh.boundingSphere;
 
-    chunk = { mesh, fireMesh, count: 0, dirty: false, fireDirty: false };
+    chunk = { mesh, fireMesh, count: 0, dirty: false, fireDirty: false, members: [] };
     this.chunks.set(key, chunk);
     this.group.add(mesh);
     this.group.add(fireMesh);
