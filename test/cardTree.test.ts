@@ -13,8 +13,8 @@ import { defaultSave } from "../src/game/systems/SaveSystem";
 
 describe("card tree data", () => {
   it("contains the expected card count and total cost", () => {
-    expect(CARDS).toHaveLength(138);
-    expect(CARDS.reduce((sum, card) => sum + card.cost, 0)).toBe(45855);
+    expect(CARDS).toHaveLength(142);
+    expect(CARDS.reduce((sum, card) => sum + card.cost, 0)).toBe(46440);
     expect(CARD_ROOT_ID).toBe("root_sharpen");
   });
 

@@ -10,7 +10,7 @@ import {
 
 describe("card catalog data", () => {
   it("loads the whole upgrade set as cards with stable categories and tiers", () => {
-    expect(CARDS).toHaveLength(138);
+    expect(CARDS).toHaveLength(142);
     expect(CARD_CATEGORIES).toEqual(["equipment", "harvest", "environment", "ability"]);
 
     expect(CARD_BY_ID.root_sharpen.category).toBe("equipment");

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-06-25T13:01:12.751Z",
+  "generatedAt": "2026-06-25T13:24:09.790Z",
   "source": "src/game/config/cards.json",
-  "count": 138,
+  "count": 142,
   "nodes": [
     {
       "id": "root_sharpen",
@@ -275,7 +275,7 @@
       "descriptionKo": "공격범위 +0.15m",
       "descriptionEn": "Attack range +0.15m.",
       "layout": {
-        "x": -298,
+        "x": -466,
         "y": -1295
       },
       "sort": 8
@@ -306,7 +306,7 @@
       "descriptionKo": "공격범위 +0.15m",
       "descriptionEn": "Attack range +0.15m.",
       "layout": {
-        "x": -107,
+        "x": -275,
         "y": -1480
       },
       "sort": 9
@@ -2221,7 +2221,7 @@
       "descriptionKo": "풀 성장속도 +1.6",
       "descriptionEn": "Grass grows 1.6s faster.",
       "layout": {
-        "x": -84,
+        "x": 84,
         "y": -1295
       },
       "sort": 70
@@ -2708,7 +2708,7 @@
       "descriptionKo": "날아다니는 낫 개수 +1",
       "descriptionEn": "Throw 5 scythes spread in a fan.",
       "layout": {
-        "x": 298,
+        "x": 466,
         "y": -1295
       },
       "sort": 85
@@ -4187,7 +4187,7 @@
       "descriptionKo": "자동 맵 확장 한도 +10m",
       "descriptionEn": "Map can auto-grow up to +10m more.",
       "layout": {
-        "x": 84,
+        "x": 252,
         "y": -1295
       },
       "sort": 130
@@ -4218,7 +4218,7 @@
       "descriptionKo": "자동 맵 확장 한도 +12m",
       "descriptionEn": "Map can auto-grow up to +12m more.",
       "layout": {
-        "x": 107,
+        "x": 275,
         "y": -1480
       },
       "sort": 131
@@ -4410,6 +4410,130 @@
         "y": -740
       },
       "sort": 137
+    },
+    {
+      "id": "spread4",
+      "nameKo": "확산 반경 ++++",
+      "nameEn": "Spread Radius ++++",
+      "category": "equipment",
+      "branch": "blade",
+      "tier": 7,
+      "cost": 120,
+      "prereq": [
+        "spread3"
+      ],
+      "gates": [],
+      "tags": [
+        "blade",
+        "equipment",
+        "fireSpreadRadiusMeters"
+      ],
+      "effects": [
+        {
+          "kind": "fireSpreadRadiusMeters",
+          "amount": 0.06
+        }
+      ],
+      "descriptionKo": "불 확산 반경 +0.06m",
+      "descriptionEn": "Fire spread radius +0.06m.",
+      "layout": {
+        "x": -298,
+        "y": -1295
+      },
+      "sort": 18
+    },
+    {
+      "id": "spread5",
+      "nameKo": "확산 반경 +++++",
+      "nameEn": "Spread Radius +++++",
+      "category": "equipment",
+      "branch": "blade",
+      "tier": 8,
+      "cost": 160,
+      "prereq": [
+        "spread4"
+      ],
+      "gates": [],
+      "tags": [
+        "blade",
+        "equipment",
+        "fireSpreadRadiusMeters"
+      ],
+      "effects": [
+        {
+          "kind": "fireSpreadRadiusMeters",
+          "amount": 0.07
+        }
+      ],
+      "descriptionKo": "불 확산 반경 +0.07m",
+      "descriptionEn": "Fire spread radius +0.07m.",
+      "layout": {
+        "x": -107,
+        "y": -1480
+      },
+      "sort": 19
+    },
+    {
+      "id": "kindle4",
+      "nameKo": "불쏘시개 ++++",
+      "nameEn": "Kindling ++++",
+      "category": "equipment",
+      "branch": "blade",
+      "tier": 7,
+      "cost": 130,
+      "prereq": [
+        "kindle3"
+      ],
+      "gates": [],
+      "tags": [
+        "blade",
+        "equipment",
+        "fireSpreadChancePerSecond"
+      ],
+      "effects": [
+        {
+          "kind": "fireSpreadChancePerSecond",
+          "amount": 0.07
+        }
+      ],
+      "descriptionKo": "불 확산 속도 +0.07/초",
+      "descriptionEn": "Fire spread speed +0.07/s.",
+      "layout": {
+        "x": -130,
+        "y": -1295
+      },
+      "sort": 20
+    },
+    {
+      "id": "kindle5",
+      "nameKo": "불쏘시개 +++++",
+      "nameEn": "Kindling +++++",
+      "category": "equipment",
+      "branch": "blade",
+      "tier": 8,
+      "cost": 175,
+      "prereq": [
+        "kindle4"
+      ],
+      "gates": [],
+      "tags": [
+        "blade",
+        "equipment",
+        "fireSpreadChancePerSecond"
+      ],
+      "effects": [
+        {
+          "kind": "fireSpreadChancePerSecond",
+          "amount": 0.08
+        }
+      ],
+      "descriptionKo": "불 확산 속도 +0.08/초",
+      "descriptionEn": "Fire spread speed +0.08/s.",
+      "layout": {
+        "x": 61,
+        "y": -1480
+      },
+      "sort": 21
     }
   ]
 }
